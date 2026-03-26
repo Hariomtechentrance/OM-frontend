@@ -371,13 +371,16 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('tokenExpiry');
     localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('user');
-    // Note: We DON'T remove userCart anymore - we want to preserve it for guest users
+    localStorage.removeItem('blacklocust_cart');
+    // Clear session cart data
+    sessionStorage.removeItem('sessionCart');
     localStorage.removeItem('currentOTP');
     localStorage.removeItem('otpValue');
     localStorage.removeItem('otpMethod');
     setAuthToken(null);
     dispatch({ type: LOGOUT });
     
+    // FORCE REDIRECT TO LOGIN
     // ✅ FORCE REDIRECT TO LOGIN
     window.location.href = '/login';
   };

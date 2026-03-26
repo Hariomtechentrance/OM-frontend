@@ -46,19 +46,17 @@ const RegisterPage = () => {
 
   const handleSocialLogin = (provider) => {
     if (provider === 'Facebook') {
-      toast.info('Facebook registration is temporarily unavailable. Please use email registration or Google.');
+      toast.info('Facebook registration is temporarily unavailable. Please use email registration.');
       return;
     }
     
-    setSocialLoginMethod(provider);
-    setShowSocialLogin(true);
+    if (provider === 'Google') {
+      toast.info('Google registration is being updated. Please use email registration for now.');
+      return;
+    }
     
-    // Simulate social login for Google
-    setTimeout(() => {
-      toast.success(`${provider} registration successful!`);
-      setShowSocialLogin(false);
-      navigate('/');
-    }, 2000);
+    // For future social login implementations
+    toast.info(`${provider} registration will be available soon.`);
   };
 
   const handleOtpRegistration = async (e) => {

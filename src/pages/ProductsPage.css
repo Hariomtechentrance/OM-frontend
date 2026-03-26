@@ -1,6 +1,6 @@
 /* Products Page Styles - Matching HomePage Featured Collection */
 .products-page {
-  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+  background: #000000;
   color: #ffffff;
   min-height: 100vh;
   padding: 4rem 0;
@@ -116,15 +116,15 @@
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 2.5rem;
   padding: 2rem 0;
-  background: rgba(255, 255, 255, 0.8);
+  background: transparent;
   border-radius: 20px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  box-shadow: none;
 }
 
 .no-products {
   text-align: center;
   padding: 4rem 2rem;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(192, 147, 69, 0.05);
   border-radius: 20px;
   color: #ffffff;
 }
@@ -165,7 +165,7 @@
 .error-state {
   text-align: center;
   padding: 4rem 2rem;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(192, 147, 69, 0.05);
   border-radius: 20px;
   color: #ffffff;
 }

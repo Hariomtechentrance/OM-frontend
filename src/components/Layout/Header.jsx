@@ -191,6 +191,13 @@ const Header = () => {
         </nav>
       </header>
 
+      {/* Mobile Menu Toggle */}
+      <div className="mobile-menu-toggle">
+        <button className="hamburger-menu" onClick={toggleMenu}>
+          <FaBars />
+        </button>
+      </div>
+
       {/* Mobile Side Navigation */}
       <nav className={`side-nav ${menuOpen ? 'active' : ''}`} id="sideNav">
         <div className="side-nav-content">

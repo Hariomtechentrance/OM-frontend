@@ -150,52 +150,48 @@ export const CartProvider = ({ children }) => {
     const loadCart = async () => {
       const token = localStorage.getItem("token");
       
-      // First, try to load from LocalStorage (works for both logged-in and guest users)
-      const localCart = loadCartFromLocalStorage();
-      if (localCart) {
+      // For both guest and logged-in users, start with empty cart
+      // Only load from backend if user has active session items
+      const sessionCart = sessionStorage.getItem('sessionCart');
+      if (sessionCart) {
+        // User has items in current session
+        const cartData = JSON.parse(sessionCart);
         dispatch({
           type: 'SET_CART',
-          payload: localCart
+          payload: cartData
         });
-      }
-      
-      // If user is logged in, also load from backend and merge
-      if (token) {
-        try {
-          const res = await api.get('/api/cart');
-          if (res.data.success) {
-            const backendCart = res.data.cart;
-            
-            // Merge LocalStorage cart with backend cart
-            if (localCart && backendCart.items.length > 0) {
-              const mergedCart = mergeCarts(localCart, backendCart);
-              dispatch({
-                type: 'SET_CART',
-                payload: mergedCart
-              });
-              // Save merged cart to backend
-              await saveCartToBackend(mergedCart);
-            } else if (backendCart.items.length > 0) {
-              dispatch({
-                type: 'SET_CART',
-                payload: backendCart
-              });
-            }
+        
+        // If logged in, sync to backend
+        if (token) {
+          try {
+            await saveCartToBackend(cartData);
+          } catch (error) {
+            console.error('❌ Cart sync error:', error);
           }
-        } catch (error) {
-          console.error('❌ Cart load error:', error);
-          // If backend fails, continue with LocalStorage cart
         }
+      } else {
+        // Start with empty cart for all users
+        dispatch({
+          type: 'CLEAR_CART'
+        });
       }
     };
 
     loadCart();
   }, []);
 
-  // Save cart to LocalStorage whenever it changes
+  // Save cart to sessionStorage and backend for logged-in users
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    
+    // Save to sessionStorage for current session
     if (state.items.length > 0) {
-      saveCartToLocalStorage(state);
+      sessionStorage.setItem('sessionCart', JSON.stringify(state));
+    }
+    
+    // Also save to backend if user is logged in
+    if (token && state.items.length > 0) {
+      saveCartToBackend(state);
     }
   }, [state]);
 
@@ -230,6 +226,15 @@ export const CartProvider = ({ children }) => {
   // Add to cart function
   const addToCart = async (product, quantity = 1, size, color) => {
     const token = localStorage.getItem("token");
+    
+    console.log('🛒 ADD TO CART - Token exists:', !!token);
+    console.log('🛒 ADD TO CART - Product:', product.name);
+    
+    if (!token) {
+      console.error('❌ No token found, user not authenticated');
+      toast.error('Please login to add items to cart');
+      return;
+    }
     
     try {
       const uniqueId = `${product._id}-${size || 'default'}-${color || 'default'}`;

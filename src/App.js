@@ -90,6 +90,7 @@ const AppContent = () => {
               <Route path="/new-arrivals" element={<NewArrivalsPage />} />
               <Route path="/shop-summer" element={<ShopSummerPage />} />
               <Route path="/shop-collection" element={<ShopCollectionPage />} />
+              <Route path="/collections" element={<ShopCollectionPage />} />
               <Route path="/collection/:slug" element={<CollectionPage />} />
               <Route path="/search" element={<SearchPage />} />
               

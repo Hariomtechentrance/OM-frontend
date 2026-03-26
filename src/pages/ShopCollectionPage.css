@@ -272,10 +272,11 @@
 .shop-collection-page {
   width: 100%;
   min-height: 100vh;
+  background-color: #000000 !important;
 }
 
 .hero-section {
-  background: linear-gradient(135deg, var(--dark) 0%, var(--gold) 100%);
+  background: #000000;
   color: var(--white);
   padding: 6rem 0;
   text-align: center;

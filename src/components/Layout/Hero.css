@@ -10,7 +10,7 @@
   background-position: center;
   background-repeat: no-repeat;
   margin-top: 0; /* Remove margin to eliminate gap */
-  padding-top: 70px; /* Add padding for header space */
+  padding-top: 0; /* Remove padding to eliminate gap */
   margin-bottom: 0; /* Remove bottom margin for seamless transition */
 }
 
@@ -306,7 +306,7 @@
     height: calc(75vh - 70px);
     min-height: 430px;
     margin-top: 0; /* Remove margin to eliminate gap */
-    padding-top: 70px; /* Add padding for header space */
+    padding-top: 0; /* Remove padding to eliminate gap */
     margin-bottom: 0; /* Remove bottom margin for seamless transition */
   }
   
@@ -328,7 +328,7 @@
     height: calc(100vh - 70px); /* Account for header height */
     min-height: 530px; /* Minimum height for mobile */
     margin-top: 0; /* Remove margin to eliminate gap */
-    padding-top: 70px; /* Add padding for header space */
+    padding-top: 0; /* Remove padding to eliminate gap */
     margin-bottom: 0; /* Remove bottom margin for seamless transition */
   }
   
@@ -355,7 +355,7 @@
     height: calc(100vh - 70px); /* Account for header height */
     min-height: 430px; /* Minimum height for small mobile */
     margin-top: 0; /* Remove margin to eliminate gap */
-    padding-top: 70px; /* Add padding for header space */
+    padding-top: 0; /* Remove padding to eliminate gap */
     margin-bottom: 0; /* Remove bottom margin for seamless transition */
   }
   

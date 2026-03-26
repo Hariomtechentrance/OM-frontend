@@ -57,19 +57,17 @@ const LoginPage = () => {
 
   const handleSocialLogin = (provider) => {
     if (provider === 'Facebook') {
-      toast.info('Facebook login is temporarily unavailable. Please use email login or Google.');
+      toast.info('Facebook login is temporarily unavailable. Please use email login.');
       return;
     }
     
-    setSocialLoginMethod(provider);
-    setShowSocialLogin(true);
+    if (provider === 'Google') {
+      toast.info('Google login is being updated. Please use email login for now.');
+      return;
+    }
     
-    // Simulate social login for Google
-    setTimeout(() => {
-      toast.success(`${provider} login successful!`);
-      setShowSocialLogin(false);
-      navigate('/');
-    }, 2000);
+    // For future social login implementations
+    toast.info(`${provider} login will be available soon.`);
   };
 
   const handleOtpLogin = async (e) => {
@@ -111,20 +109,27 @@ const LoginPage = () => {
       console.log("🔥 FORM SUBMITTED", e);
       console.log("🔥 formData:", formData);
       
-      const res = await axios.post(`${API_BASE}/users/login`, {
-        email: formData.email,
-        password: formData.password,
-      });
+      // ✅ Use AuthContext login function instead of direct API call
+      const result = await login(formData);
+      
+      console.log("LOGIN RESULT:", result);
 
-      console.log("LOGIN RESPONSE:", res.data);
-
-      // ✅ SAVE TOKEN
-      localStorage.setItem("token", res.data.token);
-
-      // ✅ REDIRECT
-      navigate("/");
+      if (result.success) {
+        toast.success('Login successful!');
+        
+        // ✅ REDIRECT based on role
+        const role = result.user?.role;
+        if (role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/');
+        }
+      } else {
+        toast.error(result.error || 'Login failed');
+      }
     } catch (err) {
-      console.error("LOGIN ERROR:", err.response?.data || err.message);
+      console.error("LOGIN ERROR:", err);
+      toast.error(err.message || 'Login failed');
     }
   };
 

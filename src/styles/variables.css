@@ -1,13 +1,13 @@
 :root {
   --gold: #c09345;
   --primary-color: #c09345;
-  --dark: #0a0a0a;
+  --dark: #000000;
   --white: #ffffff;
   --off-white: #f8f9fa;
   --bg-light: #f8f9fa;
-  --bg-dark: #0a0a0a;
+  --bg-dark: #000000;
   --text-light: #ffffff;
-  --text-dark: #0a0a0a;
+  --text-dark: #000000;
   --success-color: #28a745;
   --danger-color: #dc3545;
   --transition: all 0.3s ease;

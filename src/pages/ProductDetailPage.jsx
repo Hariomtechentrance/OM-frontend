@@ -6,6 +6,7 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import SizeSelector from '../components/SizeSelector/SizeSelector';
 import SizeChart from '../components/SizeChart/SizeChart';
+import { getColorHex } from '../utils/colorUtils';
 import '../components/SizeSelector/SizeSelector.css';
 import './ProductDetailPage.css';
 
@@ -285,57 +286,17 @@ const ProductDetailPage = () => {
                     )}
                   </div>
                 )}
-
-                {/* Technical Specifications */}
-                {product.productSpecs.technicalSpecs && (
-                  <div className="technical-specifications">
-                    <h3>Technical Specifications</h3>
-                    <div className="specs-table">
-                      {product.productSpecs.technicalSpecs.fabric && (
-                        <div className="spec-row">
-                          <span className="spec-label">Fabric:</span>
-                          <span className="spec-value">{product.productSpecs.technicalSpecs.fabric}</span>
-                        </div>
-                      )}
-                      {product.productSpecs.technicalSpecs.sleeves && (
-                        <div className="spec-row">
-                          <span className="spec-label">Sleeves:</span>
-                          <span className="spec-value">{product.productSpecs.technicalSpecs.sleeves}</span>
-                        </div>
-                      )}
-                      {product.productSpecs.technicalSpecs.collar && (
-                        <div className="spec-row">
-                          <span className="spec-label">Collar:</span>
-                          <span className="spec-value">{product.productSpecs.technicalSpecs.collar}</span>
-                        </div>
-                      )}
-                      {product.productSpecs.technicalSpecs.pocket && (
-                        <div className="spec-row">
-                          <span className="spec-label">Pocket:</span>
-                          <span className="spec-value">{product.productSpecs.technicalSpecs.pocket}</span>
-                        </div>
-                      )}
-                      {product.productSpecs.technicalSpecs.occasion && (
-                        <div className="spec-row">
-                          <span className="spec-label">Occasion:</span>
-                          <span className="spec-value">{product.productSpecs.technicalSpecs.occasion}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 
             {/* Size & Color Selection */}
             <div className="selection-section">
               <div className="size-selector-container">
-                <h3>Select Size</h3>
                 <SizeSelector
                   product={product}
                   selectedSize={selectedSize}
                   onSizeChange={handleSizeChange}
-                  availableSizes={product.sizes}
+                  className="product-size-selector"
                 />
               </div>
               
@@ -353,11 +314,7 @@ const ProductDetailPage = () => {
                       <span 
                         className="color-swatch" 
                         style={{ 
-                          backgroundColor: color.toLowerCase() === 'black' ? '#000000' :
-                                         color.toLowerCase() === 'white' ? '#ffffff' :
-                                         color.toLowerCase() === 'navy' ? '#000080' :
-                                         color.toLowerCase() === 'gray' ? '#808080' :
-                                         color.toLowerCase() === 'forest green' ? '#228b22' : '#cccccc'
+                          backgroundColor: getColorHex(color)
                         }}
                       />
                       <span className="color-name">{color}</span>

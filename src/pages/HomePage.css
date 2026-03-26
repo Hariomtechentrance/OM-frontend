@@ -66,7 +66,7 @@
 /* Featured Section */
 .featured {
   padding: 4rem 0;
-  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+  background: #000000;
   position: relative;
   overflow: hidden;
   width: 100%;
@@ -154,7 +154,7 @@
 /* Categories Section */
 .categories {
   padding: 2rem 0;
-  background: rgba(192, 147, 69, 0.05);
+  background: #000000;
 }
 
 .section-header {
@@ -294,6 +294,19 @@
 /* Featured Products */
 .featured-products {
   padding: 4rem 0;
+  background: #000000;
+}
+
+/* New Arrivals */
+.new-arrivals {
+  padding: 4rem 0;
+  background: #000000;
+}
+
+/* Trending Products */
+.trending-products {
+  padding: 4rem 0;
+  background: #000000;
 }
 
 .products-grid {
@@ -420,7 +433,7 @@
 /* View All Products Section */
 .view-all-products {
   padding: 4rem 0;
-  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  background: #000000;
   color: white;
   text-align: center;
   margin: 2rem 0;
