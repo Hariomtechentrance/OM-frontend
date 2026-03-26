@@ -56,10 +56,15 @@ const LoginPage = () => {
   };
 
   const handleSocialLogin = (provider) => {
+    if (provider === 'Facebook') {
+      toast.info('Facebook login is temporarily unavailable. Please use email login or Google.');
+      return;
+    }
+    
     setSocialLoginMethod(provider);
     setShowSocialLogin(true);
     
-    // Simulate social login
+    // Simulate social login for Google
     setTimeout(() => {
       toast.success(`${provider} login successful!`);
       setShowSocialLogin(false);

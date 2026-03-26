@@ -45,10 +45,15 @@ const RegisterPage = () => {
   };
 
   const handleSocialLogin = (provider) => {
+    if (provider === 'Facebook') {
+      toast.info('Facebook registration is temporarily unavailable. Please use email registration or Google.');
+      return;
+    }
+    
     setSocialLoginMethod(provider);
     setShowSocialLogin(true);
     
-    // Simulate social login
+    // Simulate social login for Google
     setTimeout(() => {
       toast.success(`${provider} registration successful!`);
       setShowSocialLogin(false);
