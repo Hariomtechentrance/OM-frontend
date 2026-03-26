@@ -1,0 +1,314 @@
+/* Shipping & Return Page Styles */
+.shipping-return-page {
+  min-height: 100vh;
+  padding: 8rem 0 2rem 0;
+  background: #000000;
+  color: #ffffff;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.page-header h1 {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #c09345;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.page-header p {
+  font-size: 1.2rem;
+  color: #cccccc;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4rem;
+  margin-bottom: 4rem;
+}
+
+.shipping-section,
+.returns-section {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(192, 147, 69, 0.2);
+  border-radius: 12px;
+  padding: 3rem;
+}
+
+.shipping-section h2,
+.returns-section h2 {
+  font-size: 2.5rem;
+  color: #c09345;
+  margin-bottom: 2rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid #c09345;
+  padding-bottom: 0.5rem;
+}
+
+.shipping-types {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.shipping-type {
+  background: rgba(192, 147, 69, 0.1);
+  border: 1px solid rgba(192, 147, 69, 0.3);
+  border-radius: 8px;
+  padding: 2rem;
+  transition: all 0.3s ease;
+}
+
+.shipping-type:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(192, 147, 69, 0.2);
+}
+
+.shipping-type h3 {
+  font-size: 1.5rem;
+  color: #c09345;
+  margin-bottom: 1rem;
+}
+
+.shipping-details p {
+  margin-bottom: 0.5rem;
+  color: #cccccc;
+}
+
+.shipping-details strong {
+  color: #ffffff;
+}
+
+.shipping-info,
+.return-policy,
+.return-process,
+.refund-info,
+.exchange-info {
+  margin-bottom: 3rem;
+}
+
+.shipping-info h3,
+.return-policy h3,
+.return-process h3,
+.refund-info h3,
+.exchange-info h3 {
+  font-size: 1.8rem;
+  color: #c09345;
+  margin-bottom: 1rem;
+}
+
+.return-conditions,
+.non-returnable {
+  margin-bottom: 2rem;
+}
+
+.return-conditions h4,
+.non-returnable h4 {
+  font-size: 1.3rem;
+  color: #ffffff;
+  margin-bottom: 1rem;
+}
+
+.shipping-info ul,
+.return-conditions ul,
+.non-returnable ul,
+.refund-info ul,
+.exchange-info ul {
+  list-style: none;
+  padding: 0;
+}
+
+.shipping-info li,
+.return-conditions li,
+.non-returnable li,
+.refund-info li,
+.exchange-info li {
+  background: rgba(255, 255, 255, 0.05);
+  margin-bottom: 0.5rem;
+  padding: 1rem;
+  border-left: 3px solid #c09345;
+  color: #cccccc;
+  border-radius: 4px;
+}
+
+.process-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+}
+
+.step {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.step-number {
+  width: 40px;
+  height: 40px;
+  background: #c09345;
+  color: #000000;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.step-content h4 {
+  font-size: 1.2rem;
+  color: #c09345;
+  margin-bottom: 0.5rem;
+}
+
+.step-content p {
+  color: #cccccc;
+  margin: 0;
+}
+
+.contact-support {
+  margin-top: 4rem;
+}
+
+.support-card {
+  background: rgba(192, 147, 69, 0.1);
+  border: 1px solid rgba(192, 147, 69, 0.3);
+  border-radius: 12px;
+  padding: 3rem;
+  text-align: center;
+}
+
+.support-card h2 {
+  font-size: 2rem;
+  color: #c09345;
+  margin-bottom: 1rem;
+}
+
+.support-card p {
+  font-size: 1.1rem;
+  color: #cccccc;
+  margin-bottom: 2rem;
+}
+
+.support-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+}
+
+.support-option {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2rem;
+  border-radius: 8px;
+  border: 1px solid rgba(192, 147, 69, 0.2);
+  transition: all 0.3s ease;
+}
+
+.support-option:hover {
+  transform: translateY(-5px);
+  border-color: #c09345;
+}
+
+.support-option h3 {
+  font-size: 1.3rem;
+  color: #c09345;
+  margin-bottom: 0.5rem;
+}
+
+.support-option p {
+  color: #ffffff;
+  margin-bottom: 0.25rem;
+}
+
+.support-option p:last-child {
+  color: #cccccc;
+  font-size: 0.9rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .shipping-return-page {
+    padding: 8rem 1rem 2rem 1rem;
+  }
+
+  .container {
+    padding: 0 1rem;
+  }
+
+  .page-header h1 {
+    font-size: 2rem;
+  }
+
+  .page-header p {
+    font-size: 1rem;
+  }
+
+  .shipping-section,
+  .returns-section {
+    padding: 2rem;
+  }
+
+  .shipping-section h2,
+  .returns-section h2 {
+    font-size: 1.8rem;
+  }
+
+  .shipping-types {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .shipping-type {
+    padding: 1.5rem;
+  }
+
+  .process-steps {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .support-card {
+    padding: 2rem;
+  }
+
+  .support-options {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-header h1 {
+    font-size: 1.8rem;
+  }
+
+  .shipping-section,
+  .returns-section {
+    padding: 1.5rem;
+  }
+
+  .shipping-type {
+    padding: 1rem;
+  }
+
+  .support-card {
+    padding: 1.5rem;
+  }
+}
