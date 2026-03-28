@@ -521,58 +521,6 @@
   transform: translateY(-1px);
 }
 
-.collection-highlights {
-  background: var(--off-white);
-  padding: 4rem 0;
-  margin: 4rem 0;
-  text-align: center;
-}
-
-.collection-highlights h2 {
-  font-size: 2.5rem;
-  color: var(--dark);
-  margin-bottom: 3rem;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.highlights-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.highlight-card {
-  background: var(--white);
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-}
-
-.highlight-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-}
-
-.highlight-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-}
-
-.highlight-card h3 {
-  font-size: 1.3rem;
-  color: var(--dark);
-  margin-bottom: 1rem;
-}
-
-.highlight-card p {
-  color: #666;
-  line-height: 1.6;
-}
-
 .style-guide {
   background: linear-gradient(135deg, var(--dark), var(--gold));
   padding: 4rem 0;
@@ -659,10 +607,5 @@
   
   .collection-actions {
     flex-direction: column;
-  }
-  
-  .highlights-grid {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
   }
 }

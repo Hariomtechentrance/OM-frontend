@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import ProductCard from '../components/Products/ProductCard';
-import { formatPrice } from '../utils/currency';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
+import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
+import AuthModal from '../components/AuthModal/AuthModal';
 import './ShopCollectionPage.css';
 
 const ShopCollectionPage = () => {
@@ -11,7 +13,10 @@ const ShopCollectionPage = () => {
   const [selectedCollection, setSelectedCollection] = useState('all');
   const [loading, setLoading] = useState(true);
   const [productsLoading, setProductsLoading] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+  const { addToCart } = useCart();
 
   useEffect(() => {
     fetchCollections();
@@ -66,8 +71,11 @@ const ShopCollectionPage = () => {
   };
 
   const handleAddToCart = (product) => {
-    // This will be handled by ProductCard component
-    console.log('Add to cart:', product.name);
+    if (!isAuthenticated) {
+      setShowAuth(true);
+      return;
+    }
+    addToCart(product, 1, undefined, undefined);
   };
 
   if (loading) {
@@ -166,11 +174,12 @@ const ShopCollectionPage = () => {
             </div>
           ) : products.length > 0 ? (
             <div className="products-grid">
-              {products.map(product => (
+              {products.map((product) => (
                 <ProductCard
-                  key={product._id}
+                  key={product._id || product.id}
                   product={product}
-                  onAddToCart={handleAddToCart}
+                  onAddToCart={() => handleAddToCart(product)}
+                  onQuickView={() => navigate(`/product/${product._id || product.id}`)}
                 />
               ))}
             </div>
@@ -193,33 +202,16 @@ const ShopCollectionPage = () => {
             </div>
           )}
         </div>
-
-        <div className="collection-highlights">
-          <h2>Collection Highlights</h2>
-          <div className="highlights-grid">
-            <div className="highlight-card">
-              <div className="highlight-icon">🏆</div>
-              <h3>Premium Quality</h3>
-              <p>Only the finest materials and craftsmanship</p>
-            </div>
-            <div className="highlight-card">
-              <div className="highlight-icon">🌍</div>
-              <h3>Sustainable Fashion</h3>
-              <p>Eco-friendly options for conscious consumers</p>
-            </div>
-            <div className="highlight-card">
-              <div className="highlight-icon">🎨</div>
-              <h3>Unique Designs</h3>
-              <p>Exclusive patterns and modern aesthetics</p>
-            </div>
-            <div className="highlight-card">
-              <div className="highlight-icon">👔</div>
-              <h3>Perfect Fit</h3>
-              <p>Tailored for comfort and style</p>
-            </div>
-          </div>
-        </div>
       </div>
+
+      {showAuth && (
+        <AuthModal
+          isOpen={showAuth}
+          onClose={() => setShowAuth(false)}
+          onLogin={() => navigate('/login')}
+          onRegister={() => navigate('/register')}
+        />
+      )}
     </div>
   );
 };

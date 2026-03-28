@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FaStar, FaStarHalfAlt, FaRegStar, FaRuler, FaHeart, FaShoppingCart, FaEye, FaBalanceScale } from 'react-icons/fa';
 import { formatPrice } from '../../utils/currency';
 import { getAvailableSizes, getSizeLabel } from '../../utils/sizes';
@@ -7,6 +8,7 @@ import SizeChart from '../SizeChart/SizeChart';
 import './Products.css';
 
 const ProductCard = ({ product, onAddToCart, onQuickView, onAddToWishlist, onCompare }) => {
+  const navigate = useNavigate();
   const [showSizeOptions, setShowSizeOptions] = useState(false);
   const [selectedSize, setSelectedSize] = useState(null);
   const [selectedColor, setSelectedColor] = useState(product.colors?.[0] || '');
@@ -109,10 +111,18 @@ const ProductCard = ({ product, onAddToCart, onQuickView, onAddToWishlist, onCom
     }
   };
 
-  const handleQuickView = () => {
+  const goToProductDetail = () => {
+    const id = product._id || product.id;
+    if (!id) return;
     if (onQuickView) {
       onQuickView(product);
+    } else {
+      navigate(`/product/${id}`);
     }
+  };
+
+  const handleQuickView = () => {
+    goToProductDetail();
   };
 
   const handleWishlist = (e) => {
@@ -131,10 +141,7 @@ const ProductCard = ({ product, onAddToCart, onQuickView, onAddToWishlist, onCom
   };
 
   const handleCardClick = () => {
-    // Navigate to product detail page
-    if (onQuickView) {
-      onQuickView(product);
-    }
+    goToProductDetail();
   };
 
   const availableSizesList = getAvailableSizesForProduct();
