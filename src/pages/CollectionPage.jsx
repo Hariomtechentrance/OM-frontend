@@ -2,9 +2,11 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
 import ProductCard from '../components/Products/ProductCard';
+import GlobalProductFilters from '../components/GlobalProductFilters/GlobalProductFilters';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
+import { filtersToSearchParams, defaultProductFilterState } from '../utils/productFilters';
 import './CollectionPage.css';
 
 const CollectionPage = () => {
@@ -16,11 +18,11 @@ const CollectionPage = () => {
   const [collectionName, setCollectionName] = useState('');
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [listFilters, setListFilters] = useState({ ...defaultProductFilterState });
 
   useEffect(() => {
-    const load = async () => {
+    const loadMeta = async () => {
       if (!slug) return;
-      setLoading(true);
       try {
         const colRes = await api.get(`/collections/${encodeURIComponent(slug)}`);
         if (colRes.data?.success && colRes.data.collection) {
@@ -28,10 +30,22 @@ const CollectionPage = () => {
         } else {
           setCollectionName(slug.replace(/-/g, ' '));
         }
+      } catch {
+        setCollectionName(slug.replace(/-/g, ' '));
+      }
+    };
+    loadMeta();
+  }, [slug]);
 
-        const prodRes = await api.get(
-          `/collections/${encodeURIComponent(slug)}/products?limit=100`
-        );
+  useEffect(() => {
+    if (!slug) return;
+    let cancelled = false;
+    const run = async () => {
+      setLoading(true);
+      try {
+        const params = filtersToSearchParams(listFilters, { collection: slug });
+        const prodRes = await api.get(`/products?${params.toString()}`);
+        if (cancelled) return;
         if (prodRes.data?.success) {
           setProducts(prodRes.data.products || []);
         } else {
@@ -39,15 +53,19 @@ const CollectionPage = () => {
         }
       } catch (err) {
         console.error('Collection load error:', err);
-        toast.error('Could not load this collection');
-        setProducts([]);
+        if (!cancelled) {
+          toast.error('Could not load this collection');
+          setProducts([]);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
-
-    load();
-  }, [slug]);
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [slug, listFilters]);
 
   const handleAddToCart = (product) => {
     if (!isAuthenticated) {
@@ -75,13 +93,15 @@ const CollectionPage = () => {
           </p>
         </header>
 
+        <GlobalProductFilters hideCollection onApply={setListFilters} />
+
         {loading ? (
           <p className="collection-loading-text">Loading products…</p>
         ) : products.length === 0 ? (
           <div className="collection-empty">
             <p>No products in this collection yet.</p>
-            <Link to="/shop" className="btn-primary">
-              Shop all products
+            <Link to="/shop-collection" className="btn-primary">
+              Shop all collections
             </Link>
           </div>
         ) : (

@@ -5,12 +5,15 @@ import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import AuthModal from '../components/AuthModal/AuthModal';
+import GlobalProductFilters from '../components/GlobalProductFilters/GlobalProductFilters';
+import { filtersToSearchParams, defaultProductFilterState } from '../utils/productFilters';
 import './ShopCollectionPage.css';
 
 const ShopCollectionPage = () => {
   const [collections, setCollections] = useState([]);
   const [products, setProducts] = useState([]);
   const [selectedCollection, setSelectedCollection] = useState('all');
+  const [listFilters, setListFilters] = useState({ ...defaultProductFilterState });
   const [loading, setLoading] = useState(true);
   const [productsLoading, setProductsLoading] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
@@ -23,10 +26,35 @@ const ShopCollectionPage = () => {
   }, []);
 
   useEffect(() => {
-    if (selectedCollection) {
-      fetchProducts();
-    }
-  }, [selectedCollection]);
+    if (!selectedCollection) return;
+    let cancelled = false;
+    const run = async () => {
+      try {
+        setProductsLoading(true);
+        const preset =
+          selectedCollection === 'all' ? {} : { collection: selectedCollection };
+        const params = filtersToSearchParams(listFilters, preset);
+        const res = await api.get(`/products?${params.toString()}`);
+        if (cancelled) return;
+        if (res.data.success) {
+          setProducts(res.data.products || []);
+        } else {
+          setProducts([]);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Error fetching products:', error);
+          setProducts([]);
+        }
+      } finally {
+        if (!cancelled) setProductsLoading(false);
+      }
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedCollection, listFilters]);
 
   const fetchCollections = async () => {
     try {
@@ -40,29 +68,6 @@ const ShopCollectionPage = () => {
       console.error('Error fetching collections:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchProducts = async () => {
-    try {
-      setProductsLoading(true);
-      let res;
-      
-      if (selectedCollection === 'all') {
-        // Fetch all products
-        res = await api.get('/products');
-      } else {
-        // Fetch products for specific collection
-        res = await api.get(`/collections/${selectedCollection}/products`);
-      }
-      
-      if (res.data.success) {
-        setProducts(res.data.products || res.data);
-      }
-    } catch (error) {
-      console.error('Error fetching products:', error);
-    } finally {
-      setProductsLoading(false);
     }
   };
 
@@ -139,6 +144,11 @@ const ShopCollectionPage = () => {
             </button>
           ))}
         </div>
+
+        <GlobalProductFilters
+          hideCollection
+          onApply={setListFilters}
+        />
 
         <div className="shop-collections-products">
           <div className="shop-collections-products__header">

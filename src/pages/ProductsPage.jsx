@@ -3,9 +3,11 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import ProductCard from '../components/Products/ProductCard';
 import AuthModal from '../components/AuthModal/AuthModal';
+import GlobalProductFilters from '../components/GlobalProductFilters/GlobalProductFilters';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import api from '../api/axios';
+import { filtersToSearchParams, defaultProductFilterState } from '../utils/productFilters';
 import './ProductsPage.css';
 
 function ProductsPage() {
@@ -14,95 +16,82 @@ function ProductsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAuth, setShowAuth] = useState(false);
+  const [listFilters, setListFilters] = useState({ ...defaultProductFilterState });
+
   const { isAuthenticated, loading: authLoading } = useAuth();
   const { addToCart } = useCart();
   const navigate = useNavigate();
 
-  // Fetch products from backend
   useEffect(() => {
-    fetchProducts();
-  }, [searchParams]); // Re-fetch when URL params change
+    const cat = searchParams.get('category') || '';
+    const col = searchParams.get('collection') || '';
+    setListFilters((prev) => ({
+      ...prev,
+      category: cat,
+      collection: col,
+    }));
+  }, [searchParams]);
 
-  const fetchProducts = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Get collection and category from URL parameters
-      const collection = searchParams.get('collection');
-      const category = searchParams.get('category');
-      
-      // Build API query parameters
-      let queryParams = [];
-      if (category) queryParams.push(`category=${category}`);
-      if (collection) queryParams.push(`collection=${collection}`);
-      
-      const queryString = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
-      
-      const response = await api.get(`/products${queryString}`);
-      
-      if (response.data && response.data.success) {
-        setProducts(response.data.products || []);
-      } else {
-        setProducts([]);
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const params = filtersToSearchParams(listFilters);
+        const response = await api.get(`/products?${params.toString()}`);
+        if (cancelled) return;
+        if (response.data?.success) {
+          setProducts(response.data.products || []);
+        } else {
+          setProducts([]);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error('Error fetching products:', err);
+          setError('Failed to fetch products');
+          setProducts([]);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-    } catch (error) {
-      console.error('Error fetching products:', error);
-      setError('Failed to fetch products');
-      setProducts([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [listFilters]);
 
   const getPageTitle = () => {
     const collection = searchParams.get('collection');
     const category = searchParams.get('category');
-    
+
     if (collection) {
-      // Convert slug to readable name
-      return collection.split('-').map(word => 
-        word.charAt(0).toUpperCase() + word.slice(1)
-      ).join(' ');
-    } else if (category) {
-      // Convert slug to readable name
-      return category.split('-').map(word => 
-        word.charAt(0).toUpperCase() + word.slice(1)
-      ).join(' ');
+      return collection
+        .split('-')
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
     }
-    
+    if (category) {
+      return category
+        .split('-')
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+    }
+
     return 'All Products';
   };
 
   const handleAddToCart = (product) => {
-    console.log('Add to cart clicked', product);
-    console.log('Auth loading:', authLoading);
-    console.log('Is authenticated:', isAuthenticated);
-    
-    if (authLoading) {
-      console.log('Auth loading, returning');
-      return;
-    }
+    if (authLoading) return;
     if (!isAuthenticated) {
-      console.log('Not authenticated, showing auth modal');
       setShowAuth(true);
       return;
     }
-
-    console.log('Proceeding to add to cart');
-    // Ensure product has productId for CartContext
-    const productForCart = {
-      ...product,
-      productId: product._id || product.id,
-      quantity: 1
-    };
-
-    console.log('Product for cart:', productForCart);
-    addToCart(productForCart);
+    addToCart(product, 1, undefined, undefined);
   };
 
   const handleQuickView = (product) => {
-    // Navigate to product detail page
     navigate(`/product/${product.id || product._id}`);
   };
 
@@ -111,10 +100,9 @@ function ProductsPage() {
       setShowAuth(true);
       return;
     }
-    // Add to wishlist functionality - save to localStorage or state
     const wishlist = JSON.parse(localStorage.getItem('wishlist') || '[]');
-    const exists = wishlist.find(item => item.id === (product.id || product._id));
-    
+    const exists = wishlist.find((item) => item.id === (product.id || product._id));
+
     if (!exists) {
       wishlist.push({
         id: product.id || product._id,
@@ -122,30 +110,28 @@ function ProductsPage() {
         price: product.price,
         image: product.images?.[0] || product.image,
         category: product.category,
-        addedAt: new Date().toISOString()
+        addedAt: new Date().toISOString(),
       });
       localStorage.setItem('wishlist', JSON.stringify(wishlist));
       toast.success(`${product.name} added to wishlist!`);
     } else {
-      // Remove from wishlist
-      const updatedWishlist = wishlist.filter(item => item.id !== (product.id || product._id));
+      const updatedWishlist = wishlist.filter((item) => item.id !== (product.id || product._id));
       localStorage.setItem('wishlist', JSON.stringify(updatedWishlist));
       toast.success(`${product.name} removed from wishlist!`);
     }
   };
 
   const handleCompare = (product) => {
-    // Add to compare functionality
     const compare = JSON.parse(localStorage.getItem('compare') || '[]');
     if (compare.length < 4) {
-      const exists = compare.find(item => item.id === (product.id || product._id));
+      const exists = compare.find((item) => item.id === (product.id || product._id));
       if (!exists) {
         compare.push({
           id: product.id || product._id,
           name: product.name,
           price: product.price,
           image: product.images?.[0] || product.image,
-          category: product.category
+          category: product.category,
         });
         localStorage.setItem('compare', JSON.stringify(compare));
         toast.success(`${product.name} added to compare!`);
@@ -157,6 +143,11 @@ function ProductsPage() {
     }
   };
 
+  const initialFilterSync = {
+    category: searchParams.get('category') || '',
+    collection: searchParams.get('collection') || '',
+  };
+
   return (
     <div className="products-page">
       <div className="container">
@@ -165,10 +156,15 @@ function ProductsPage() {
           <p>
             {searchParams.get('collection') || searchParams.get('category')
               ? `Browse our ${getPageTitle().toLowerCase()} collection of premium fashion items`
-              : 'Browse our complete collection of premium fashion items'
-            }
+              : 'Browse our complete collection of premium fashion items'}
           </p>
         </div>
+
+        <GlobalProductFilters
+          key={`${initialFilterSync.category}-${initialFilterSync.collection}`}
+          initialFilters={initialFilterSync}
+          onApply={setListFilters}
+        />
 
         <div className="products-grid">
           {loading ? (
@@ -180,7 +176,7 @@ function ProductsPage() {
             <div className="error-state">
               <h3>Error Loading Products</h3>
               <p>{error}</p>
-              <button onClick={fetchProducts} className="retry-btn">
+              <button type="button" onClick={() => setListFilters((f) => ({ ...f }))} className="retry-btn">
                 Try Again
               </button>
             </div>
@@ -208,9 +204,8 @@ function ProductsPage() {
         </div>
       </div>
 
-      {/* Auth Modal */}
       {showAuth && (
-        <AuthModal 
+        <AuthModal
           isOpen={showAuth}
           onClose={() => setShowAuth(false)}
           onLogin={() => navigate('/login')}

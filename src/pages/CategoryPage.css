@@ -93,6 +93,13 @@
   height: auto; /* Allow natural height */
 }
 
+.category-container--filters-only {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  grid-template-columns: unset;
+}
+
 /* Products Content - Takes main space */
 .products-content {
   order: 1; /* Products come first in HTML */

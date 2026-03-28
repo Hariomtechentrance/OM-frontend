@@ -6,9 +6,8 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
 import ProductCard from '../components/Products/ProductCard';
-import SizeSelector from '../components/SizeSelector/SizeSelector';
-import SizeChart from '../components/SizeChart/SizeChart';
-import '../components/SizeSelector/SizeSelector.css';
+import GlobalProductFilters from '../components/GlobalProductFilters/GlobalProductFilters';
+import { filtersToSearchParams, defaultProductFilterState } from '../utils/productFilters';
 import '../components/Products/Products.css';
 import './CategoryPage.css';
 
@@ -18,23 +17,11 @@ const CategoryPage = () => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { isAuthenticated } = useAuth();
-  const { addToWishlist, isInWishlist } = useWishlist();
+  const { addToWishlist } = useWishlist();
   
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [selectedSize, setSelectedSize] = useState(null);
-  const [selectedColor, setSelectedColor] = useState('');
-  const [quantity, setQuantity] = useState(1);
-  const [mainImage, setMainImage] = useState('');
-  const [showSizeChart, setShowSizeChart] = useState(false);
-  const [filters, setFilters] = useState({
-    priceRange: [0, 10000],
-    sizes: [],
-    colors: [],
-    sortBy: 'newest'
-  });
-  const [showFilters, setShowFilters] = useState(false);
+  const [listFilters, setListFilters] = useState({ ...defaultProductFilterState });
 
   // Category configurations
   const categoryConfig = {
@@ -168,43 +155,32 @@ const CategoryPage = () => {
   };
 
   useEffect(() => {
+    let cancelled = false;
+    const fetchCategoryProducts = async () => {
+      try {
+        setLoading(true);
+        const params = filtersToSearchParams(listFilters, { category: categoryType });
+        const response = await api.get(`/products?${params.toString()}`);
+        if (cancelled) return;
+        setProducts(response.data?.products || []);
+      } catch (error) {
+        if (!cancelled) toast.error('Failed to fetch products');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
     fetchCategoryProducts();
-  }, [categoryType, filters]);
+    return () => {
+      cancelled = true;
+    };
+  }, [categoryType, listFilters]);
 
-  const fetchCategoryProducts = async () => {
-    try {
-      setLoading(true);
-      const response = await api.get(`/products?category=${currentCategory.name}&minPrice=${filters.priceRange[0]}&maxPrice=${filters.priceRange[1]}&sortBy=${filters.sortBy}`);
-      setProducts(response.data.products || []);
-      setLoading(false);
-    } catch (error) {
-      toast.error('Failed to fetch products');
-      setLoading(false);
-    }
-  };
-
-  const handleAddToCart = async (product) => {
-    if (!selectedSize) {
-      toast.error('Please select a size');
+  const handleAddToCart = (product) => {
+    if (!isAuthenticated) {
+      toast.info('Please log in to add items to your cart');
       return;
     }
-
-    const cartItem = {
-      productId: product._id,
-      name: product.name,
-      price: product.price,
-      image: product.images?.[0]?.url || product.image,
-      size: selectedSize,
-      color: selectedColor || 'Default',
-      quantity
-    };
-
-    const result = await addToCart(cartItem);
-    if (result.success) {
-      toast.success('Added to cart successfully!');
-    } else {
-      toast.error(result.message || 'Failed to add to cart');
-    }
+    addToCart(product, 1, undefined, undefined);
   };
 
   const handleAddToWishlist = async (product) => {
@@ -214,22 +190,6 @@ const CategoryPage = () => {
     } else {
       toast.error(result.message || 'Failed to add to wishlist');
     }
-  };
-
-  const handleFilterChange = (filterType, value) => {
-    setFilters(prev => ({
-      ...prev,
-      [filterType]: value
-    }));
-  };
-
-  const resetFilters = () => {
-    setFilters({
-      priceRange: [0, 10000],
-      sizes: [],
-      colors: [],
-      sortBy: 'newest'
-    });
   };
 
   if (loading) {
@@ -261,121 +221,21 @@ const CategoryPage = () => {
         </div>
       </div>
 
-      <div className="category-container">
-        {/* Mobile Filter Overlay */}
-        {showFilters && (
-          <div className="filter-overlay" onClick={() => setShowFilters(false)} />
-        )}
-        
-        {/* Filters Sidebar */}
-        <div className={`filters-sidebar ${showFilters ? 'mobile-open' : ''}`}>
-          <div className="filters-header">
-            <h3>Filters</h3>
-            <button className="reset-filters" onClick={resetFilters}>Reset</button>
-            <button className="close-filters" onClick={() => setShowFilters(false)}>×</button>
-          </div>
-          
-          {/* Price Range */}
-          <div className="filter-section">
-            <h4>Price Range</h4>
-            <div className="price-range">
-              <span>₹{filters.priceRange[0]}</span>
-              <input
-                type="range"
-                min="0"
-                max="10000"
-                value={filters.priceRange[1]}
-                onChange={(e) => handleFilterChange('priceRange', [filters.priceRange[0], parseInt(e.target.value)])}
-              />
-              <span>₹{filters.priceRange[1]}</span>
-            </div>
-          </div>
+      <div className="category-container category-container--filters-only">
+        <GlobalProductFilters hideCategory onApply={setListFilters} />
 
-          {/* Sizes */}
-          <div className="filter-section">
-            <h4>Sizes</h4>
-            <div className="size-filters">
-              {currentCategory.sizes.map(size => (
-                <label key={size} className="size-filter">
-                  <input
-                    type="checkbox"
-                    checked={filters.sizes.includes(size)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        handleFilterChange('sizes', [...filters.sizes, size]);
-                      } else {
-                        handleFilterChange('sizes', filters.sizes.filter(s => s !== size));
-                      }
-                    }}
-                  />
-                  <span>{size}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Colors */}
-          <div className="filter-section">
-            <h4>Colors</h4>
-            <div className="color-filters">
-              {currentCategory.colors.map(color => (
-                <label key={color} className="color-filter">
-                  <input
-                    type="checkbox"
-                    checked={filters.colors.includes(color)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        handleFilterChange('colors', [...filters.colors, color]);
-                      } else {
-                        handleFilterChange('colors', filters.colors.filter(c => c !== color));
-                      }
-                    }}
-                  />
-                  <span className="color-swatch" style={{ backgroundColor: color.toLowerCase().replace('/', '') }}></span>
-                  <span>{color}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Sort */}
-          <div className="filter-section">
-            <h4>Sort By</h4>
-            <select
-              value={filters.sortBy}
-              onChange={(e) => handleFilterChange('sortBy', e.target.value)}
-              className="sort-select"
-            >
-              <option value="newest">Newest First</option>
-              <option value="price-low">Price: Low to High</option>
-              <option value="price-high">Price: High to Low</option>
-              <option value="name">Name: A to Z</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Products Grid */}
         <div className="products-content">
-          {/* Mobile Filter Toggle */}
-          <div className="mobile-filter-toggle">
-            <button onClick={() => setShowFilters(!showFilters)}>
-              <span>🔍</span> Filters
-            </button>
-          </div>
-
-          {/* Products Count */}
           <div className="products-header">
             <h2>{products.length} Products Found</h2>
           </div>
 
-          {/* Products Grid */}
           <div className="products-grid">
-            {products.map(product => (
+            {products.map((product) => (
               <ProductCard
                 key={product._id}
                 product={product}
-                onAddToCart={handleAddToCart}
-                onQuickView={setSelectedProduct}
+                onAddToCart={() => handleAddToCart(product)}
+                onQuickView={() => navigate(`/product/${product._id}`)}
                 onAddToWishlist={handleAddToWishlist}
               />
             ))}
@@ -389,96 +249,6 @@ const CategoryPage = () => {
           )}
         </div>
       </div>
-
-      {/* Quick View Modal */}
-      {selectedProduct && (
-        <div className="quick-view-modal" onClick={() => setSelectedProduct(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <button className="close-modal" onClick={() => setSelectedProduct(null)}>×</button>
-            
-            <div className="modal-product">
-              <div className="modal-images">
-                <img 
-                  src={selectedProduct.images?.[0]?.url || selectedProduct.image || 'https://via.placeholder.com/400x500'} 
-                  alt={selectedProduct.name}
-                />
-              </div>
-              
-              <div className="modal-details">
-                <h2>{selectedProduct.name}</h2>
-                <p className="product-description">{selectedProduct.description}</p>
-                
-                <div className="price-section">
-                  <span className="current-price">₹{selectedProduct.price}</span>
-                  {selectedProduct.originalPrice && (
-                    <span className="original-price">₹{selectedProduct.originalPrice}</span>
-                  )}
-                </div>
-
-                <div className="size-selection">
-                  <h4>Select Size</h4>
-                  <SizeSelector 
-                    sizes={selectedProduct.sizes}
-                    selectedSize={selectedSize}
-                    onSizeSelect={setSelectedSize}
-                  />
-                  <button className="size-chart-btn" onClick={() => setShowSizeChart(true)}>
-                    📏 Size Chart
-                  </button>
-                </div>
-
-                <div className="color-selection">
-                  <h4>Color</h4>
-                  <div className="color-options">
-                    {selectedProduct.colors?.map(color => (
-                      <button
-                        key={color}
-                        className={`color-option ${selectedColor === color ? 'selected' : ''}`}
-                        style={{ backgroundColor: color.toLowerCase() }}
-                        onClick={() => setSelectedColor(color)}
-                      >
-                        {selectedColor === color && '✓'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="quantity-selection">
-                  <h4>Quantity</h4>
-                  <div className="quantity-controls">
-                    <button onClick={() => setQuantity(Math.max(1, quantity - 1))}>-</button>
-                    <span>{quantity}</span>
-                    <button onClick={() => setQuantity(quantity + 1)}>+</button>
-                  </div>
-                </div>
-
-                <div className="modal-actions">
-                  <button 
-                    className="add-to-cart-btn"
-                    onClick={() => handleAddToCart(selectedProduct)}
-                  >
-                    Add to Cart
-                  </button>
-                  <button 
-                    className="wishlist-btn"
-                    onClick={() => handleAddToWishlist(selectedProduct)}
-                  >
-                    {isInWishlist(selectedProduct._id) ? '❤️ Saved' : '🤍 Save to Wishlist'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Size Chart Modal */}
-      {showSizeChart && (
-        <SizeChart 
-          category={currentCategory.name}
-          onClose={() => setShowSizeChart(false)}
-        />
-      )}
     </div>
   );
 };
