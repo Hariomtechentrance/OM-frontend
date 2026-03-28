@@ -40,16 +40,21 @@ const ProductCard = ({ product, onAddToCart, onQuickView, onAddToWishlist, onCom
     return stars;
   };
 
+  const PLACEHOLDER_IMG =
+    'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=400&fit=crop';
+
   const getImageUrl = (product) => {
-    // Handle different image URL formats
+    let url = '';
     if (product.images && product.images.length > 0) {
-      return product.images[0].url || product.images[0];
+      const first = product.images[0];
+      url = typeof first === 'string' ? first : first?.url || '';
+    } else if (product.image) {
+      url = product.image;
     }
-    if (product.image) {
-      return product.image;
+    if (!url || (typeof url === 'string' && url.includes('imagekit.io/dashboard'))) {
+      return PLACEHOLDER_IMG;
     }
-    // Fallback to placeholder without text
-    return 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=400&fit=crop';
+    return url;
   };
 
   const getAvailableSizesForProduct = () => {
@@ -146,7 +151,14 @@ const ProductCard = ({ product, onAddToCart, onQuickView, onAddToWishlist, onCom
     >
       <div className="product-image-container">
         <div className="product-image">
-          <img src={getImageUrl(product)} alt={product.name || 'Product'} />
+          <img
+            src={getImageUrl(product)}
+            alt={product.name || 'Product'}
+            loading="lazy"
+            onError={(e) => {
+              e.currentTarget.src = PLACEHOLDER_IMG;
+            }}
+          />
           
           {/* Badges */}
           <div className="product-badges">

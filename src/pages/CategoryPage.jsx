@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import axios from 'axios';
+import api from '../api/axios';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
@@ -13,7 +13,8 @@ import '../components/Products/Products.css';
 import './CategoryPage.css';
 
 const CategoryPage = () => {
-  const { categoryType } = useParams();
+  const location = useLocation();
+  const categoryType = (location.pathname || '').replace(/^\//, '').split('/')[0] || 'party-wear';
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { isAuthenticated } = useAuth();
@@ -173,7 +174,7 @@ const CategoryPage = () => {
   const fetchCategoryProducts = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/products?category=${currentCategory.name}&minPrice=${filters.priceRange[0]}&maxPrice=${filters.priceRange[1]}&sortBy=${filters.sortBy}`);
+      const response = await api.get(`/products?category=${currentCategory.name}&minPrice=${filters.priceRange[0]}&maxPrice=${filters.priceRange[1]}&sortBy=${filters.sortBy}`);
       setProducts(response.data.products || []);
       setLoading(false);
     } catch (error) {

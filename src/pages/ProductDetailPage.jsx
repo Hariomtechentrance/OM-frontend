@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import api from '../api/axios'; // ✅ FIXED: Use shared axios instance
@@ -22,46 +22,70 @@ const ProductDetailPage = () => {
   const [selectedColor, setSelectedColor] = useState('');
   const [quantity, setQuantity] = useState(1);
 
-  // 🔥 STEP 4: SAFE IMAGE HANDLING FUNCTION
+  const PLACEHOLDER_IMAGE =
+    'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&q=80';
+
   const getImage = (img) => {
-    if (!img) return "https://dummyimage.com/600x600/cccccc/000000&text=No+Image";
-    
-    // New correct format
+    if (!img) return PLACEHOLDER_IMAGE;
     if (img.url) return img.url;
-    
-    // Old broken format - convert object to string
     if (typeof img === 'object') {
       const values = Object.values(img);
       if (values.length > 0 && typeof values[0] === 'string') {
         return values.join('');
       }
     }
-    
-    // String format
     if (typeof img === 'string') return img;
-    
-    return "https://dummyimage.com/600x600/cccccc/000000&text=Invalid+Image";
+    return PLACEHOLDER_IMAGE;
   };
-  const [mainImage, setMainImage] = useState('');
+
+  const resolveGalleryUrl = (img) => {
+    const u = getImage(img);
+    if (!u || (typeof u === 'string' && u.includes('imagekit.io/dashboard'))) {
+      return PLACEHOLDER_IMAGE;
+    }
+    return u;
+  };
+
+  /** Always 4 gallery slots — duplicate assets when fewer than 4 images exist */
+  const galleryImages = useMemo(() => {
+    if (!product) {
+      return [PLACEHOLDER_IMAGE, PLACEHOLDER_IMAGE, PLACEHOLDER_IMAGE, PLACEHOLDER_IMAGE];
+    }
+    const imgs = (product.images || []).map(resolveGalleryUrl);
+    const base = imgs.length ? imgs : [PLACEHOLDER_IMAGE];
+    const out = [];
+    for (let i = 0; i < 4; i++) out.push(base[i % base.length]);
+    return out;
+  }, [product]);
+
+  const [activeIndex, setActiveIndex] = useState(0);
   const [showSizeChart, setShowSizeChart] = useState(false);
-  const [currentStock, setCurrentStock] = useState(0); // ✅ FIX: Add stock state
+  const [currentStock, setCurrentStock] = useState(0);
+
+  const mainImage = galleryImages[activeIndex] || PLACEHOLDER_IMAGE;
+
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [product?._id]);
+
+  useEffect(() => {
+    if (!product) return undefined;
+    const id = setInterval(() => {
+      setActiveIndex((i) => (i + 1) % 4);
+    }, 5000);
+    return () => clearInterval(id);
+  }, [product?._id]);
 
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const response = await api.get(`/api/products/${id}`); // ✅ FIXED: Use proxy instead of hardcoded URL
+        const response = await api.get(`/products/${id}`); // ✅ FIXED: Use proxy instead of hardcoded URL
         const productData = response.data.product;
         
         // ✅ STEP 3: USE RAW DATABASE DATA DIRECTLY
         setProduct(productData);
         
-        // ✅ FIX 1: Handle both string and object images for main image
-        const firstImage = productData.images?.[0];
-        const mainImageUrl = typeof firstImage === 'string' ? firstImage : firstImage?.url;
-        
-        setMainImage(mainImageUrl || 'https://dummyimage.com/600x600/cccccc/000000&text=No+Image');
-        console.log("IMAGES:", productData.images); // Debug log
-        console.log("COLORS:", productData.colors); // Debug log
+        // Debug: Log product images
         setLoading(false);
       } catch (error) {
         console.error('Error fetching product:', error);
@@ -84,7 +108,6 @@ const ProductDetailPage = () => {
   }, [product]);
 
   const handleSizeChange = (size) => {
-    console.log("🔍 SIZE SELECTED:", size); // Debug log
     setSelectedSize(size);
     setCurrentStock(size.stock); // ✅ IMPORTANT: Use raw database stock
   };
@@ -157,9 +180,6 @@ const ProductDetailPage = () => {
   // 
   const isInStock = currentStock > 0;
   
-  console.log("PRODUCT SIZES:", product.sizes);
-  console.log("SELECTED SIZE:", selectedSize);
-
   return (
     <div className="page-container">
       <div className="product-detail">
@@ -167,38 +187,52 @@ const ProductDetailPage = () => {
           {/* Left Column - Images */}
           <div className="product-images-section">
             <div className="main-image-container">
+              <button
+                type="button"
+                className="gallery-nav gallery-nav--prev"
+                aria-label="Previous image"
+                onClick={() => setActiveIndex((i) => (i + 3) % 4)}
+              >
+                ‹
+              </button>
               <img
-                src={getImage(mainImage)}
+                src={mainImage}
                 alt={product.name}
                 className="main-product-image"
                 onError={(e) => {
-                  e.target.src = 'https://dummyimage.com/600x600/cccccc/000000&text=Image+Not+Available';
+                  e.target.src = PLACEHOLDER_IMAGE;
                 }}
               />
+              <button
+                type="button"
+                className="gallery-nav gallery-nav--next"
+                aria-label="Next image"
+                onClick={() => setActiveIndex((i) => (i + 1) % 4)}
+              >
+                ›
+              </button>
             </div>
-            <div className="thumbnail-gallery">
-              {(product.images || []).map((image, index) => {
-                // 🔥 STEP 5: USE SAFE IMAGE FUNCTION
-                const imageUrl = getImage(image);
-                const imageKey = typeof image === 'object' ? image._id || index : index;
-                
-                return (
-                <div
-                  key={imageKey}
-                  className={`thumbnail-item ${mainImage === imageUrl ? 'active' : ''}`}
-                  onClick={() => setMainImage(imageUrl)}
+
+            <div className="thumbnail-gallery" role="tablist" aria-label="Product images">
+              {galleryImages.map((imageUrl, index) => (
+                <button
+                  key={`thumb-${index}`}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeIndex === index}
+                  className={`thumbnail-item ${activeIndex === index ? 'active' : ''}`}
+                  onClick={() => setActiveIndex(index)}
                 >
                   <img
                     src={imageUrl}
-                    alt={`Thumbnail ${index + 1}`}
+                    alt={`View ${index + 1}`}
                     className="thumbnail-image"
                     onError={(e) => {
-                      e.target.src = 'https://dummyimage.com/100x100/cccccc/000000&text=Thumb';
+                      e.target.src = PLACEHOLDER_IMAGE;
                     }}
                   />
-                </div>
-              );
-              })}
+                </button>
+              ))}
             </div>
           </div>
 

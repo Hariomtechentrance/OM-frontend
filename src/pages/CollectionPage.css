@@ -360,3 +360,74 @@
     padding: 1.5rem 5%;
   }
 }
+
+/* Collection slug page (e.g. /collection/party-wear-collection) */
+.collection-page--slug {
+  min-height: 100vh;
+  background: #000;
+  color: #fff;
+  padding: 6rem 1rem 3rem;
+  box-sizing: border-box;
+}
+
+.collection-page-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.collection-breadcrumb {
+  margin-bottom: 1.25rem;
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+
+.collection-breadcrumb a {
+  color: #c09345;
+  text-decoration: none;
+}
+
+.collection-breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+.collection-page-header h1 {
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+  line-height: 1.2;
+}
+
+.collection-product-count {
+  opacity: 0.8;
+  margin-bottom: 2rem;
+  font-size: 0.95rem;
+}
+
+.collection-loading-text {
+  opacity: 0.75;
+}
+
+.collection-products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .collection-products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+    gap: 1.25rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .collection-page--slug {
+    padding: 5.5rem 0.75rem 2rem;
+  }
+
+  .collection-products-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}

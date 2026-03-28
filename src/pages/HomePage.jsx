@@ -30,7 +30,7 @@ function HomePage() {
   // Fetch products from API
   const fetchProducts = async () => {
     try {
-      const response = await api.get('/api/products');
+      const response = await api.get('/products');
       const data = response.data;
 
       if (data.success) {
@@ -116,7 +116,7 @@ function HomePage() {
           </div>
           <div className="categories-grid">
             {categories.map((category) => (
-              <Link key={category._id} to={`/category/${category.slug}`} className="category-card reveal">
+              <Link key={category._id} to="/products" className="category-card reveal" title={`Shop all products — ${category.name}`}>
                 <div className="category-image">
                   <img src={category.image} alt={category.name} />
                 </div>

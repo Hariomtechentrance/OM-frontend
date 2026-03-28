@@ -509,3 +509,35 @@ body {
   border-color: #000;
   color: #000;
 }
+
+/* Product card — responsive meta & footer (collection / shop grids) */
+.product-card .product-meta {
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+@media (max-width: 520px) {
+  .product-card .product-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+  }
+
+  .product-card .add-to-cart-quick-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .product-card .product-category {
+    text-align: center;
+    align-self: center;
+  }
+
+  .product-card .size-chart-trigger {
+    width: 100%;
+    justify-content: center;
+  }
+}
