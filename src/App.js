@@ -13,6 +13,7 @@ import { WishlistProvider } from './context/WishlistContext';
 // Components
 import Header from './components/Header/Header';
 import Footer from './components/Footer/Footer';
+import PageLoader from './components/PageLoader/PageLoader';
 
 // Pages (Lazy)
 const HomePage = lazy(() => import('./pages/HomePage'));
@@ -106,7 +107,7 @@ const App = () => {
         <StockProvider>
           <CartProvider>
             <WishlistProvider>
-              <Suspense fallback={<div>Loading...</div>}>
+              <Suspense fallback={<PageLoader />}>
                 <AppLayout />
               </Suspense>
 

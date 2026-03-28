@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ProductCard from '../components/Products/ProductCard';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
@@ -14,29 +14,26 @@ const ShopCollectionPage = () => {
   const [products, setProducts] = useState([]);
   const [selectedCollection, setSelectedCollection] = useState('all');
   const [listFilters, setListFilters] = useState({ ...defaultProductFilterState });
-  const [loading, setLoading] = useState(true);
-  const [productsLoading, setProductsLoading] = useState(false);
+  const [collectionsLoading, setCollectionsLoading] = useState(true);
+  const [productsLoading, setProductsLoading] = useState(true);
+  const initialBootstrapDone = useRef(false);
   const [showAuth, setShowAuth] = useState(false);
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const { addToCart } = useCart();
 
   useEffect(() => {
-    fetchCollections();
-  }, []);
-
-  useEffect(() => {
-    if (!selectedCollection) return;
     let cancelled = false;
-    const run = async () => {
+    const preset =
+      selectedCollection === 'all' ? {} : { collection: selectedCollection };
+    const params = filtersToSearchParams(listFilters, preset);
+
+    const fetchProductsOnly = async () => {
       try {
         setProductsLoading(true);
-        const preset =
-          selectedCollection === 'all' ? {} : { collection: selectedCollection };
-        const params = filtersToSearchParams(listFilters, preset);
         const res = await api.get(`/products?${params.toString()}`);
         if (cancelled) return;
-        if (res.data.success) {
+        if (res.data?.success) {
           setProducts(res.data.products || []);
         } else {
           setProducts([]);
@@ -50,26 +47,49 @@ const ShopCollectionPage = () => {
         if (!cancelled) setProductsLoading(false);
       }
     };
-    run();
+
+    const bootstrap = async () => {
+      setCollectionsLoading(true);
+      setProductsLoading(true);
+      try {
+        const [colRes, prodRes] = await Promise.all([
+          api.get('/collections'),
+          api.get(`/products?${params.toString()}`),
+        ]);
+        if (cancelled) return;
+        if (colRes.data?.success) {
+          setCollections(colRes.data.collections || []);
+        }
+        if (prodRes.data?.success) {
+          setProducts(prodRes.data.products || []);
+        } else {
+          setProducts([]);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Error loading shop collections page:', error);
+          setProducts([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setCollectionsLoading(false);
+          setProductsLoading(false);
+          initialBootstrapDone.current = true;
+        }
+      }
+    };
+
+
+    if (!initialBootstrapDone.current) {
+      bootstrap();
+    } else {
+      fetchProductsOnly();
+    }
+
     return () => {
       cancelled = true;
     };
   }, [selectedCollection, listFilters]);
-
-  const fetchCollections = async () => {
-    try {
-      setLoading(true);
-      const res = await api.get('/collections');
-      if (res.data.success) {
-        setCollections(res.data.collections || []);
-        setSelectedCollection('all');
-      }
-    } catch (error) {
-      console.error('Error fetching collections:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleCollectionClick = (collectionSlug) => {
     setSelectedCollection(collectionSlug);
@@ -83,25 +103,6 @@ const ShopCollectionPage = () => {
     addToCart(product, 1, undefined, undefined);
   };
 
-  if (loading) {
-    return (
-      <div className="shop-collection-page">
-        <div className="shop-collections-hero">
-          <div className="shop-collections-hero__content">
-            <div className="shop-collections-hero__icon">👔</div>
-            <h1>SHOP COLLECTIONS</h1>
-            <p>Curated collections for every style and occasion</p>
-          </div>
-        </div>
-        <div className="shop-collections-container">
-          <div className="loading-skeleton">
-            <p>Loading collections...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="shop-collection-page">
       <div className="shop-collections-hero">
@@ -111,11 +112,15 @@ const ShopCollectionPage = () => {
           <p>Curated collections for every style and occasion</p>
           <div className="shop-collections-hero__stats">
             <div className="stat">
-              <span className="stat-number">{collections.length || 12}</span>
+              <span className="stat-number">
+                {collectionsLoading ? '—' : collections.length}
+              </span>
               <span className="stat-label">Collections</span>
             </div>
             <div className="stat">
-              <span className="stat-number">{products.length || 7}</span>
+              <span className="stat-number">
+                {productsLoading && products.length === 0 ? '—' : products.length}
+              </span>
               <span className="stat-label">Products</span>
             </div>
             <div className="stat">
@@ -128,21 +133,29 @@ const ShopCollectionPage = () => {
 
       <div className="shop-collections-container">
         <div className="collection-filters">
-          <button 
-            className={`filter-btn ${selectedCollection === 'all' ? 'active' : ''}`}
-            onClick={() => setSelectedCollection('all')}
-          >
-            All Collections
-          </button>
-          {collections.map(collection => (
-            <button 
-              key={collection._id}
-              className={`filter-btn ${selectedCollection === collection.slug ? 'active' : ''}`}
-              onClick={() => handleCollectionClick(collection.slug)}
-            >
-              {collection.name}
-            </button>
-          ))}
+          {collectionsLoading ? (
+            <span className="collection-filters-loading">Loading collections…</span>
+          ) : (
+            <>
+              <button
+                type="button"
+                className={`filter-btn ${selectedCollection === 'all' ? 'active' : ''}`}
+                onClick={() => setSelectedCollection('all')}
+              >
+                All Collections
+              </button>
+              {collections.map((collection) => (
+                <button
+                  type="button"
+                  key={collection._id}
+                  className={`filter-btn ${selectedCollection === collection.slug ? 'active' : ''}`}
+                  onClick={() => handleCollectionClick(collection.slug)}
+                >
+                  {collection.name}
+                </button>
+              ))}
+            </>
+          )}
         </div>
 
         <GlobalProductFilters

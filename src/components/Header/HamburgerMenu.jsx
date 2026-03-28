@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { FaTimes, FaShoppingBag } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import api from '../../api/axios';
+import { useAuth } from '../../context/AuthContext';
 import './Header.css';
 
 const HamburgerMenu = ({ isOpen, onClose }) => {
   const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { isAuthenticated, logout } = useAuth();
 
   useEffect(() => {
     const fetchCollections = async () => {
@@ -80,6 +82,37 @@ const HamburgerMenu = ({ isOpen, onClose }) => {
             <FaShoppingBag />
             View All Collections
           </Link>
+          <div className="hamburger-auth-actions">
+            {isAuthenticated ? (
+              <button
+                type="button"
+                className="hamburger-auth-btn hamburger-auth-btn--outline"
+                onClick={() => {
+                  logout();
+                  onClose();
+                }}
+              >
+                Logout
+              </button>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="hamburger-auth-btn hamburger-auth-btn--primary"
+                  onClick={onClose}
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/register"
+                  className="hamburger-auth-btn hamburger-auth-btn--outline"
+                  onClick={onClose}
+                >
+                  Registration
+                </Link>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </>

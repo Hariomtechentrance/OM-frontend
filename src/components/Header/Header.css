@@ -225,6 +225,55 @@
   transform: translateY(-2px);
 }
 
+.hamburger-auth-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(192, 147, 69, 0.2);
+}
+
+.hamburger-auth-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+  text-align: center;
+  transition: all 0.25s ease;
+  border: 1px solid transparent;
+  cursor: pointer;
+  color: #fff;
+  font-family: inherit;
+  background: transparent;
+  box-sizing: border-box;
+}
+
+.hamburger-auth-btn--primary {
+  background: #c09345;
+  color: #0a0a0a;
+}
+
+.hamburger-auth-btn--primary:hover {
+  background: #d4a85a;
+  color: #0a0a0a;
+}
+
+.hamburger-auth-btn--outline {
+  border-color: rgba(255, 255, 255, 0.35);
+  background: transparent;
+  color: #fff;
+}
+
+.hamburger-auth-btn--outline:hover {
+  border-color: #c09345;
+  color: #c09345;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .hamburger-menu-slide {
