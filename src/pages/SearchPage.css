@@ -3,7 +3,7 @@
   min-height: 100vh;
   background: var(--bg-dark);
   color: var(--text-light);
-  padding: 8rem 2rem 2rem 2rem; /* Increased top padding to prevent header overlap */
+  padding: calc(var(--header-height, 76px) + 2.5rem) 1.25rem 2.5rem;
 }
 
 .search-header {

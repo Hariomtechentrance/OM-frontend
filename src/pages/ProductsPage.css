@@ -3,7 +3,8 @@
   background: #000000;
   color: #ffffff;
   min-height: 100vh;
-  padding: 4rem 0;
+  /* Clear fixed header so banner is not tucked under the bar */
+  padding: calc(var(--header-height, 76px) + 1.75rem) 0 4rem;
 }
 
 .container {
