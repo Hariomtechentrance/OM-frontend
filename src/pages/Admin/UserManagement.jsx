@@ -15,7 +15,7 @@ const UserManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await api.get('/api/users');
+      const response = await api.get('/users');
       setUsers(response.data.users);
       setLoading(false);
     } catch (error) {
@@ -26,7 +26,7 @@ const UserManagement = () => {
 
   const handleRoleChange = async (userId, newRole) => {
     try {
-      await api.put(`/api/users/${userId}/role`, { role: newRole });
+      await api.put(`/users/${userId}/role`, { role: newRole });
       toast.success('User role updated successfully');
       fetchUsers();
       setShowRoleModal(false);
@@ -39,7 +39,7 @@ const UserManagement = () => {
   const handleToggleUserStatus = async (userId) => {
     try {
       const user = users.find(u => u._id === userId);
-      await api.put(`/api/users/${userId}`, { isActive: !user.isActive });
+      await api.put(`/users/${userId}`, { isActive: !user.isActive });
       toast.success(`User ${user.isActive ? 'deactivated' : 'activated'} successfully`);
       fetchUsers();
     } catch (error) {

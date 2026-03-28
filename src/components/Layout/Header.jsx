@@ -67,28 +67,8 @@ const Header = () => {
     return () => document.removeEventListener('click', handleClickOutside);
   }, [menuOpen, navbarOpen]);
 
-  // Fetch categories and collections from API
   useEffect(() => {
     fetchNavigationData();
-    
-    // Force load fallback collections for testing
-    const testCollections = [
-      { name: 'Checked Collection', slug: 'checked-collection', _id: 'test-1', order: 1 },
-      { name: 'Office Collection', slug: 'office-collection', _id: 'test-2', order: 2 },
-      { name: 'Party Wear Collection', slug: 'party-wear-collection', _id: 'test-3', order: 3 },
-      { name: 'Casual Collection', slug: 'casual-collection', _id: 'test-4', order: 4 },
-      { name: 'New Collection', slug: 'new-collection', _id: 'test-5', order: 5 },
-      { name: 'Winter Collection', slug: 'winter-collection', _id: 'test-6', order: 6 },
-      { name: 'Polos', slug: 'polos', _id: 'test-7', order: 7 },
-      { name: 'Trousers', slug: 'trousers', _id: 'test-8', order: 8 },
-      { name: 'Denim', slug: 'denim', _id: 'test-9', order: 9 },
-      { name: 'Formal Pants', slug: 'formal-pants', _id: 'test-10', order: 10 },
-      { name: 'Summer Collection', slug: 'summer-collection', _id: 'test-11', order: 11 },
-      { name: 'Printed Collection', slug: 'printed-collection', _id: 'test-12', order: 12 },
-      { name: 'Cargo Collection', slug: 'cargo-collection', _id: 'test-13', order: 13 }
-    ];
-    setCollections(testCollections);
-    console.log("🔥 Force loaded test collections:", testCollections.length);
   }, []);
 
   const fetchNavigationData = async () => {

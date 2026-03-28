@@ -76,7 +76,7 @@ export const WishlistProvider = ({ children }) => {
       dispatch({ type: 'SET_LOADING', payload: true });
       
       // ✅ TEMPORARILY DISABLED: Wishlist API not implemented yet
-      // const response = await api.get('/api/users/wishlist');
+      // const response = await api.get('/users/wishlist');
       // dispatch({ type: 'SET_WISHLIST', payload: response.data.wishlist || [] });
       
       // Load from localStorage for now

@@ -158,7 +158,7 @@ const ProductManagement = () => {
 
   const fetchCategories = useCallback(async () => {
     try {
-      const response = await api.get("/api/categories");
+      const response = await api.get("/categories");
       console.log("Categories:", response.data);
       setCategories(response.data.categories);
     } catch (error) {
@@ -169,7 +169,7 @@ const ProductManagement = () => {
 
   const fetchCollections = useCallback(async () => {
     try {
-      const response = await api.get("/api/collections?showInNavbar=true&isActive=true&sortBy=order&sortOrder=asc");
+      const response = await api.get("/collections?showInNavbar=true&isActive=true&sortBy=order&sortOrder=asc");
       console.log("Collections:", response.data);
       setCollections(response.data.collections);
     } catch (err) {
@@ -180,7 +180,7 @@ const ProductManagement = () => {
 
   const fetchProducts = useCallback(async () => {
     try {
-      const response = await api.get("/api/products");
+      const response = await api.get("/products");
       console.log("Products:", response.data);
       setProducts(response.data.products);
       setLoading(false);
@@ -421,10 +421,10 @@ const ProductManagement = () => {
       };
 
       if (selectedProduct) {
-        await api.put(`/api/products/${selectedProduct._id}`, payload);
+        await api.put(`/products/${selectedProduct._id}`, payload);
         toast.success('Product updated successfully');
       } else {
-        await api.post("/api/products", payload);
+        await api.post("/products", payload);
         toast.success('Product added successfully');
       }
 
@@ -507,7 +507,7 @@ const ProductManagement = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {
-        await api.delete(`/api/products/${id}`);
+        await api.delete(`/products/${id}`);
         toast.success('Product deleted successfully');
         fetchProducts();
       } catch (error) {
@@ -540,7 +540,7 @@ const ProductManagement = () => {
       };
 
       await api.put(
-        `/api/products/${editProduct._id}`,
+        `/products/${editProduct._id}`,
         payload
       );
 
@@ -554,7 +554,7 @@ const ProductManagement = () => {
 
   const handleToggleFeatured = async (product) => {
     try {
-      await api.put(`/api/products/${product?._id}`, {
+      await api.put(`/products/${product?._id}`, {
         isFeatured: !product?.isFeatured
       });
       fetchProducts();
@@ -567,7 +567,7 @@ const ProductManagement = () => {
   const toggleNewArrival = async (product) => {
     try {
       await api.put(
-        `/api/products/${product?._id}`,
+        `/products/${product?._id}`,
         {
           isNewArrival: !product?.isNewArrival
         }
@@ -583,7 +583,7 @@ const ProductManagement = () => {
   const toggleTrending = async (product) => {
     try {
       await api.put(
-        `/api/products/${product?._id}`,
+        `/products/${product?._id}`,
         {
           isTrending: !product?.isTrending
         }

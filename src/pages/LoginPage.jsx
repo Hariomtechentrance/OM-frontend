@@ -28,23 +28,17 @@ const LoginPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log("🔥 useEffect - loading:", loading, "isAuthenticated:", isAuthenticated, "user:", user);
-    if (loading) {
-      console.log("🔥 useEffect - returning early due to loading");
-      return;
-    }
-    if (!isAuthenticated) {
-      console.log("🔥 useEffect - user not authenticated");
-      return;
-    }
-
-    const role = user?.role;
-    if (role === 'admin') {
-      console.log("🔥 useEffect - navigating to admin");
-      navigate('/admin');
-    } else {
-      console.log("🔥 useEffect - navigating to home");
-      navigate('/');
+    if (
+      !loading &&
+      isAuthenticated &&
+      user &&
+      window.location.pathname === '/login'
+    ) {
+      if (user.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
     }
   }, [loading, isAuthenticated, user, navigate]);
 

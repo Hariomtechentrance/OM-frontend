@@ -20,9 +20,10 @@ const AdminLogin = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if already logged in as admin
-    const token = localStorage.getItem('adminToken');
-    if (token) {
+    const adminToken = localStorage.getItem('adminToken');
+
+    // Only redirect if admin already logged in
+    if (adminToken) {
       navigate('/admin');
     }
   }, [navigate]);
@@ -39,7 +40,10 @@ const AdminLogin = () => {
     setLoading(true);
 
     try {
-      const res = await api.post('/api/users/admin/login', formData); // ✅ FIXED: Use shared api instance
+      const res = await api.post('/users/admin/login', {
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password
+      });
       
       const { token, refreshToken, tokenExpiry, user } = res.data;
       

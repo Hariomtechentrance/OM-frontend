@@ -29,7 +29,7 @@ const ShopSummerPage = () => {
       setLoading(true);
       
       // Fetch products with summer filter
-      const response = await api.get('/api/products?season=summer');
+      const response = await api.get('/products?season=summer');
       
       if (response.data && response.data.success) {
         setSummerProducts(response.data.products || []);

@@ -39,7 +39,7 @@ function ProductsPage() {
       
       const queryString = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
       
-      const response = await api.get(`/api/products${queryString}`);
+      const response = await api.get(`/products${queryString}`);
       
       if (response.data && response.data.success) {
         setProducts(response.data.products || []);

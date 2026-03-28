@@ -95,10 +95,20 @@ const CheckoutPage = () => {
     return true;
   };
 
+  const lineImage = (item) => {
+    if (typeof item.image === 'string' && item.image.trim()) return item.image;
+    return 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200&h=200&fit=crop';
+  };
+
   const createBackendOrder = async ({ paymentMethodToUse, codConfirmationToUse }) => {
     const orderItems = items.map((item) => ({
-      product: item.id,
-      quantity: item.quantity
+      product: item.product || item.productId || item.id,
+      quantity: item.quantity,
+      size: item.size ?? 'Default',
+      color: item.color ?? 'Default',
+      name: item.name,
+      price: item.price,
+      image: lineImage(item)
     }));
 
     const payload = {
@@ -112,14 +122,14 @@ const CheckoutPage = () => {
       totalPrice
     };
 
-    const res = await api.post('/api/orders', payload);
+    const res = await api.post('/orders', payload);
     return res.data;
   };
 
   const cancelPendingOrder = async (orderId) => {
     if (!orderId) return;
     try {
-      await api.put(`/api/orders/${orderId}/cancel`);
+      await api.put(`/orders/${orderId}/cancel`);
     } catch (e) {
       // ignore
     }
@@ -132,14 +142,14 @@ const CheckoutPage = () => {
       return null;
     }
 
-    const keyRes = await api.get('/api/payments/razorpay/key');
+    const keyRes = await api.get('/payments/razorpay/key');
     const keyId = keyRes.data?.keyId;
     if (!keyId) {
       toast.error('Razorpay is not configured on the server');
       return null;
     }
 
-    const orderRes = await api.post('/api/payments/razorpay/order', {
+    const orderRes = await api.post('/payments/razorpay/order', {
       amount,
       currency: 'INR',
       receipt: `${purpose}_${Date.now()}`
@@ -169,7 +179,7 @@ const CheckoutPage = () => {
         },
         handler: async (response) => {
           try {
-            await api.post('/api/payments/razorpay/verify', {
+            await api.post('/payments/razorpay/verify', {
               ...response,
               purpose,
               orderId
@@ -576,7 +586,7 @@ const CheckoutPage = () => {
                     <div key={item.id} className="order-item">
                       <div className="item-image">
                         {item.image ? (
-                          <img src={item.image} alt={item.name} />
+                          <img src={lineImage(item)} alt={item.name} />
                         ) : (
                           <div className="placeholder-image">📦</div>
                         )}

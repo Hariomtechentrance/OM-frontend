@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FaTimes, FaChevronRight } from 'react-icons/fa';
-import axios from '../../utils/axios';
+import api from '../../api/axios';
 
 const HamburgerMenu = ({ isOpen, onClose }) => {
   const [collections, setCollections] = useState([]);
@@ -10,7 +10,7 @@ const HamburgerMenu = ({ isOpen, onClose }) => {
   useEffect(() => {
     const fetchCollections = async () => {
       try {
-        const response = await axios.get('/api/collections');
+        const response = await api.get('/collections');
         // Filter only sub-collections (collectionType: 'sub')
         const subCollections = response.data.collections || [];
         setCollections(subCollections);
@@ -65,7 +65,7 @@ const HamburgerMenu = ({ isOpen, onClose }) => {
               {collections.map((collection) => (
                 <Link
                   key={collection._id}
-                  to={`/collections/${collection.slug}`}
+                  to={`/collection/${collection.slug}`}
                   onClick={handleLinkClick}
                   className="flex items-center justify-between px-6 py-3 text-gray-700 hover:bg-gray-100 hover:text-black transition-colors duration-200"
                 >

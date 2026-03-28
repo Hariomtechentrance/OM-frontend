@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ProductCard from '../components/Products/ProductCard';
 import { formatPrice } from '../utils/currency';
 import { useNavigate } from 'react-router-dom';
-import api from '../utils/axios';
+import api from '../api/axios';
 import './ShopCollectionPage.css';
 
 const ShopCollectionPage = () => {
@@ -26,7 +26,7 @@ const ShopCollectionPage = () => {
   const fetchCollections = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/api/collections');
+      const res = await api.get('/collections');
       if (res.data.success) {
         setCollections(res.data);
       }
@@ -44,10 +44,10 @@ const ShopCollectionPage = () => {
       
       if (selectedCollection === 'all') {
         // Fetch all products
-        res = await api.get('/api/products');
+        res = await api.get('/products');
       } else {
         // Fetch products for specific collection
-        res = await api.get(`/api/collections/${selectedCollection}/products`);
+        res = await api.get(`/collections/${selectedCollection}/products`);
       }
       
       if (res.data.success) {
@@ -62,114 +62,6 @@ const ShopCollectionPage = () => {
 
   const handleCollectionClick = (collectionSlug) => {
     setSelectedCollection(collectionSlug);
-  };
-          image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600',
-          description: 'Edgy streetwear for the modern urbanite',
-          rating: 4.7,
-          featured: true,
-          collection: 'streetwear'
-        },
-        {
-          _id: '4',
-          name: 'Formal Excellence',
-          category: 'formal',
-          image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600',
-          description: 'Sophisticated formal wear for professionals',
-          rating: 4.9,
-          featured: true,
-          collection: 'formal'
-        },
-        {
-          _id: '5',
-          name: 'Athletic Performance',
-          category: 'sports',
-          image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=600',
-          description: 'High-performance athletic wear for active lifestyles',
-          rating: 4.6,
-          featured: false,
-          collection: 'sports'
-        },
-        {
-          _id: '6',
-          name: 'Minimalist Basics',
-          category: 'minimal',
-          image: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=600',
-          description: 'Clean, minimalist pieces for versatile styling',
-          rating: 4.8,
-          featured: false,
-          collection: 'minimal'
-        },
-        {
-          _id: '7',
-          name: 'Vintage Revival',
-          category: 'vintage',
-          image: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=600',
-          description: 'Retro-inspired pieces with modern comfort',
-          rating: 4.7,
-          featured: false,
-          collection: 'vintage'
-        },
-        {
-          _id: '8',
-          name: 'Sustainable Fashion',
-          category: 'eco',
-          image: 'https://images.unsplash.com/photo-1528459801416-a9e53bbf4e17?w=600',
-          description: 'Eco-friendly fashion for conscious consumers',
-          rating: 4.9,
-          featured: true,
-          collection: 'eco'
-        },
-        {
-          _id: '9',
-          name: 'Business Casual',
-          category: 'business',
-          image: 'https://images.unsplash.com/photo-1554568218-0f585de2e08c?w=600',
-          description: 'Professional yet comfortable for modern workplaces',
-          rating: 4.8,
-          featured: false,
-          collection: 'business'
-        },
-        {
-          _id: '10',
-          name: 'Weekend Comfort',
-          category: 'casual',
-          image: 'https://images.unsplash.com/photo-1517891905240-472988babdf9?w=600',
-          description: 'Relaxed pieces for perfect weekend vibes',
-          rating: 4.6,
-          featured: false,
-          collection: 'casual'
-        },
-        {
-          _id: '11',
-          name: 'Evening Elegance',
-          category: 'evening',
-          image: 'https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=600',
-          description: 'Sophisticated evening wear for special occasions',
-          rating: 4.9,
-          featured: true,
-          collection: 'evening'
-        },
-        {
-          _id: '12',
-          name: 'Travel Essentials',
-          category: 'travel',
-          image: 'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=600',
-          description: 'Comfortable and stylish pieces for your journeys',
-          rating: 4.7,
-          featured: false,
-          collection: 'travel'
-        }
-      ];
-      
-      setCollections(sampleCollections);
-    } catch (error) {
-      console.error('Error fetching collections:', error);
-    } finally {
-      setLoading(false);
-      if (initialLoad) {
-        setInitialLoad(false);
-      }
-    }
   };
 
   const handleExploreCollection = (collectionType) => {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import api from '../../api/axios'; // ✅ FIXED: Use shared axios instance
+import api from '../../api/axios';
 import './CollectionsNav.css';
 
 const CollectionsNav = () => {
@@ -9,38 +9,36 @@ const CollectionsNav = () => {
   const location = useLocation();
 
   useEffect(() => {
-    fetchCategories();
-    
-    // Listen for storage changes to update collections when new ones are added from admin
+    fetchCollections();
+
     const handleStorageChange = (e) => {
       if (e.key === 'collections') {
-        fetchCategories();
+        fetchCollections();
       }
     };
-    
-    // Also check periodically for new collections (fallback)
+
     const interval = setInterval(() => {
-      fetchCategories();
-    }, 5000); // Check every 5 seconds
-    
+      fetchCollections();
+    }, 30000);
+
     window.addEventListener('storage', handleStorageChange);
-    
+
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       clearInterval(interval);
     };
   }, []);
 
-  const fetchCategories = async () => {
+  const fetchCollections = async () => {
     try {
-      const res = await api.get("/api/categories/navbar"); // ✅ FIXED: Use proxy instead of hardcoded URL
-      const data = res.data;
-      
-      if (data.success) {
-        setCollections(data.categories || []);
+      const res = await api.get(
+        '/collections?showInNavbar=true&isActive=true&sortBy=order&sortOrder=asc'
+      );
+      if (res.data?.success) {
+        setCollections(res.data.collections || []);
       }
     } catch (error) {
-      console.error('Failed to fetch navbar categories:', error);
+      console.error('Failed to fetch collections for nav:', error);
     }
   };
 
@@ -57,25 +55,29 @@ const CollectionsNav = () => {
     }
   }, [collectionsOpen]);
 
+  useEffect(() => {
+    setCollectionsOpen(false);
+  }, [location.pathname]);
+
   return (
     <div className="collections-dropdown">
-      <button 
+      <button
         className={`collections-toggle ${collectionsOpen ? 'active' : ''}`}
         onClick={() => setCollectionsOpen(!collectionsOpen)}
       >
         Collections
       </button>
-      
+
       {collectionsOpen && (
         <div className="collections-menu">
-          {collections.map(cat => (
-            <Link 
-              key={cat._id} 
-              to={`/collection/${cat._id}`}
+          {collections.map((col) => (
+            <Link
+              key={col._id}
+              to={`/collection/${col.slug}`}
               className="collection-link"
               onClick={() => setCollectionsOpen(false)}
             >
-              {cat.name}
+              {col.name}
             </Link>
           ))}
         </div>

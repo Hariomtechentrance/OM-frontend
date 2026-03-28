@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useReducer, useEffect, useState } from 'react';
 import api from '../utils/axios';
 
+const ACCESS_TOKEN_TTL_MS = 14 * 60 * 1000; // Slightly under backend 15m JWT expiry
+
 // Create context
 const AuthContext = createContext();
 
@@ -109,28 +111,28 @@ export const AuthProvider = ({ children }) => {
   // Refresh token function
   const refreshAuthToken = async () => {
     const refreshToken = localStorage.getItem('refreshToken');
-    
+
     if (!refreshToken) {
-      logout();
       return false;
     }
 
     try {
-      const res = await api.post('/api/users/refresh-token', { refreshToken }); // ✅ FIXED: Use proxy instead of hardcoded URL
-      
-      const { token, tokenExpiry } = res.data;
-      
+      const res = await api.post('/users/refresh-token', { refreshToken });
+
+      const token = res.data.token;
+      const tokenExpiry =
+        res.data.tokenExpiry || new Date(Date.now() + ACCESS_TOKEN_TTL_MS).toISOString();
+
       setAuthToken(token);
       localStorage.setItem('tokenExpiry', tokenExpiry);
-      
+
       dispatch({
         type: REFRESH_TOKEN,
         payload: { token, tokenExpiry }
       });
-      
+
       return true;
     } catch (error) {
-      logout();
       return false;
     }
   };
@@ -204,7 +206,7 @@ export const AuthProvider = ({ children }) => {
       
       setAuthToken(token);
       try {
-        const res = await api.get('/api/users/profile'); // ✅ FIXED: Added /api prefix
+        const res = await api.get('/users/profile');
         dispatch({
           type: AUTH_SUCCESS,
           payload: {
@@ -280,21 +282,28 @@ export const AuthProvider = ({ children }) => {
   // Register user
   const register = async (formData) => {
     try {
-      const res = await api.post('/users/register', formData); // ✅ FIXED: Use API_BASE
-      
-      const { token, refreshToken, tokenExpiry, user } = res.data;
-      
-      // Store tokens
-      localStorage.setItem('refreshToken', refreshToken);
+      const res = await api.post('/users/register', formData);
+
+      const token = res.data.token;
+      const refreshToken = res.data.refreshToken;
+      const user = res.data.user;
+      const tokenExpiry =
+        res.data.tokenExpiry || new Date(Date.now() + ACCESS_TOKEN_TTL_MS).toISOString();
+
+      if (!token || !user) {
+        return { success: false, error: 'Registration response missing token or user' };
+      }
+
+      localStorage.setItem('refreshToken', refreshToken || '');
       localStorage.setItem('tokenExpiry', tokenExpiry);
       setAuthToken(token);
-      
+
       dispatch({
         type: AUTH_SUCCESS,
         payload: {
           user,
           token,
-          refreshToken,
+          refreshToken: refreshToken || null,
           tokenExpiry
         }
       });
@@ -316,33 +325,34 @@ export const AuthProvider = ({ children }) => {
   const login = async (formData) => {
     try {
       console.log("MAKING API CALL TO: /users/login");
-      const res = await api.post('/users/login', formData); // ✅ FIXED: Use API_BASE
-      
-      console.log("FULL RESPONSE:", res.data); // ✅ Add this to see exact structure
+      const res = await api.post('/users/login', formData);
 
-      // ✅ Handle both response shapes
       const token = res.data.token || res.data.data?.token;
       const user = res.data.user || res.data.data?.user;
+      const refreshToken = res.data.refreshToken;
+      const tokenExpiry =
+        res.data.tokenExpiry || new Date(Date.now() + ACCESS_TOKEN_TTL_MS).toISOString();
 
       if (!token || !user) {
         return { success: false, error: 'Invalid response from server' };
       }
 
-      // ✅ STORE DATA
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
+      if (refreshToken) {
+        localStorage.setItem('refreshToken', refreshToken);
+      }
+      localStorage.setItem('tokenExpiry', tokenExpiry);
 
-      // ✅ SET AUTH HEADER
       setAuthToken(token);
 
-      // ✅ UPDATE STATE (IMPORTANT)
       dispatch({
         type: AUTH_SUCCESS,
         payload: {
           user,
           token,
-          refreshToken: null,
-          tokenExpiry: null
+          refreshToken: refreshToken || null,
+          tokenExpiry
         }
       });
 
@@ -380,9 +390,8 @@ export const AuthProvider = ({ children }) => {
     setAuthToken(null);
     dispatch({ type: LOGOUT });
     
-    // FORCE REDIRECT TO LOGIN
-    // ✅ FORCE REDIRECT TO LOGIN
-    window.location.href = '/login';
+    // ❌ REMOVED: window.location.href = '/login';
+    // ✅ React Router will handle redirect
   };
 
   // Clear error

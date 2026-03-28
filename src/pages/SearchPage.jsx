@@ -4,6 +4,7 @@ import ProductCard from '../components/Products/ProductCard';
 import ProductFilter from '../components/Products/ProductFilter';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import api from '../api/axios';
 import '../components/Products/Products.css';
 import './SearchPage.css';
 
@@ -31,18 +32,12 @@ const SearchPage = () => {
     
     try {
       // Connect to backend API
-      const response = await fetch(`/api/products?search=${encodeURIComponent(term)}&limit=50`);
+      const response = await api.get(`/products?search=${encodeURIComponent(term)}&limit=50`);
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch search results');
-      }
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        setSearchResults(data.products || []);
+      if (response.data && response.data.success) {
+        setSearchResults(response.data.products || []);
       } else {
-        setError(data.message || 'Search failed');
+        setError(response.data?.message || 'Search failed');
         setSearchResults([]);
       }
     } catch (error) {

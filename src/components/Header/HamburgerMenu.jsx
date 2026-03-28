@@ -11,7 +11,7 @@ const HamburgerMenu = ({ isOpen, onClose }) => {
   useEffect(() => {
     const fetchCollections = async () => {
       try {
-        const response = await api.get('/api/collections');
+        const response = await api.get('/collections');
         setCollections(response.data.collections || []);
       } catch (error) {
         console.error('Error fetching collections:', error);

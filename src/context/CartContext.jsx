@@ -164,7 +164,7 @@ export const CartProvider = ({ children }) => {
         // If logged in, sync to backend
         if (token) {
           try {
-            await saveCartToBackend(cartData);
+            await saveCartToBackend();
           } catch (error) {
             console.error('❌ Cart sync error:', error);
           }
@@ -191,7 +191,7 @@ export const CartProvider = ({ children }) => {
     
     // Also save to backend if user is logged in
     if (token && state.items.length > 0) {
-      saveCartToBackend(state);
+      saveCartToBackend();
     }
   }, [state]);
 
@@ -214,13 +214,8 @@ export const CartProvider = ({ children }) => {
     };
   };
 
-  // Save cart to backend function
-  const saveCartToBackend = async (cartState) => {
-    try {
-      await api.post('/api/cart/sync', { items: cartState.items });
-    } catch (error) {
-      console.error('❌ Failed to sync cart to backend:', error);
-    }
+  const saveCartToBackend = async () => {
+    // Cart is persisted via add/update/remove endpoints; no bulk sync route on API.
   };
 
   // Add to cart function
@@ -259,7 +254,7 @@ export const CartProvider = ({ children }) => {
       // If user is logged in, also sync to backend
       if (token) {
         try {
-          const res = await api.post('/api/cart/add', {
+          const res = await api.post('/cart/add', {
             productId: product._id,
             quantity,
             size,
@@ -301,7 +296,15 @@ export const CartProvider = ({ children }) => {
       // If user is logged in, also remove from backend
       if (token) {
         try {
-          await api.delete(`/api/cart/remove/${uniqueId}`);
+          await api.delete('/cart/line', {
+            data: {
+              productId: typeof itemToRemove.product === 'object' && itemToRemove.product?._id
+                ? itemToRemove.product._id
+                : itemToRemove.product,
+              size: itemToRemove.size,
+              color: itemToRemove.color
+            }
+          });
           console.log('✅ Removed from cart (backend)');
         } catch (backendError) {
           console.error('❌ Backend cart remove error:', backendError.response?.data || backendError.message);
@@ -347,7 +350,14 @@ export const CartProvider = ({ children }) => {
       // If user is logged in, also update backend
       if (token) {
         try {
-          await api.put(`/api/cart/update/${uniqueId}`, { quantity });
+          await api.put('/cart/line', {
+            productId: typeof item.product === 'object' && item.product?._id
+              ? item.product._id
+              : item.product,
+            size: item.size,
+            color: item.color,
+            quantity
+          });
           console.log('✅ Updated quantity (backend)');
         } catch (backendError) {
           console.error('❌ Backend cart update error:', backendError.response?.data || backendError.message);
@@ -380,7 +390,7 @@ export const CartProvider = ({ children }) => {
       // If user is logged in, also clear backend
       if (token) {
         try {
-          await api.delete('/api/cart/clear');
+          await api.delete('/cart');
           console.log('✅ Cart cleared (backend)');
         } catch (backendError) {
           console.error('❌ Backend cart clear error:', backendError.response?.data || backendError.message);

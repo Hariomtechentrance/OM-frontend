@@ -26,10 +26,9 @@ const ShopCollectionPage = () => {
   const fetchCollections = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/api/collections');
+      const res = await api.get('/collections');
       if (res.data.success) {
-        setCollections(res.data);
-        // Fetch all products initially
+        setCollections(res.data.collections || []);
         setSelectedCollection('all');
       }
     } catch (error) {
@@ -46,10 +45,10 @@ const ShopCollectionPage = () => {
       
       if (selectedCollection === 'all') {
         // Fetch all products
-        res = await api.get('/api/products');
+        res = await api.get('/products');
       } else {
         // Fetch products for specific collection
-        res = await api.get(`/api/collections/${selectedCollection}/products`);
+        res = await api.get(`/collections/${selectedCollection}/products`);
       }
       
       if (res.data.success) {

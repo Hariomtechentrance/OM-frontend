@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Link, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { FaTachometerAlt, FaBox, FaShoppingCart, FaUsers, FaCog, FaTags, FaHome, FaSignOutAlt } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import axios from 'axios';
@@ -17,6 +17,7 @@ const AdminDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Check admin authentication
@@ -36,7 +37,9 @@ const AdminDashboard = () => {
     localStorage.removeItem('isAdmin');
     delete axios.defaults.headers.common['Authorization'];
     toast.success('Logged out successfully');
-    window.location.href = '/admin/login';
+    
+    // ✅ FIXED: Use React Router navigation instead of forced reload
+    navigate('/admin/login');
   };
 
   const toggleSidebar = () => {
@@ -63,7 +66,7 @@ const AdminDashboard = () => {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/admin/login" />;
+    return <Navigate to="/admin/login" replace />;
   }
 
   return (

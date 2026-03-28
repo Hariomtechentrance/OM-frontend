@@ -1,18 +1,19 @@
 import axios from 'axios';
+import { API_BASE } from '../config/api';
 
-// Create axios instance with direct backend connection
 const api = axios.create({
-  baseURL: 'http://localhost:5002', // ✅ must match your backend port
+  baseURL: API_BASE,
   headers: {
     'Content-Type': 'application/json'
   },
   withCredentials: true
 });
 
-// Request interceptor to add auth token
+// Request interceptor: user JWT or admin JWT (admin panel stores adminToken)
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token =
+      localStorage.getItem('token') || localStorage.getItem('adminToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -28,11 +29,16 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Token expired or invalid
-      localStorage.removeItem('token');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('tokenExpiry');
-      window.location.href = '/login';
+      [
+        'token',
+        'refreshToken',
+        'tokenExpiry',
+        'user',
+        'adminToken',
+        'adminRefreshToken',
+        'adminTokenExpiry',
+        'isAdmin'
+      ].forEach((k) => localStorage.removeItem(k));
     }
     return Promise.reject(error);
   }
