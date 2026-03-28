@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ProductCard from '../components/Products/ProductCard';
 import { formatPrice } from '../utils/currency';
 import { useNavigate } from 'react-router-dom';
-import api from '../utils/axios';
+import api from '../api/axios';
 import './ShopCollectionPage.css';
 
 const ShopCollectionPage = () => {
@@ -73,14 +73,14 @@ const ShopCollectionPage = () => {
   if (loading) {
     return (
       <div className="shop-collection-page">
-        <div className="hero-section">
-          <div className="hero-content">
-            <div className="collection-icon">👔</div>
+        <div className="shop-collections-hero">
+          <div className="shop-collections-hero__content">
+            <div className="shop-collections-hero__icon">👔</div>
             <h1>SHOP COLLECTIONS</h1>
             <p>Curated collections for every style and occasion</p>
           </div>
         </div>
-        <div className="container">
+        <div className="shop-collections-container">
           <div className="loading-skeleton">
             <p>Loading collections...</p>
           </div>
@@ -91,12 +91,12 @@ const ShopCollectionPage = () => {
 
   return (
     <div className="shop-collection-page">
-      <div className="hero-section">
-        <div className="hero-content">
-          <div className="collection-icon">👔</div>
+      <div className="shop-collections-hero">
+        <div className="shop-collections-hero__content">
+          <div className="shop-collections-hero__icon">👔</div>
           <h1>SHOP COLLECTIONS</h1>
           <p>Curated collections for every style and occasion</p>
-          <div className="collection-stats">
+          <div className="shop-collections-hero__stats">
             <div className="stat">
               <span className="stat-number">{collections.length || 12}</span>
               <span className="stat-label">Collections</span>
@@ -113,7 +113,7 @@ const ShopCollectionPage = () => {
         </div>
       </div>
 
-      <div className="container">
+      <div className="shop-collections-container">
         <div className="collection-filters">
           <button 
             className={`filter-btn ${selectedCollection === 'all' ? 'active' : ''}`}
@@ -132,8 +132,8 @@ const ShopCollectionPage = () => {
           ))}
         </div>
 
-        <div className="products-section">
-          <div className="section-header">
+        <div className="shop-collections-products">
+          <div className="shop-collections-products__header">
             <h2>
               {selectedCollection === 'all' 
                 ? 'All Products' 
