@@ -8,7 +8,6 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import api from '../api/axios';
 import { filtersToSearchParams, defaultProductFilterState } from '../utils/productFilters';
-import './ProductsPage.css';
 
 function ProductsPage() {
   const [searchParams] = useSearchParams();
@@ -149,41 +148,70 @@ function ProductsPage() {
   };
 
   return (
-    <div className="products-page">
-      <div className="container">
-        <div className="products-header">
-          <h1>{getPageTitle()}</h1>
-          <p>
-            {searchParams.get('collection') || searchParams.get('category')
-              ? `Browse our ${getPageTitle().toLowerCase()} collection of premium fashion items`
-              : 'Browse our complete collection of premium fashion items'}
+    <div className="bg-black pt-[76px] text-white">
+      <div className="bl-container py-8 md:py-10 lg:py-14">
+        <header className="mb-8 flex flex-col gap-3 md:mb-10 md:flex-row md:items-end md:justify-between">
+          <div>
+            <h1 className="font-heading text-3xl font-semibold text-white md:text-4xl">
+              {getPageTitle()}
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm text-white/60">
+              {searchParams.get('collection') || searchParams.get('category')
+                ? `Browse our ${getPageTitle().toLowerCase()} edit of premium fashion essentials.`
+                : 'Explore the complete Blacklocust range for Men and Kids.'}
+            </p>
+          </div>
+          <p className="text-xs font-semibold tracking-[0.18em] text-white/50">
+            {loading ? 'LOADING PRODUCTS…' : `${products.length} ITEMS`}
           </p>
-        </div>
+        </header>
 
-        <GlobalProductFilters
-          key={`${initialFilterSync.category}-${initialFilterSync.collection}`}
-          initialFilters={initialFilterSync}
-          onApply={setListFilters}
-        />
+        <div className="grid gap-8 lg:grid-cols-[280px,minmax(0,1fr)]">
+          {/* Filters sidebar */}
+          <aside className="space-y-4">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 md:p-5">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-xs font-semibold tracking-[0.18em] text-white/80">
+                  FILTERS
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setListFilters({ ...defaultProductFilterState })}
+                  className="text-[11px] font-semibold tracking-[0.16em] text-white/40 hover:text-white/70"
+                >
+                  CLEAR
+                </button>
+              </div>
+              <GlobalProductFilters
+                key={`${initialFilterSync.category}-${initialFilterSync.collection}`}
+                initialFilters={initialFilterSync}
+                onApply={setListFilters}
+              />
+            </div>
+          </aside>
 
-        <div className="products-grid">
-          {loading ? (
-            <div className="loading-state">
-              <div className="loading-spinner"></div>
-              <p>Loading products...</p>
-            </div>
-          ) : error ? (
-            <div className="error-state">
-              <h3>Error Loading Products</h3>
-              <p>{error}</p>
-              <button type="button" onClick={() => setListFilters((f) => ({ ...f }))} className="retry-btn">
-                Try Again
-              </button>
-            </div>
-          ) : (
-            <>
-              {products.length > 0 ? (
-                products.map((item) => (
+          {/* Products grid */}
+          <section>
+            {loading ? (
+              <div className="flex min-h-[240px] flex-col items-center justify-center gap-4 rounded-2xl border border-white/10 bg-white/5">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-blacklocust-gold" />
+                <p className="text-sm text-white/70">Loading products…</p>
+              </div>
+            ) : error ? (
+              <div className="rounded-2xl border border-red-500/40 bg-red-500/10 p-6">
+                <h3 className="font-heading text-xl text-white">Error Loading Products</h3>
+                <p className="mt-2 text-sm text-white/70">{error}</p>
+                <button
+                  type="button"
+                  onClick={() => setListFilters((f) => ({ ...f }))}
+                  className="mt-4 rounded-full border border-white/20 px-4 py-2 text-xs font-semibold tracking-[0.16em] text-white/80 hover:border-blacklocust-gold hover:text-blacklocust-gold"
+                >
+                  TRY AGAIN
+                </button>
+              </div>
+            ) : products.length > 0 ? (
+              <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+                {products.map((item) => (
                   <ProductCard
                     key={item._id || item.id}
                     product={item}
@@ -192,15 +220,24 @@ function ProductsPage() {
                     onAddToWishlist={handleAddToWishlist}
                     onCompare={handleCompare}
                   />
-                ))
-              ) : (
-                <div className="no-products">
-                  <h3>No products found</h3>
-                  <p>Try adjusting your filters to see more products.</p>
-                </div>
-              )}
-            </>
-          )}
+                ))}
+              </div>
+            ) : (
+              <div className="flex min-h-[240px] flex-col items-center justify-center rounded-2xl border border-white/10 bg-white/5 p-8 text-center">
+                <h3 className="font-heading text-xl text-white">No products found</h3>
+                <p className="mt-2 max-w-md text-sm text-white/70">
+                  Try adjusting your filters or explore all products to discover more from Blacklocust.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setListFilters({ ...defaultProductFilterState })}
+                  className="mt-4 rounded-full border border-white/20 px-4 py-2 text-xs font-semibold tracking-[0.16em] text-white/80 hover:border-blacklocust-gold hover:text-blacklocust-gold"
+                >
+                  RESET FILTERS
+                </button>
+              </div>
+            )}
+          </section>
         </div>
       </div>
 
