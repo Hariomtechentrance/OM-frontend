@@ -14,10 +14,67 @@ function HomePage() {
   const [categories, setCategories] = useState([]);
   const [showAuth, setShowAuth] = useState(false);
   const [wishlist, setWishlist] = useState([]);
+  const [currentHeroSlide, setCurrentHeroSlide] = useState(0);
   
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const { addToCart } = useCart();
+
+  // Hero images array
+  const heroImages = useMemo(() => [
+    {
+      src: '/images/hero/15.jpg',
+      alt: 'Black Locust Premium Fashion Collection 1',
+      title: 'Elevate Your Style',
+      subtitle: 'Discover our latest premium collection'
+    },
+    {
+      src: '/images/hero/16.jpg',
+      alt: 'Black Locust Premium Fashion Collection 2',
+      title: 'Timeless Elegance',
+      subtitle: 'Classic designs with modern sophistication'
+    },
+    {
+      src: '/images/hero/17.jpg',
+      alt: 'Black Locust Premium Fashion Collection 3',
+      title: 'Premium Quality',
+      subtitle: 'Crafted with attention to every detail'
+    },
+    {
+      src: '/images/hero/18.jpg',
+      alt: 'Black Locust Premium Fashion Collection 4',
+      title: 'Modern Luxury',
+      subtitle: 'Contemporary style meets comfort'
+    },
+    {
+      src: '/images/hero/19.jpg',
+      alt: 'Black Locust Premium Fashion Collection 5',
+      title: 'Sophisticated Design',
+      subtitle: 'Where fashion meets functionality'
+    }
+  ], []);
+
+  // Auto-rotate hero carousel
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentHeroSlide((prev) => (prev + 1) % heroImages.length);
+    }, 5000); // Change slide every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [heroImages.length]);
+
+  // Manual slide navigation
+  const goToSlide = (index) => {
+    setCurrentHeroSlide(index);
+  };
+
+  const nextSlide = () => {
+    setCurrentHeroSlide((prev) => (prev + 1) % heroImages.length);
+  };
+
+  const prevSlide = () => {
+    setCurrentHeroSlide((prev) => (prev - 1 + heroImages.length) % heroImages.length);
+  };
 
   // Initialize products and categories on mount
   useEffect(() => {
@@ -104,21 +161,25 @@ function HomePage() {
     [products]
   );
 
-  const heroImage =
-    'https://images.unsplash.com/photo-1520975958225-30b650bbf3c5?w=2400&q=80&auto=format&fit=crop';
+  const currentHeroImage = heroImages[currentHeroSlide];
 
   return (
     <div className="pt-[76px]">
-      {/* HERO */}
+      {/* HERO CAROUSEL */}
       <section className="relative">
         <div className="relative h-[560px] w-full overflow-hidden md:h-[640px]">
+          {/* Hero Image */}
           <img
-            src={heroImage}
-            alt="Blacklocust premium fashion"
-            className="absolute inset-0 h-full w-full object-cover"
+            src={currentHeroImage.src}
+            alt={currentHeroImage.alt}
+            className="absolute inset-0 h-full w-full object-cover transition-opacity duration-1000"
             loading="eager"
           />
+          
+          {/* Gradient Overlay */}
           <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/35 to-black" />
+          
+          {/* Content Overlay */}
           <div className="absolute inset-0">
             <div className="bl-container h-full">
               <div className="flex h-full max-w-2xl flex-col justify-center">
@@ -126,10 +187,10 @@ function HomePage() {
                   PREMIUM MEN & KIDS
                 </Badge>
                 <h1 className="mt-4 font-heading text-4xl font-bold leading-tight tracking-tight text-white md:text-5xl">
-                  Luxury minimal. Built to turn heads.
+                  {currentHeroImage.title}
                 </h1>
                 <p className="mt-4 max-w-xl text-base leading-7 text-white/75 md:text-lg">
-                  Discover elevated essentials with Zara-level hierarchy, premium spacing, and a fit that feels custom.
+                  {currentHeroImage.subtitle}
                 </p>
                 <div className="mt-8 flex flex-wrap items-center gap-3">
                   <Button onClick={() => navigate('/products')} variant="primary">
@@ -148,6 +209,45 @@ function HomePage() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Carousel Navigation */}
+          {/* Previous Button */}
+          <button
+            onClick={prevSlide}
+            className="absolute left-4 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm text-white transition hover:bg-white/30 md:left-6"
+            aria-label="Previous slide"
+          >
+            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+
+          {/* Next Button */}
+          <button
+            onClick={nextSlide}
+            className="absolute right-4 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm text-white transition hover:bg-white/30 md:right-6"
+            aria-label="Next slide"
+          >
+            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+
+          {/* Slide Indicators */}
+          <div className="absolute bottom-6 left-1/2 flex -translate-x-1/2 space-x-2">
+            {heroImages.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => goToSlide(index)}
+                className={`h-2 w-2 rounded-full transition-all md:h-3 md:w-3 ${
+                  index === currentHeroSlide
+                    ? 'bg-white w-8'
+                    : 'bg-white/50 hover:bg-white/75'
+                }`}
+                aria-label={`Go to slide ${index + 1}`}
+              />
+            ))}
           </div>
         </div>
       </section>
