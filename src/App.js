@@ -62,6 +62,7 @@ const AppLayout = () => {
           <Route path="/shop-collection" element={<ShopCollectionPage />} />
           <Route path="/collections" element={<ShopCollectionPage />} />
           <Route path="/collection/:slug" element={<CollectionPage />} />
+          <Route path="/category/:slug" element={<CategoryPage />} />
           <Route path="/search" element={<SearchPage />} />
 
           {/* CATEGORY */}

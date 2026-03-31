@@ -1,130 +1,46 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import api from '../api/axios'; // ✅ FIXED: Use shared axios instance
-import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import SizeSelector from '../components/SizeSelector/SizeSelector';
-import SizeChart from '../components/SizeChart/SizeChart';
-import { getColorHex } from '../utils/colorUtils';
-import '../components/SizeSelector/SizeSelector.css';
-import './ProductDetailPage.css';
+import { useCart } from '../context/CartContext';
+import api from '../api/axios';
 
-const ProductDetailPage = () => {
+function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { addToCart } = useCart();
   const { isAuthenticated } = useAuth();
-  
+  const { addToCart } = useCart();
+
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [selectedSize, setSelectedSize] = useState(null);
+  const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
   const [quantity, setQuantity] = useState(1);
-
-  const PLACEHOLDER_IMAGE =
-    'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&q=80';
-
-  const getImage = (img) => {
-    if (!img) return PLACEHOLDER_IMAGE;
-    if (img.url) return img.url;
-    if (typeof img === 'object') {
-      const values = Object.values(img);
-      if (values.length > 0 && typeof values[0] === 'string') {
-        return values.join('');
-      }
-    }
-    if (typeof img === 'string') return img;
-    return PLACEHOLDER_IMAGE;
-  };
-
-  const resolveGalleryUrl = (img) => {
-    const u = getImage(img);
-    if (!u || (typeof u === 'string' && u.includes('imagekit.io/dashboard'))) {
-      return PLACEHOLDER_IMAGE;
-    }
-    return u;
-  };
-
-  /** Always 4 gallery slots — duplicate assets when fewer than 4 images exist */
-  const galleryImages = useMemo(() => {
-    if (!product) {
-      return [PLACEHOLDER_IMAGE, PLACEHOLDER_IMAGE, PLACEHOLDER_IMAGE, PLACEHOLDER_IMAGE];
-    }
-    const imgs = (product.images || []).map(resolveGalleryUrl);
-    const base = imgs.length ? imgs : [PLACEHOLDER_IMAGE];
-    const out = [];
-    for (let i = 0; i < 4; i++) out.push(base[i % base.length]);
-    return out;
-  }, [product]);
-
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [showSizeChart, setShowSizeChart] = useState(false);
-  const [currentStock, setCurrentStock] = useState(0);
-
-  const mainImage = galleryImages[activeIndex] || PLACEHOLDER_IMAGE;
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
-    setActiveIndex(0);
-  }, [product?._id]);
-
-  useEffect(() => {
-    if (!product) return undefined;
-    const id = setInterval(() => {
-      setActiveIndex((i) => (i + 1) % 4);
-    }, 5000);
-    return () => clearInterval(id);
-  }, [product?._id]);
-
-  useEffect(() => {
-    const fetchProduct = async () => {
-      try {
-        const response = await api.get(`/products/${id}`); // ✅ FIXED: Use proxy instead of hardcoded URL
-        const productData = response.data.product;
-        
-        // ✅ STEP 3: USE RAW DATABASE DATA DIRECTLY
-        setProduct(productData);
-        
-        // Debug: Log product images
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching product:', error);
-        setLoading(false);
-      }
-    };
-
     fetchProduct();
   }, [id]);
 
-  // ✅ STEP 3: DEFAULT SELECT FIRST AVAILABLE SIZE
-  useEffect(() => {
-    if (product?.sizes?.length > 0) {
-      const firstAvailable = product.sizes.find(s => s.stock > 0);
-      if (firstAvailable) {
-        setSelectedSize(firstAvailable);
-        setCurrentStock(firstAvailable.stock);
+  const fetchProduct = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get(`/products/${id}`);
+      if (response.data.success) {
+        setProduct(response.data.product);
       }
+    } catch (error) {
+      console.error('Error fetching product:', error);
+      toast.error('Failed to load product');
+    } finally {
+      setLoading(false);
     }
-  }, [product]);
-
-  const handleSizeChange = (size) => {
-    setSelectedSize(size);
-    setCurrentStock(size.stock); // ✅ IMPORTANT: Use raw database stock
-  };
-
-  const handleColorChange = (color) => {
-    setSelectedColor(color);
-  };
-
-  const handleQuantityChange = (e) => {
-    const value = parseInt(e.target.value) || 1;
-    setQuantity(Math.max(1, Math.min(value, currentStock || 10)));
   };
 
   const handleAddToCart = () => {
     if (!isAuthenticated) {
-      toast.error('Please login to add items to cart');
-      navigate('/login');
+      setShowAuthModal(true);
       return;
     }
 
@@ -134,29 +50,44 @@ const ProductDetailPage = () => {
     }
 
     const cartItem = {
-      _id: product._id,
-      name: product.name,
-      price: selectedSize.price || product.price,
-      image: mainImage,
-      size: selectedSize.size, // ✅ FIX: Use size field
-      color: selectedColor || (product.colors?.[0]?.includes('-') ? product.colors[0].split('-')[0] : product.colors?.[0] || 'Default'),
-      quantity: quantity
+      ...product,
+      selectedSize,
+      selectedColor,
+      quantity
     };
 
     addToCart(cartItem);
-    // ✅ FIX: Remove duplicate success message (handled in context)
+    toast.success(`${product.name} added to cart!`);
   };
 
   const handleBuyNow = () => {
-    handleAddToCart();
-    navigate('/cart');
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    if (!selectedSize) {
+      toast.error('Please select a size');
+      return;
+    }
+
+    const cartItem = {
+      ...product,
+      selectedSize,
+      selectedColor,
+      quantity
+    };
+
+    addToCart(cartItem);
+    navigate('/checkout');
   };
 
   if (loading) {
     return (
-      <div className="page-container">
-        <div className="loading">
-          <p>Loading product details...</p>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading product...</p>
         </div>
       </div>
     );
@@ -164,11 +95,13 @@ const ProductDetailPage = () => {
 
   if (!product) {
     return (
-      <div className="page-container">
-        <div className="error-message">
-          <h2>Product Not Found</h2>
-          <p>The product you're looking for doesn't exist or has been removed.</p>
-          <button onClick={() => navigate('/shop')} className="btn btn-primary">
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Product Not Found</h2>
+          <button
+            onClick={() => navigate('/products')}
+            className="bg-black text-white px-6 py-3 rounded-md hover:bg-gray-800 transition-colors"
+          >
             Continue Shopping
           </button>
         </div>
@@ -176,254 +109,271 @@ const ProductDetailPage = () => {
     );
   }
 
-  const currentPrice = selectedSize?.price || product.price;
-  // 
-  const isInStock = currentStock > 0;
-  
+  const productImages = product.images && product.images.length > 0 
+    ? product.images 
+    : [product.image];
+
   return (
-    <div className="page-container">
-      <div className="product-detail">
-        <div className="product-layout">
-          {/* Left Column - Images */}
-          <div className="product-images-section">
-            <div className="main-image-container">
-              <button
-                type="button"
-                className="gallery-nav gallery-nav--prev"
-                aria-label="Previous image"
-                onClick={() => setActiveIndex((i) => (i + 3) % 4)}
-              >
-                ‹
-              </button>
+    <div className="min-h-screen bg-white">
+      {/* Breadcrumb */}
+      <div className="max-w-7xl mx-auto px-4 py-4">
+        <nav className="flex text-sm text-gray-600">
+          <button onClick={() => navigate('/')} className="hover:text-black">Home</button>
+          <span className="mx-2">/</span>
+          <button onClick={() => navigate('/products')} className="hover:text-black">Products</button>
+          <span className="mx-2">/</span>
+          <span className="text-black font-medium">{product.name}</span>
+        </nav>
+      </div>
+
+      {/* Product Detail Section */}
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          {/* Product Images */}
+          <div className="space-y-4">
+            {/* Main Image */}
+            <div className="aspect-[3/4] overflow-hidden bg-gray-50 rounded-lg">
               <img
-                src={mainImage}
+                src={productImages[currentImageIndex]}
                 alt={product.name}
-                className="main-product-image"
-                onError={(e) => {
-                  e.target.src = PLACEHOLDER_IMAGE;
-                }}
+                className="w-full h-full object-cover"
               />
-              <button
-                type="button"
-                className="gallery-nav gallery-nav--next"
-                aria-label="Next image"
-                onClick={() => setActiveIndex((i) => (i + 1) % 4)}
-              >
-                ›
-              </button>
             </div>
 
-            <div className="thumbnail-gallery" role="tablist" aria-label="Product images">
-              {galleryImages.map((imageUrl, index) => (
-                <button
-                  key={`thumb-${index}`}
-                  type="button"
-                  role="tab"
-                  aria-selected={activeIndex === index}
-                  className={`thumbnail-item ${activeIndex === index ? 'active' : ''}`}
-                  onClick={() => setActiveIndex(index)}
-                >
-                  <img
-                    src={imageUrl}
-                    alt={`View ${index + 1}`}
-                    className="thumbnail-image"
-                    onError={(e) => {
-                      e.target.src = PLACEHOLDER_IMAGE;
-                    }}
-                  />
-                </button>
-              ))}
-            </div>
+            {/* Thumbnail Images */}
+            {productImages.length > 1 && (
+              <div className="flex space-x-2">
+                {productImages.map((image, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentImageIndex(index)}
+                    className={`flex-shrink-0 w-20 h-20 overflow-hidden rounded-md border-2 ${
+                      index === currentImageIndex ? 'border-black' : 'border-gray-200'
+                    }`}
+                  >
+                    <img
+                      src={image}
+                      alt={`${product.name} ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Right Column - Product Info */}
-          <div className="product-info-section">
-            <div className="product-header">
-              <h1 className="product-title">{product.name}</h1>
-              <div className="product-meta">
-                <div className="rating">
-                  <span className="stars">{'★'.repeat(Math.floor(product.rating))}</span>
-                  <span className="rating-text">({product.numReviews} reviews)</span>
-                </div>
-                <div className="brand">Brand: {product.brand}</div>
-              </div>
-            </div>
-
-            <div className="price-section">
-              <div className="price-display">
-                <span className="current-price">₹{currentPrice.toFixed(2)}</span>
-                {selectedSize && selectedSize.price !== product.price && (
-                  <span className="original-price">₹{product.price.toFixed(2)}</span>
+          {/* Product Information */}
+          <div className="space-y-6">
+            {/* Product Name and Price */}
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.name}</h1>
+              <div className="flex items-center space-x-4 mb-4">
+                <span className="text-2xl font-bold text-gray-900">₹{product.price}</span>
+                {product.mrp && (
+                  <span className="text-lg text-gray-500 line-through">₹{product.mrp}</span>
+                )}
+                {product.mrp && (
+                  <span className="text-sm text-green-600 font-medium">
+                    {Math.round(((product.mrp - product.price) / product.mrp) * 100)}% OFF
+                  </span>
                 )}
               </div>
-              {!isInStock && (
-                <div className="out-of-stock-badge">Out of Stock</div>
-              )}
             </div>
 
-            {/* Product Features */}
-            <div className="product-features">
-              <h3>Product Features</h3>
-              <div className="features-grid">
-                {(product.features || []).map((feature, index) => (
-                  <div key={index} className="feature-item">
-                    <span className="feature-icon">✓</span>
-                    <span className="feature-text">{feature}</span>
-                  </div>
+            {/* Product Description */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Description</h3>
+              <p className="text-gray-600 leading-relaxed">
+                {product.description || 'Premium quality product crafted with attention to detail. Perfect for any occasion.'}
+              </p>
+            </div>
+
+            {/* Size Selection */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Select Size</h3>
+              <div className="flex flex-wrap gap-2">
+                {['S', 'M', 'L', 'XL', 'XXL'].map((size) => (
+                  <button
+                    key={size}
+                    onClick={() => setSelectedSize(size)}
+                    className={`px-4 py-2 border rounded-md transition-colors ${
+                      selectedSize === size
+                        ? 'border-black bg-black text-white'
+                        : 'border-gray-300 hover:border-black'
+                    }`}
+                  >
+                    {size}
+                  </button>
                 ))}
               </div>
             </div>
 
-            {/* Material & Care */}
-            <div className="product-details">
-              <div className="detail-item">
-                <h4>Material</h4>
-                <p>{product.material}</p>
-              </div>
-              <div className="detail-item">
-                <h4>Care Instructions</h4>
-                <p>{product.care}</p>
+            {/* Color Selection */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Select Color</h3>
+              <div className="flex space-x-2">
+                {['Black', 'White', 'Navy', 'Gray', 'Blue'].map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => setSelectedColor(color)}
+                    className={`px-4 py-2 border rounded-md transition-colors ${
+                      selectedColor === color
+                        ? 'border-black bg-black text-white'
+                        : 'border-gray-300 hover:border-black'
+                    }`}
+                  >
+                    {color}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Enhanced Product Specifications */}
-            {product.productSpecs && (
-              <div className="product-specifications">
-                {/* Marketing Description */}
-                {product.productSpecs.marketingDescription && (
-                  <div className="marketing-description">
-                    <h3>Product Description</h3>
-                    <p>{product.productSpecs.marketingDescription}</p>
-                  </div>
-                )}
-
-                {/* Fit & Available Sizes */}
-                {product.productSpecs.fit && (
-                  <div className="fit-sizes-section">
-                    <div className="fit-info">
-                      <h4>Fit: {product.productSpecs.fit}</h4>
-                    </div>
-                    {product.productSpecs.availableSizes && product.productSpecs.availableSizes.length > 0 && (
-                      <div className="available-sizes">
-                        <h4>Available Sizes: {product.productSpecs.availableSizes.map(s => s.size).join(', ')}</h4>
-                        <div className="size-options">
-                          {product.productSpecs.availableSizes.map((size, index) => (
-                            <div key={index} className="size-option">
-                              <span className="size-label">{size.size}</span>
-                              <span className={`size-stock ${size.stock > 0 ? 'in-stock' : 'out-of-stock'}`}>
-                                {size.stock > 0 ? `In Stock (${size.stock})` : 'Out of Stock'}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+            {/* Quantity Selection */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Quantity</h3>
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  className="w-10 h-10 border border-gray-300 rounded-md flex items-center justify-center hover:border-black"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                  </svg>
+                </button>
+                <span className="w-12 text-center font-medium">{quantity}</span>
+                <button
+                  onClick={() => setQuantity(quantity + 1)}
+                  className="w-10 h-10 border border-gray-300 rounded-md flex items-center justify-center hover:border-black"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                </button>
               </div>
-            )}
+            </div>
 
-            {/* Size & Color Selection */}
-            <div className="selection-section">
-              <div className="size-selector-container">
-                <SizeSelector
-                  product={product}
-                  selectedSize={selectedSize}
-                  onSizeChange={handleSizeChange}
-                  className="product-size-selector"
+            {/* Action Buttons */}
+            <div className="space-y-4">
+              <button
+                onClick={handleAddToCart}
+                className="w-full bg-black text-white py-3 rounded-md font-medium hover:bg-gray-800 transition-colors"
+              >
+                ADD TO CART
+              </button>
+              <button
+                onClick={handleBuyNow}
+                className="w-full border border-black text-black py-3 rounded-md font-medium hover:bg-black hover:text-white transition-colors"
+              >
+                BUY NOW
+              </button>
+            </div>
+
+            {/* Product Features */}
+            <div className="border-t border-gray-200 pt-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Product Details</h3>
+              <div className="space-y-2 text-sm text-gray-600">
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span>Brand</span>
+                  <span className="font-medium">Black Locust</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span>Material</span>
+                  <span className="font-medium">Premium Cotton</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span>Fit</span>
+                  <span className="font-medium">Regular Fit</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span>Care</span>
+                  <span className="font-medium">Machine Wash</span>
+                </div>
+                <div className="flex justify-between py-2">
+                  <span>Country of Origin</span>
+                  <span className="font-medium">India</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Trust Badges */}
+            <div className="border-t border-gray-200 pt-6">
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div>
+                  <svg className="w-8 h-8 text-gray-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8-4m8-4l8 4m0-10l-8 4m8 4l8 4m0-10v10" />
+                  </svg>
+                  <p className="text-xs text-gray-600">Free Shipping</p>
+                </div>
+                <div>
+                  <svg className="w-8 h-8 text-gray-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 15v-1a4 4 0 00-4-4H8M0 0l4 4m-4-4v4m0 0V8a4 4 0 014-4h4a4 4 0 014 4v0" />
+                  </svg>
+                  <p className="text-xs text-gray-600">15 Days Return</p>
+                </div>
+                <div>
+                  <svg className="w-8 h-8 text-gray-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  <p className="text-xs text-gray-600">Secure Payment</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Related Products */}
+      <div className="max-w-7xl mx-auto px-4 py-12">
+        <h2 className="text-2xl font-bold text-gray-900 mb-8">You May Also Like</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map((item) => (
+            <div key={item} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden group">
+              <div className="aspect-[3/4] overflow-hidden">
+                <img
+                  src={`https://images.unsplash.com/photo-1594634311268-0be55f8a4f2b?w=400&q=80&auto=format&fit=crop&random=${item}`}
+                  alt="Related product"
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
               </div>
-              
-              <div className="color-selector-container">
-                <h3>Select Color</h3>
-                <div className="color-options">
-                  {(product.colors?.[0]?.includes('-') ? product.colors[0].split('-') : product.colors || []).map((color, index) => (
-                    <button
-                      key={index}
-                      type="button"
-                      className={`color-option ${selectedColor === color ? 'selected' : ''}`}
-                      onClick={() => handleColorChange(color)}
-                      title={color}
-                    >
-                      <span 
-                        className="color-swatch" 
-                        style={{ 
-                          backgroundColor: getColorHex(color)
-                        }}
-                      />
-                      <span className="color-name">{color}</span>
-                    </button>
-                  ))}
+              <div className="p-4">
+                <h3 className="font-medium text-gray-900 mb-2">Related Product {item}</h3>
+                <div className="flex items-center justify-between">
+                  <span className="text-lg font-bold text-gray-900">₹{999 + item * 100}</span>
+                  <button className="bg-black text-white px-3 py-1 text-sm hover:bg-gray-800 transition-colors">
+                    Add to Cart
+                  </button>
                 </div>
               </div>
             </div>
+          ))}
+        </div>
+      </div>
 
-            {/* Quantity & Actions */}
-            <div className="action-section">
-              <div className="quantity-container">
-                <h3>Quantity</h3>
-                <div className="quantity-controls">
-                  <input
-                    type="number"
-                    min="1"
-                    max={currentStock || 10}
-                    value={quantity}
-                    onChange={handleQuantityChange}
-                    className="quantity-input"
-                  />
-                  <span className="stock-info">
-                    {selectedSize 
-                      ? `${currentStock} in stock` 
-                      : "Select size first"}
-                  </span>
-                </div>
-              </div>
-
-              <div className="action-buttons">
-                <button 
-                  className="add-to-cart-btn"
-                  onClick={handleAddToCart}
-                  disabled={!selectedSize || currentStock === 0}
-                >
-                  Add to Cart
-                </button>
-                <button 
-                  className="buy-now-btn"
-                  onClick={handleBuyNow}
-                  disabled={!selectedSize || currentStock === 0}
-                >
-                  Buy Now
-                </button>
-              </div>
-            </div>
-
-            {/* Size Chart Button */}
-            <div className="size-chart-section">
-              <button 
-                className="size-chart-trigger"
-                onClick={() => setShowSizeChart(true)}
+      {/* Auth Modal */}
+      {showAuthModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Sign In Required</h2>
+            <p className="text-gray-600 mb-6">Please sign in to continue with your purchase.</p>
+            <div className="space-y-4">
+              <button
+                onClick={() => navigate('/login')}
+                className="w-full bg-black text-white py-3 rounded-md font-medium hover:bg-gray-800 transition-colors"
               >
-                📏 View Size Chart
+                Sign In
+              </button>
+              <button
+                onClick={() => setShowAuthModal(false)}
+                className="w-full border border-gray-300 text-gray-700 py-3 rounded-md font-medium hover:bg-gray-50 transition-colors"
+              >
+                Cancel
               </button>
             </div>
           </div>
         </div>
-
-        {/* Product Description */}
-        <div className="product-description-section">
-          <h3>Description</h3>
-          <p>{product.description}</p>
-        </div>
-      </div>
-
-      {/* Size Chart Modal */}
-      <SizeChart
-        isOpen={showSizeChart}
-        onClose={() => setShowSizeChart(false)}
-        product={product}
-      />
+      )}
     </div>
   );
-};
+}
 
 export default ProductDetailPage;

@@ -1,15 +1,54 @@
 :root {
-  --header-height: 76px;
-  --gold: #c09345;
-  --primary-color: #c09345;
+  --header-height: 80px;
+  --gold: #C19A6B;
+  --primary-color: #C19A6B;
   --dark: #000000;
-  --white: #ffffff;
-  --off-white: #f8f9fa;
-  --bg-light: #f8f9fa;
+  --white: #FFFFFF;
+  --off-white: #FAFAFA;
+  --bg-light: #FFFFFF;
   --bg-dark: #000000;
-  --text-light: #ffffff;
-  --text-dark: #000000;
+  --text-light: #FFFFFF;
+  --text-dark: #111111;
   --success-color: #28a745;
   --danger-color: #dc3545;
   --transition: all 0.3s ease;
+  
+  /* COLORS */
+  --color-background: #FFFFFF;
+  --color-surface: #FAFAFA;
+  --color-primary-text: #111111;
+  --color-secondary-text: #6B7280;
+  --color-accent: #C19A6B;
+  --color-cta: #000000;
+  --color-cta-text: #FFFFFF;
+  --color-border: #E5E7EB;
+  
+  /* TYPOGRAPHY */
+  --font-heading: 'Playfair Display', serif;
+  --font-body: 'Inter', sans-serif;
+  
+  /* FONT SIZES */
+  --font-size-h1: 48px;
+  --font-size-h2: 36px;
+  --font-size-h3: 28px;
+  --font-size-body: 16px;
+  --font-size-small: 14px;
+  
+  /* SPACING */
+  --spacing-section-desktop: 80px;
+  --spacing-section-mobile: 40px;
+  --spacing-grid-gap: 24px;
+  --spacing-border-radius: 8px;
+  
+  /* LAYOUT */
+  --product-card-width: 280px;
+  --product-card-max-width: 300px;
+  
+  /* TRANSITIONS */
+  --transition-fast: 0.3s ease;
+  --transition-hover: all 0.3s ease;
+  
+  /* SHADOWS */
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.12);
 }

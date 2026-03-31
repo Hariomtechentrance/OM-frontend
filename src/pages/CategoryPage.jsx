@@ -1,253 +1,223 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { toast } from 'react-toastify';
-import api from '../api/axios';
-import { useCart } from '../context/CartContext';
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useWishlist } from '../context/WishlistContext';
-import ProductCard from '../components/Products/ProductCard';
-import GlobalProductFilters from '../components/GlobalProductFilters/GlobalProductFilters';
-import { filtersToSearchParams, defaultProductFilterState } from '../utils/productFilters';
-import '../components/Products/Products.css';
-import './CategoryPage.css';
+import { useCart } from '../context/CartContext';
+import DataService from '../services/dataService';
 
-const CategoryPage = () => {
-  const location = useLocation();
-  const categoryType = (location.pathname || '').replace(/^\//, '').split('/')[0] || 'party-wear';
+function CategoryPage() {
+  const { categorySlug } = useParams();
   const navigate = useNavigate();
-  const { addToCart } = useCart();
   const { isAuthenticated } = useAuth();
-  const { addToWishlist } = useWishlist();
-  
+  const { addToCart } = useCart();
+
+  const [category, setCategory] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [listFilters, setListFilters] = useState({ ...defaultProductFilterState });
-
-  // Category configurations
-  const categoryConfig = {
-    'party-wear': {
-      name: 'Party Wear',
-      description: 'Elegant outfits for special occasions',
-      icon: '🎉',
-      sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
-      colors: ['Black', 'Navy', 'Burgundy', 'Gold', 'Silver', 'Red', 'Purple'],
-      features: ['Premium Fabric', 'Designer Fit', 'Limited Edition'],
-      priceRange: [1999, 8999]
-    },
-    'casual': {
-      name: 'Casual Wear',
-      description: 'Comfortable everyday fashion',
-      icon: '👕',
-      sizes: ['S', 'M', 'L', 'XL', 'XXL'],
-      colors: ['White', 'Black', 'Gray', 'Navy', 'Blue', 'Green', 'Brown'],
-      features: ['Comfort Fit', 'Breathable', 'Easy Care'],
-      priceRange: [799, 2999]
-    },
-    'polo-tshirts': {
-      name: 'Polo T-Shirts',
-      description: 'Classic polo shirts for all occasions',
-      icon: '👔',
-      sizes: ['S', 'M', 'L', 'XL', 'XXL'],
-      colors: ['White', 'Black', 'Navy', 'Red', 'Green', 'Blue', 'Yellow', 'Pink'],
-      features: ['Cotton Pique', 'Collar Style', 'Classic Fit'],
-      priceRange: [999, 2499]
-    },
-    'new-collection': {
-      name: 'New Collection',
-      description: 'Latest arrivals and trends',
-      icon: '✨',
-      sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
-      colors: ['All Colors'],
-      features: ['New Arrivals', 'Trending', 'Exclusive'],
-      priceRange: [1299, 5999]
-    },
-    'striped-collection': {
-      name: 'Striped Collection',
-      description: 'Stylish striped patterns',
-      icon: '📊',
-      sizes: ['S', 'M', 'L', 'XL', 'XXL'],
-      colors: ['Navy/White', 'Black/White', 'Gray/White', 'Multi-color'],
-      features: ['Striped Patterns', 'Classic Design', 'Versatile'],
-      priceRange: [999, 3499]
-    },
-    'cargo-collection': {
-      name: 'Cargo Collection',
-      description: 'Functional and stylish cargo wear',
-      icon: '🎒',
-      sizes: ['S', 'M', 'L', 'XL', 'XXL'],
-      colors: ['Khaki', 'Olive', 'Black', 'Navy', 'Brown'],
-      features: ['Multiple Pockets', 'Durable', 'Utility Design'],
-      priceRange: [1499, 4499]
-    },
-    'trousers-collection': {
-      name: 'Trousers Collection',
-      description: 'Professional and casual trousers',
-      icon: '👖',
-      sizes: ['28', '30', '32', '34', '36', '38', '40'],
-      colors: ['Black', 'Gray', 'Navy', 'Brown', 'Khaki', 'Beige'],
-      features: ['Perfect Fit', 'Quality Fabric', 'Versatile'],
-      priceRange: [1299, 3999]
-    },
-    'denim-collection': {
-      name: 'Denim Collection',
-      description: 'Premium denim wear',
-      icon: '💙',
-      sizes: ['28', '30', '32', '34', '36', '38'],
-      colors: ['Blue', 'Black', 'Gray', 'White', 'Light Blue'],
-      features: ['Premium Denim', 'Perfect Fit', 'Durable'],
-      priceRange: [1999, 4999]
-    },
-    'winter-collection': {
-      name: 'Winter Collection',
-      description: 'Warm and stylish winter wear',
-      icon: '❄️',
-      sizes: ['S', 'M', 'L', 'XL', 'XXL'],
-      colors: ['Black', 'Gray', 'Navy', 'Brown', 'Burgundy', 'Forest Green'],
-      features: ['Warm Fabric', 'Layering', 'Winter Ready'],
-      priceRange: [1999, 6999]
-    },
-    'formal-pants': {
-      name: 'Formal Pants',
-      description: 'Professional formal wear',
-      icon: '🤵',
-      sizes: ['28', '30', '32', '34', '36', '38', '40'],
-      colors: ['Black', 'Gray', 'Navy', 'Brown', 'Charcoal', 'Khaki'],
-      features: ['Professional Fit', 'Office Ready', 'Classic Style'],
-      priceRange: [1499, 3499]
-    },
-    'summer-final': {
-      name: 'Summer Collection',
-      description: 'Light and breezy summer wear',
-      icon: '☀️',
-      sizes: ['S', 'M', 'L', 'XL', 'XXL'],
-      colors: ['White', 'Light Blue', 'Yellow', 'Pink', 'Lime', 'Sky Blue'],
-      features: ['Lightweight', 'Breathable', 'Summer Ready'],
-      priceRange: [799, 2999]
-    },
-    'office-collection': {
-      name: 'Office Collection',
-      description: 'Professional office wear',
-      icon: '💼',
-      sizes: ['S', 'M', 'L', 'XL', 'XXL'],
-      colors: ['White', 'Light Blue', 'Pink', 'Yellow', 'Gray', 'Navy'],
-      features: ['Office Ready', 'Professional', 'Comfortable'],
-      priceRange: [1299, 3999]
-    },
-    'checked-collection': {
-      name: 'Checked Collection',
-      description: 'Stylish checked patterns',
-      icon: '✅',
-      sizes: ['S', 'M', 'L', 'XL', 'XXL'],
-      colors: ['Black/White', 'Blue/White', 'Red/Black', 'Multi-check'],
-      features: ['Checked Patterns', 'Classic Style', 'Versatile'],
-      priceRange: [1299, 3999]
-    }
-  };
-
-  const currentCategory = categoryConfig[categoryType] || {
-    name: 'Collection',
-    description: 'Explore our collection',
-    icon: '🛍️',
-    sizes: ['S', 'M', 'L', 'XL'],
-    colors: ['Black', 'White', 'Gray', 'Navy'],
-    features: ['Quality Fabric', 'Perfect Fit'],
-    priceRange: [999, 3999]
-  };
+  const [sortBy, setSortBy] = useState('name');
+  const [filterBy, setFilterBy] = useState('all');
 
   useEffect(() => {
-    let cancelled = false;
-    const fetchCategoryProducts = async () => {
-      try {
-        setLoading(true);
-        const params = filtersToSearchParams(listFilters, { category: categoryType });
-        const response = await api.get(`/products?${params.toString()}`);
-        if (cancelled) return;
-        setProducts(response.data?.products || []);
-      } catch (error) {
-        if (!cancelled) toast.error('Failed to fetch products');
-      } finally {
-        if (!cancelled) setLoading(false);
+    fetchCategoryData();
+  }, [categorySlug]);
+
+  const fetchCategoryData = async () => {
+    try {
+      setLoading(true);
+      const data = await DataService.getHomepageData();
+      
+      // Find the category
+      const foundCategory = data.categories.find(c => c.slug === categorySlug);
+      if (!foundCategory) {
+        navigate('/404');
+        return;
       }
-    };
-    fetchCategoryProducts();
-    return () => {
-      cancelled = true;
-    };
-  }, [categoryType, listFilters]);
+
+      setCategory(foundCategory);
+      
+      // Get products for this category
+      const categoryProducts = data.organizedByCategories[categorySlug]?.products || [];
+      setProducts(categoryProducts);
+    } catch (error) {
+      console.error('Error fetching category data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAddToCart = (product) => {
     if (!isAuthenticated) {
-      toast.info('Please log in to add items to your cart');
+      navigate('/login');
       return;
     }
-    addToCart(product, 1, undefined, undefined);
+    addToCart(product);
   };
 
-  const handleAddToWishlist = async (product) => {
-    const result = await addToWishlist(product);
-    if (result.success) {
-      toast.success('Added to wishlist!');
-    } else {
-      toast.error(result.message || 'Failed to add to wishlist');
+  const handleProductClick = (productId) => {
+    navigate(`/product/${productId}`);
+  };
+
+  const sortProducts = (products) => {
+    const sorted = [...products];
+    switch (sortBy) {
+      case 'price-low':
+        return sorted.sort((a, b) => a.price - b.price);
+      case 'price-high':
+        return sorted.sort((a, b) => b.price - a.price);
+      case 'name':
+        return sorted.sort((a, b) => a.name.localeCompare(b.name));
+      default:
+        return sorted;
     }
   };
+
+  const filteredProducts = products.filter(product => {
+    if (filterBy === 'all') return true;
+    if (filterBy === 'new') return product.isNewArrival || product.newArrival;
+    if (filterBy === 'sale') return product.mrp && product.mrp > product.price;
+    return true;
+  });
+
+  const displayedProducts = sortProducts(filteredProducts);
 
   if (loading) {
     return (
-      <div className="category-page">
-        <div className="loading-spinner">
-          <div className="spinner"></div>
-          <p>Loading {currentCategory.name}...</p>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading category...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!category) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Category Not Found</h2>
+          <button
+            onClick={() => navigate('/')}
+            className="bg-black text-white px-6 py-3 rounded-md hover:bg-gray-800 transition-colors"
+          >
+            Back to Home
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="category-page">
+    <div className="min-h-screen bg-white">
       {/* Category Header */}
-      <div className="category-header">
-        <div className="category-hero">
-          <div className="category-content">
-            <span className="category-icon">{currentCategory.icon}</span>
-            <h1>{currentCategory.name}</h1>
-            <p>{currentCategory.description}</p>
-            <div className="category-features">
-              {currentCategory.features.map((feature, index) => (
-                <span key={index} className="feature-tag">{feature}</span>
-              ))}
-            </div>
+      <div className="relative h-[300px] w-full overflow-hidden">
+        <img
+          src={category.image}
+          alt={category.name}
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-black bg-opacity-40"></div>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center text-white px-4">
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">{category.name}</h1>
+            <p className="text-xl md:text-2xl">{category.description}</p>
           </div>
         </div>
       </div>
 
-      <div className="category-container category-container--filters-only">
-        <GlobalProductFilters hideCategory onApply={setListFilters} />
-
-        <div className="products-content">
-          <div className="products-header">
-            <h2>{products.length} Products Found</h2>
+      {/* Filters and Sort */}
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">
+              {displayedProducts.length} Products
+            </h2>
+            <p className="text-gray-600">From {category.name}</p>
           </div>
+          
+          <div className="flex flex-col sm:flex-row gap-4">
+            <select
+              value={filterBy}
+              onChange={(e) => setFilterBy(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
+            >
+              <option value="all">All Products</option>
+              <option value="new">New Arrivals</option>
+              <option value="sale">On Sale</option>
+            </select>
+            
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
+            >
+              <option value="name">Sort by Name</option>
+              <option value="price-low">Price: Low to High</option>
+              <option value="price-high">Price: High to Low</option>
+            </select>
+          </div>
+        </div>
 
-          <div className="products-grid">
-            {products.map((product) => (
-              <ProductCard
-                key={product._id}
-                product={product}
-                onAddToCart={() => handleAddToCart(product)}
-                onQuickView={() => navigate(`/product/${product._id}`)}
-                onAddToWishlist={handleAddToWishlist}
-              />
+        {/* Products Grid */}
+        {displayedProducts.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {displayedProducts.map((product) => (
+              <div key={product._id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden group">
+                <div className="aspect-[3/4] overflow-hidden cursor-pointer" onClick={() => handleProductClick(product._id)}>
+                  <div className="relative">
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                    {(product.isNewArrival || product.newArrival) && (
+                      <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 text-xs font-medium rounded">
+                        NEW
+                      </div>
+                    )}
+                    {product.mrp && product.mrp > product.price && (
+                      <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 text-xs font-medium rounded">
+                        {Math.round(((product.mrp - product.price) / product.mrp) * 100)}% OFF
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="p-4">
+                  <h3 className="font-medium text-gray-900 mb-2">{product.name}</h3>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-lg font-bold text-gray-900">₹{product.price}</span>
+                      {product.mrp && (
+                        <span className="text-sm text-gray-500 line-through ml-2">₹{product.mrp}</span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleAddToCart(product)}
+                      className="bg-black text-white px-3 py-1 text-sm hover:bg-gray-800 transition-colors"
+                    >
+                      Add to Cart
+                    </button>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
-
-          {products.length === 0 && (
-            <div className="no-products">
-              <h3>No products found</h3>
-              <p>Try adjusting your filters or check back later</p>
+        ) : (
+          <div className="text-center py-16">
+            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.318 2.293M7 13l10 0m-10 0a2 2 0 00-2 2v0a2 2 0 002 2h0a2 2 0 002-2v0a2 2 0 00-2-2h0z" />
+              </svg>
             </div>
-          )}
-        </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No products found</h3>
+            <p className="text-gray-600 mb-6">Try adjusting your filters or check back later</p>
+            <button
+              onClick={() => navigate('/')}
+              className="bg-black text-white px-6 py-3 rounded-md hover:bg-gray-800 transition-colors"
+            >
+              Continue Shopping
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

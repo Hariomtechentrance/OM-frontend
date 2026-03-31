@@ -1,9 +1,24 @@
 /*
  * Black Locust Fashion E-commerce Platform
- * Main Stylesheet
+ * Premium White Theme Design System
  * 
- * This file contains global styles, animations, and utility classes
- * for the Black Locust fashion website.
+ * Hybrid design inspired by:
+ * - Luxury minimalism (House of Rare)
+ * - High conversion UX (Snitch) 
+ * - Structured clarity (Peter England)
+ * 
+ * Color Palette:
+ * - Background: #FFFFFF (white)
+ * - Surface: #FAFAFA
+ * - Primary Text: #111111
+ * - Secondary Text: #6B7280
+ * - Accent (Luxury Gold): #C19A6B
+ * - CTA Button: #000000 (white text)
+ * - Border: #E5E7EB
+ * 
+ * Typography:
+ * - Heading: Playfair Display (serif luxury)
+ * - Body: Inter
  * 
  * Author: Development Team
  * Created: 2024
@@ -24,30 +39,17 @@ html, body {
   width: 100%;
   height: 100%;
   overflow-x: hidden; /* Only prevent horizontal scroll */
-  overflow-y: auto; /* Allow vertical scrolling */
-  margin: 0;
-  padding: 0;
-}
-
-/* Additional overflow prevention */
-html {
-  overflow-x: hidden; /* Only prevent horizontal scroll */
-  overflow-y: auto; /* Allow vertical scrolling */
   scroll-behavior: smooth;
 }
 
 body {
   font-family: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
   line-height: 1.6;
-  color: #ffffff;
-  background-color: #000000;
+  color: #111111; /* Primary Text */
+  background-color: #FFFFFF; /* White Background */
   overflow-x: hidden; /* Only prevent horizontal scroll */
   overflow-y: auto; /* Allow vertical scrolling */
   min-height: 100vh;
-  position: relative;
-  font-size: 16px;
-  font-weight: 400;
-  text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   scroll-behavior: smooth;

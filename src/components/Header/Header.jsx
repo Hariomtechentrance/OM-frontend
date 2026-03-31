@@ -27,84 +27,112 @@ const Header = () => {
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-[1000] border-b border-white/10 bg-black/70 backdrop-blur-xl">
-        <div className="bl-container">
-          <div className="flex h-[76px] items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={toggleHamburger}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white transition duration-300 hover:bg-white/10"
-                aria-label="Open collections menu"
-              >
-                <FaBars />
-              </button>
+      {/* PETER ENGLAND STYLE HEADER */}
+      <header className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4">
+          {/* Top Bar */}
+          <div className="flex justify-between items-center py-2 text-xs text-gray-600 border-b border-gray-100">
+            <div className="flex items-center space-x-4">
+              <span>FREE SHIPPING</span>
+              <span className="border-l border-gray-300 pl-4">RETURN WITHIN 15 DAYS</span>
+              <span className="border-l border-gray-300 pl-4">EXPRESS DELIVERY IN STORE MODE</span>
+            </div>
+            <div className="flex items-center space-x-4">
+              <span>NEED HELP?</span>
+              <button onClick={() => navigate('/track-order')} className="hover:text-black">Track Order</button>
+              <button onClick={() => navigate('/profile')} className="hover:text-black">My Account</button>
+              <button onClick={() => navigate('/store-locator')} className="hover:text-black">Find a Store</button>
+            </div>
+          </div>
 
+          {/* Main Header */}
+          <div className="flex items-center justify-between py-4">
+            {/* Mobile Menu Button */}
+            <button
+              type="button"
+              onClick={toggleHamburger}
+              className="md:hidden p-2 text-gray-600 hover:text-black"
+              aria-label="Open menu"
+            >
+              <FaBars />
+            </button>
+
+            {/* Logo */}
+            <div className="flex-shrink-0">
               <Link to="/" className="flex items-center gap-2">
                 <img src={logo} alt="Blacklocust" className="h-8 w-auto" />
-                <span className="hidden text-[15px] font-semibold tracking-[0.18em] text-white/90 sm:inline">
-                  BLACKLOCUST
+                <span className="text-2xl font-bold text-black">
+                  BLACK LOCUST
                 </span>
               </Link>
             </div>
 
-            <nav className="hidden items-center gap-8 md:flex">
-              <Link to="/products" className="text-sm font-medium tracking-[0.14em] text-white/80 hover:text-white transition">
+            {/* Navigation - Desktop */}
+            <nav className="hidden lg:flex space-x-6">
+              <Link to="/products" className="text-sm font-medium text-gray-700 hover:text-black uppercase tracking-wide">
                 MEN
               </Link>
-              <Link to="/products" className="text-sm font-medium tracking-[0.14em] text-white/80 hover:text-white transition">
+              <Link to="/products" className="text-sm font-medium text-gray-700 hover:text-black uppercase tracking-wide">
                 KIDS
               </Link>
-              <Link to="/new-arrivals" className="text-sm font-medium tracking-[0.14em] text-white/80 hover:text-white transition">
-                NEW
+              <Link to="/new-arrivals" className="text-sm font-medium text-gray-700 hover:text-black uppercase tracking-wide">
+                NEW IN
               </Link>
-              <Link to="/products" className="text-sm font-medium tracking-[0.14em] text-white/80 hover:text-white transition">
+              <Link to="/products" className="text-sm font-medium text-red-600 hover:text-red-700 uppercase tracking-wide">
                 SALE
               </Link>
             </nav>
 
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
+            {/* Right Icons */}
+            <div className="flex items-center space-x-4">
+              <button 
                 onClick={() => navigate('/search')}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white transition duration-300 hover:bg-white/10"
+                className="p-2 text-gray-600 hover:text-black"
                 aria-label="Search"
               >
-                <FaSearch />
+                <FaSearch className="w-5 h-5" />
               </button>
-
-              <button
-                type="button"
-                onClick={() => navigate(isAuthenticated ? '/profile' : '/login')}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white transition duration-300 hover:bg-white/10"
-                aria-label="Profile"
+              
+              <button 
+                onClick={() => navigate('/wishlist')}
+                className="p-2 text-gray-600 hover:text-black"
+                aria-label="Wishlist"
               >
-                {isAuthenticated ? (
-                  <span className="text-sm font-semibold">{accountInitial || <FaUser />}</span>
-                ) : (
-                  <FaUser />
-                )}
+                <FaRegHeart className="w-5 h-5" />
               </button>
-
-              <button
-                type="button"
+              
+              <button 
                 onClick={() => navigate('/cart')}
-                className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white transition duration-300 hover:bg-white/10"
+                className="relative p-2 text-gray-600 hover:text-black"
                 aria-label="Cart"
               >
-                <FaShoppingBag />
+                <FaShoppingBag className="w-5 h-5" />
                 {totalItems > 0 && (
-                  <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-blacklocust-gold px-1 text-[11px] font-bold text-black">
+                  <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-black text-white text-xs font-bold">
                     {totalItems}
                   </span>
                 )}
               </button>
 
+              {/* User Account */}
+              <button
+                onClick={() => navigate(isAuthenticated ? '/profile' : '/login')}
+                className="p-2 text-gray-600 hover:text-black"
+                aria-label="Account"
+              >
+                {isAuthenticated ? (
+                  <span className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-bold text-gray-700">
+                    {accountInitial}
+                  </span>
+                ) : (
+                  <FaUser className="w-5 h-5" />
+                )}
+              </button>
+
               {isAuthenticated && (
                 <button
-                  type="button"
                   onClick={handleLogout}
-                  className="hidden rounded-full border border-white/15 bg-transparent px-4 py-2 text-xs font-semibold tracking-[0.14em] text-white/85 transition hover:border-blacklocust-gold hover:text-blacklocust-gold md:inline-flex"
+                  className="hidden md:block px-4 py-2 text-sm font-medium text-gray-700 hover:text-black border border-gray-300 rounded-md hover:border-black"
                 >
                   LOGOUT
                 </button>

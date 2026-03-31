@@ -1,56 +1,58 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
-import ProductCard from '../components/Products/ProductCard';
-import AuthModal from '../components/AuthModal/AuthModal';
-import Badge from '../components/ui/Badge';
-import Button from '../components/ui/Button';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import api from '../api/axios';
+import DataService from '../services/dataService';
 
 function HomePage() {
-  const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [showAuth, setShowAuth] = useState(false);
-  const [wishlist, setWishlist] = useState([]);
+  const [homepageData, setHomepageData] = useState({
+    products: [],
+    categories: [],
+    collections: [],
+    organizedByCategories: {},
+    organizedByCollections: {},
+    featuredProducts: [],
+    newArrivals: [],
+    trendingProducts: []
+  });
+  const [loading, setLoading] = useState(true);
   const [currentHeroSlide, setCurrentHeroSlide] = useState(0);
   
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const { addToCart } = useCart();
 
-  // Hero images array
+  // Hero images array (Peter England Style)
   const heroImages = useMemo(() => [
     {
       src: '/images/hero/15.jpg',
       alt: 'Black Locust Premium Fashion Collection 1',
-      title: 'Elevate Your Style',
-      subtitle: 'Discover our latest premium collection'
+      title: 'India\'s Most Trusted Fashion Destination',
+      subtitle: 'Discover premium quality clothing for men and kids'
     },
     {
       src: '/images/hero/16.jpg',
       alt: 'Black Locust Premium Fashion Collection 2',
-      title: 'Timeless Elegance',
-      subtitle: 'Classic designs with modern sophistication'
+      title: 'Unmatched Value Proposition',
+      subtitle: 'International fashion standards at affordable prices'
     },
     {
       src: '/images/hero/17.jpg',
       alt: 'Black Locust Premium Fashion Collection 3',
-      title: 'Premium Quality',
-      subtitle: 'Crafted with attention to every detail'
+      title: 'Crafted for Excellence',
+      subtitle: 'Premium fabrics tailored to perfection'
     },
     {
       src: '/images/hero/18.jpg',
       alt: 'Black Locust Premium Fashion Collection 4',
-      title: 'Modern Luxury',
-      subtitle: 'Contemporary style meets comfort'
+      title: 'Effortless Style',
+      subtitle: 'Casual and formal outfits for every occasion'
     },
     {
       src: '/images/hero/19.jpg',
       alt: 'Black Locust Premium Fashion Collection 5',
-      title: 'Sophisticated Design',
-      subtitle: 'Where fashion meets functionality'
+      title: 'Timeless Fashion',
+      subtitle: 'Trendsetting clothing that lasts'
     }
   ], []);
 
@@ -58,7 +60,7 @@ function HomePage() {
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentHeroSlide((prev) => (prev + 1) % heroImages.length);
-    }, 5000); // Change slide every 5 seconds
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [heroImages.length]);
@@ -76,382 +78,502 @@ function HomePage() {
     setCurrentHeroSlide((prev) => (prev - 1 + heroImages.length) % heroImages.length);
   };
 
-  // Initialize products and categories on mount
+  // Fetch homepage data
   useEffect(() => {
-    fetchProducts();
-    fetchCategories();
+    fetchHomepageData();
   }, []);
 
-  // Fetch products from API
-  const fetchProducts = async () => {
+  const fetchHomepageData = async () => {
     try {
-      const response = await api.get('/products');
-      const data = response.data;
-
-      if (data.success) {
-        setProducts(data.products || []);
-      }
-    } catch (err) {
-      console.log(err);
+      setLoading(true);
+      const data = await DataService.getHomepageData();
+      setHomepageData(data);
+    } catch (error) {
+      console.error('Error fetching homepage data:', error);
+    } finally {
+      setLoading(false);
     }
   };
-
-  // Set default categories (removed API call to avoid 404 error)
-  const fetchCategories = async () => {
-    setCategories([
-      {
-        _id: '1',
-        name: 'Men\'s Collection',
-        slug: 'mens-collection',
-        description: 'Refined elegance meets contemporary style',
-        image: 'https://images.unsplash.com/photo-1490114538077-0a7f8cb49891?w=800&q=80',
-        order: 0,
-        isActive: true,
-        featured: true,
-        type: 'category'
-      },
-      {
-        _id: '2',
-        name: 'Kids Collection',
-        slug: 'kids-collection',
-        description: 'Adventure-ready style for young minds',
-        image: 'https://images.unsplash.com/photo-1503944583220-79d8926ad5e2?w=800&q=80',
-        order: 1,
-        isActive: true,
-        featured: true,
-        type: 'category'
-      }
-    ]);
-  };
-
-  // Handle add to cart with auth check
-  const handleAddToCart = (product) => {
-    if (!isAuthenticated) {
-      setShowAuth(true);
-      return;
-    }
-    addToCart(product);
-    toast.success(`${product.name} added to cart!`);
-  };
-
-  // Handle wishlist
-  const handleToggleWishlist = (product) => {
-    if (!isAuthenticated) {
-      setShowAuth(true);
-      return;
-    }
-    
-    const isInWishlist = wishlist.some(item => item._id === product._id);
-    
-    if (isInWishlist) {
-      setWishlist(wishlist.filter(item => item._id !== product._id));
-      toast.success('Removed from wishlist');
-    } else {
-      setWishlist([...wishlist, product]);
-      toast.success('Added to wishlist');
-    }
-  };
-
-  const newArrivals = useMemo(
-    () => products.filter((p) => p.isNewArrival).slice(0, 8),
-    [products]
-  );
-  const trending = useMemo(
-    () => products.filter((p) => p.isTrending).slice(0, 8),
-    [products]
-  );
 
   const currentHeroImage = heroImages[currentHeroSlide];
 
+  const handleAddToCart = (product) => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    addToCart(product);
+  };
+
+  const handleProductClick = (productId) => {
+    navigate(`/product/${productId}`);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading amazing products...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="pt-[76px]">
-      {/* HERO CAROUSEL */}
+    <div className="min-h-screen bg-white">
+      {/* HERO SECTION - Peter England Style */}
       <section className="relative">
-        <div className="relative h-[560px] w-full overflow-hidden md:h-[640px]">
+        <div className="relative h-[600px] w-full overflow-hidden">
           {/* Hero Image */}
           <img
             src={currentHeroImage.src}
             alt={currentHeroImage.alt}
-            className="absolute inset-0 h-full w-full object-cover transition-opacity duration-1000"
-            loading="eager"
+            className="w-full h-full object-cover"
           />
           
-          {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/35 to-black" />
+          {/* Overlay */}
+          <div className="absolute inset-0 bg-black bg-opacity-30"></div>
           
-          {/* Content Overlay */}
-          <div className="absolute inset-0">
-            <div className="bl-container h-full">
-              <div className="flex h-full max-w-2xl flex-col justify-center">
-                <Badge tone="neutral" className="w-fit border-white/15">
-                  PREMIUM MEN & KIDS
-                </Badge>
-                <h1 className="mt-4 font-heading text-4xl font-bold leading-tight tracking-tight text-white md:text-5xl">
-                  {currentHeroImage.title}
-                </h1>
-                <p className="mt-4 max-w-xl text-base leading-7 text-white/75 md:text-lg">
-                  {currentHeroImage.subtitle}
-                </p>
-                <div className="mt-8 flex flex-wrap items-center gap-3">
-                  <Button onClick={() => navigate('/products')} variant="primary">
-                    SHOP NOW
-                  </Button>
-                  <Button onClick={() => navigate('/new-arrivals')} variant="outline">
-                    NEW ARRIVALS
-                  </Button>
-                </div>
-                <div className="mt-10 flex items-center gap-6 text-xs font-semibold tracking-[0.18em] text-white/60">
-                  <span>FREE SHIPPING*</span>
-                  <span className="h-1 w-1 rounded-full bg-white/30" />
-                  <span>EASY RETURNS</span>
-                  <span className="h-1 w-1 rounded-full bg-white/30" />
-                  <span>SECURE PAYMENTS</span>
-                </div>
-              </div>
+          {/* Hero Content */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center text-white px-4">
+              <h1 className="text-5xl md:text-6xl font-bold mb-4">{currentHeroImage.title}</h1>
+              <p className="text-xl md:text-2xl mb-8">{currentHeroImage.subtitle}</p>
+              <Link
+                to="/products"
+                className="bg-white text-black px-8 py-3 rounded-md font-medium hover:bg-gray-100 transition-colors inline-block"
+              >
+                SHOP NOW
+              </Link>
             </div>
           </div>
 
-          {/* Carousel Navigation */}
-          {/* Previous Button */}
+          {/* Slide Navigation */}
           <button
             onClick={prevSlide}
-            className="absolute left-4 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm text-white transition hover:bg-white/30 md:left-6"
-            aria-label="Previous slide"
+            className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 hover:bg-opacity-100 rounded-full p-2 transition-all"
           >
-            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-
-          {/* Next Button */}
           <button
             onClick={nextSlide}
-            className="absolute right-4 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm text-white transition hover:bg-white/30 md:right-6"
-            aria-label="Next slide"
+            className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 hover:bg-opacity-100 rounded-full p-2 transition-all"
           >
-            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
 
           {/* Slide Indicators */}
-          <div className="absolute bottom-6 left-1/2 flex -translate-x-1/2 space-x-2">
+          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
             {heroImages.map((_, index) => (
               <button
                 key={index}
                 onClick={() => goToSlide(index)}
-                className={`h-2 w-2 rounded-full transition-all md:h-3 md:w-3 ${
-                  index === currentHeroSlide
-                    ? 'bg-white w-8'
-                    : 'bg-white/50 hover:bg-white/75'
+                className={`w-3 h-3 rounded-full transition-all ${
+                  index === currentHeroSlide ? 'bg-white' : 'bg-white bg-opacity-50'
                 }`}
-                aria-label={`Go to slide ${index + 1}`}
               />
             ))}
           </div>
         </div>
       </section>
 
-      {/* CATEGORIES */}
-      <section className="bl-section">
-        <div className="bl-container">
-          <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-end">
-            <div>
-              <h2 className="font-heading text-3xl font-semibold text-white md:text-4xl">Shop Collections</h2>
-              <p className="mt-2 text-sm text-white/60">Curated edits for every style and occasion.</p>
-            </div>
-            <Link className="bl-link text-sm font-semibold tracking-[0.14em]" to="/collections">
-              VIEW ALL
-            </Link>
-          </div>
-
-          <div className="mt-8 grid gap-6 md:grid-cols-2">
-            {categories.slice(0, 2).map((category) => (
+      {/* MEN'S CATEGORY SECTION */}
+      <section className="bg-gray-50 py-16">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Left Content - Text */}
+            <div className="flex flex-col justify-center">
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Men's Collection</h2>
+              <p className="text-lg text-gray-600 mb-6">Discover our latest men's fashion collection featuring premium quality shirts, pants, and more. Designed for the modern man who values style and comfort.</p>
               <Link
-                key={category._id}
-                to="/products"
-                className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-luxe transition duration-300 ease-out hover:scale-[1.02]"
+                to="/category/men"
+                className="inline-flex items-center bg-black text-white px-8 py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors duration-200"
               >
-                <div className="absolute inset-0">
-                  <img
-                    src={category.image}
-                    alt={category.name}
-                    className="h-full w-full object-cover transition duration-300 ease-out group-hover:scale-105"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/30" />
-                </div>
-                <div className="relative p-6 md:p-8">
-                  <div className="flex items-center gap-2">
-                    <Badge tone="neutral" className="border-white/20">
-                      {category.name.toUpperCase().includes('KID') ? 'KIDS' : 'MEN'}
-                    </Badge>
-                    <Badge tone="sale" className="opacity-95">
-                      NEW DROP
-                    </Badge>
-                  </div>
-                  <h3 className="mt-4 font-heading text-2xl font-semibold text-white md:text-3xl">
-                    {category.name}
-                  </h3>
-                  <p className="mt-2 max-w-md text-sm text-white/70">{category.description}</p>
-                  <div className="mt-6">
-                    <span className="inline-flex items-center gap-2 text-sm font-semibold tracking-[0.14em] text-blacklocust-gold">
-                      SHOP NOW <span className="transition group-hover:translate-x-1">→</span>
-                    </span>
-                  </div>
-                </div>
+                Shop Men
+                <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5-5m5 5v6m-5-6h6" />
+                </svg>
               </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* NEW ARRIVALS */}
-      <section className="bl-section pt-0">
-        <div className="bl-container">
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <h2 className="font-heading text-3xl font-semibold text-white md:text-4xl">New Arrivals</h2>
-              <p className="mt-2 text-sm text-white/60">Fresh edits. Premium finish.</p>
             </div>
-            <Link className="bl-link text-sm font-semibold tracking-[0.14em]" to="/new-arrivals">
-              VIEW ALL
-            </Link>
-          </div>
-
-          <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {(newArrivals.length ? newArrivals : products.slice(0, 8)).map((product) => (
-              <ProductCard
-                key={product._id || product.id}
-                product={product}
-                onAddToCart={() => handleAddToCart(product)}
-                onQuickView={() => navigate(`/product/${product._id || product.id}`)}
-                onAddToWishlist={() => handleToggleWishlist(product)}
+            
+            {/* Right Content - Image */}
+            <div className="relative overflow-hidden rounded-lg shadow-lg">
+              <img
+                src="https://images.unsplash.com/photo-1617137968032-f6e7b6d5e9a?w=600&q=80"
+                alt="Men's Collection"
+                className="w-full h-full object-cover"
               />
-            ))}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-40"></div>
+              <div className="absolute bottom-6 left-6 text-white">
+                <h3 className="text-2xl font-bold mb-2">Premium Men's Wear</h3>
+                <p className="text-gray-200">From casual to formal</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* TRENDING TAGS */}
-      <section className="bl-section pt-0">
-        <div className="bl-container">
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 md:p-8">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h2 className="font-heading text-2xl font-semibold text-white md:text-3xl">Trending Now</h2>
-                <p className="mt-2 text-sm text-white/60">Quick picks designed for conversion.</p>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={() => navigate('/products')}
-                  className="rounded-full border border-white/15 bg-transparent px-5 py-2 text-xs font-semibold tracking-[0.16em] text-white/80 transition hover:border-blacklocust-gold hover:text-blacklocust-gold"
-                >
-                  BEST SELLER
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigate('/products')}
-                  className="rounded-full border border-white/15 bg-transparent px-5 py-2 text-xs font-semibold tracking-[0.16em] text-white/80 transition hover:border-blacklocust-gold hover:text-blacklocust-gold"
-                >
-                  UNDER ₹999
-                </button>
+      {/* KIDS' CATEGORY SECTION */}
+      <section className="bg-white py-16">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Left Content - Image */}
+            <div className="relative overflow-hidden rounded-lg shadow-lg">
+              <img
+                src="https://images.unsplash.com/photo-1509631179647-0177331693ae?w=600&q=80"
+                alt="Kids' Collection"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-40"></div>
+              <div className="absolute bottom-6 left-6 text-white">
+                <h3 className="text-2xl font-bold mb-2">Kids Collection</h3>
+                <p className="text-gray-200">Fun & comfortable styles</p>
               </div>
             </div>
-            {trending.length > 0 && (
-              <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                {trending.slice(0, 4).map((product) => (
-                  <ProductCard
-                    key={product._id || product.id}
-                    product={product}
-                    onAddToCart={() => handleAddToCart(product)}
-                    onQuickView={() => navigate(`/product/${product._id || product.id}`)}
-                    onAddToWishlist={() => handleToggleWishlist(product)}
+            
+            {/* Right Content - Text */}
+            <div className="flex flex-col justify-center">
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Kids' Collection</h2>
+              <p className="text-lg text-gray-600 mb-6">Explore our vibrant kids' collection with comfortable and stylish outfits for every occasion. From playful casual wear to elegant party outfits, we have it all.</p>
+              <Link
+                to="/category/kids"
+                className="inline-flex items-center bg-black text-white px-8 py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors duration-200"
+              >
+                Shop Kids
+                <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5-5m5 5v6m-5-6h6" />
+                </svg>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* COLLECTIONS SECTION */}
+      {homepageData.collections.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 py-16">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Shop by Collection</h2>
+            <p className="text-lg text-gray-600">Curated collections for every occasion</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {homepageData.collections.map((collection) => (
+              <div key={collection._id} className="group relative overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-all duration-300">
+                <div className="aspect-[4/5] overflow-hidden">
+                  <img
+                    src={collection.image}
+                    alt={collection.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60"></div>
+                <div className="absolute bottom-0 left-0 right-0 p-6">
+                  <h3 className="text-2xl font-bold text-white mb-2">{collection.name}</h3>
+                  <p className="text-gray-200 mb-4">{collection.description}</p>
+                  <Link
+                    to={`/collection/${collection.slug}`}
+                    className="bg-white text-black px-6 py-2 rounded-md font-medium hover:bg-gray-100 transition-colors inline-block"
+                  >
+                    EXPLORE
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* CATEGORIES SECTION */}
+      {homepageData.categories.length > 0 && (
+        <section className="bg-gray-50 py-16">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Shop by Category</h2>
+              <p className="text-lg text-gray-600">Find exactly what you're looking for</p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {homepageData.categories.map((category) => (
+                <div key={category._id} className="group relative overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-all duration-300">
+                  <div className="aspect-[3/2] overflow-hidden">
+                    <img
+                      src={category.image}
+                      alt={category.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60"></div>
+                  <div className="absolute bottom-0 left-0 right-0 p-6">
+                    <h3 className="text-2xl font-bold text-white mb-2">{category.name}</h3>
+                    <p className="text-gray-200 mb-4">{category.description}</p>
+                    <Link
+                      to={`/category/${category.slug}`}
+                      className="bg-white text-black px-6 py-2 rounded-md font-medium hover:bg-gray-100 transition-colors inline-block"
+                    >
+                      SHOP NOW
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* FEATURED PRODUCTS SECTION */}
+      {homepageData.featuredProducts.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 py-16">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Featured Products</h2>
+            <p className="text-lg text-gray-600">Handpicked favorites from our collection</p>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {homepageData.featuredProducts.map((product) => (
+              <div key={product._id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden group">
+                <div className="aspect-[3/4] overflow-hidden cursor-pointer" onClick={() => handleProductClick(product._id)}>
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                </div>
+                <div className="p-4">
+                  <h3 className="font-medium text-gray-900 mb-2">{product.name}</h3>
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg font-bold text-gray-900">₹{product.price}</span>
+                    <button
+                      onClick={() => handleAddToCart(product)}
+                      className="bg-black text-white px-3 py-1 text-sm hover:bg-gray-800 transition-colors"
+                    >
+                      Add to Cart
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* NEW ARRIVALS SECTION */}
+      {homepageData.newArrivals.length > 0 && (
+        <section className="bg-gray-50 py-16">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">New Arrivals</h2>
+              <p className="text-lg text-gray-600">Fresh styles just landed</p>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {homepageData.newArrivals.map((product) => (
+                <div key={product._id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden group">
+                  <div className="aspect-[3/4] overflow-hidden cursor-pointer" onClick={() => handleProductClick(product._id)}>
+                    <div className="relative">
+                      <img
+                        src={product.image}
+                        alt={product.name}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                      <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 text-xs font-medium rounded">
+                        NEW
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-medium text-gray-900 mb-2">{product.name}</h3>
+                    <div className="flex items-center justify-between">
+                      <span className="text-lg font-bold text-gray-900">₹{product.price}</span>
+                      <button
+                        onClick={() => handleAddToCart(product)}
+                        className="bg-black text-white px-3 py-1 text-sm hover:bg-gray-800 transition-colors"
+                      >
+                        Add to Cart
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* VIEW ALL PRODUCTS BUTTON */}
+      <section className="bg-white py-8">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <Link
+            to="/shop"
+            className="inline-flex items-center justify-center bg-black text-white px-8 py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            View All Products
+          </Link>
+        </div>
+      </section>
+
+      {/* COLLECTIONS WITH PRODUCTS SECTION */}
+      {Object.entries(homepageData.organizedByCollections).map(([slug, data]) => (
+        data.products.length > 0 && (
+          <section key={slug} className="max-w-7xl mx-auto px-4 py-16">
+            <div className="flex items-center justify-between mb-12">
+              <div>
+                <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">{data.collection.name}</h2>
+                <p className="text-lg text-gray-600">{data.collection.description}</p>
+              </div>
+              <Link
+                to={`/collection/${slug}`}
+                className="bg-black text-white px-6 py-3 rounded-md font-medium hover:bg-gray-800 transition-colors"
+              >
+                VIEW ALL
+              </Link>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {data.products.slice(0, 8).map((product) => (
+                <div key={product._id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden group">
+                  <div className="aspect-[3/4] overflow-hidden cursor-pointer" onClick={() => handleProductClick(product._id)}>
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-medium text-gray-900 mb-2">{product.name}</h3>
+                    <div className="flex items-center justify-between">
+                      <span className="text-lg font-bold text-gray-900">₹{product.price}</span>
+                      <button
+                        onClick={() => handleAddToCart(product)}
+                        className="bg-black text-white px-3 py-1 text-sm hover:bg-gray-800 transition-colors"
+                      >
+                        Add to Cart
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )
+      ))}
+
+      {/* CATEGORIES WITH PRODUCTS SECTION */}
+      {Object.entries(homepageData.organizedByCategories).map(([slug, data]) => (
+        data.products.length > 0 && (
+          <section key={slug} className="bg-gray-50 py-16">
+            <div className="max-w-7xl mx-auto px-4">
+              <div className="flex items-center justify-between mb-12">
+                <div>
+                  <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">{data.category.name}</h2>
+                  <p className="text-lg text-gray-600">{data.category.description}</p>
+                </div>
+                <Link
+                  to={`/category/${slug}`}
+                  className="bg-black text-white px-6 py-3 rounded-md font-medium hover:bg-gray-800 transition-colors"
+                >
+                  VIEW ALL
+                </Link>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {data.products.slice(0, 8).map((product) => (
+                  <div key={product._id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden group">
+                    <div className="aspect-[3/4] overflow-hidden cursor-pointer" onClick={() => handleProductClick(product._id)}>
+                      <img
+                        src={product.image}
+                        alt={product.name}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-medium text-gray-900 mb-2">{product.name}</h3>
+                      <div className="flex items-center justify-between">
+                        <span className="text-lg font-bold text-gray-900">₹{product.price}</span>
+                        <button
+                          onClick={() => handleAddToCart(product)}
+                          className="bg-black text-white px-3 py-1 text-sm hover:bg-gray-800 transition-colors"
+                        >
+                          Add to Cart
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* BRAND STORY */}
-      <section className="bl-section pt-0">
-        <div className="bl-container">
-          <div className="grid gap-8 rounded-2xl border border-white/10 bg-white/5 p-6 md:grid-cols-2 md:p-10">
-            <div className="relative overflow-hidden rounded-2xl">
-              <img
-                src="https://images.unsplash.com/photo-1520975916090-3105956dac38?w=1600&q=80&auto=format&fit=crop"
-                alt="Brand story"
-                className="h-full w-full object-cover"
-                loading="lazy"
-              />
             </div>
-            <div className="flex flex-col justify-center">
-              <Badge tone="neutral" className="w-fit border-white/15">
-                OUR STORY
-              </Badge>
-              <h2 className="mt-4 font-heading text-3xl font-semibold text-white md:text-4xl">
-                Made for a premium global wardrobe.
-              </h2>
-              <p className="mt-4 text-sm leading-7 text-white/65">
-                Blacklocust is built on luxury minimalism—clean silhouettes, elevated fabrics, and a fit-first approach.
-                Every detail is designed to feel expensive and effortless.
-              </p>
-              <div className="mt-6">
-                <Button as={Link} to="/about" variant="outline">
-                  READ MORE
-                </Button>
+          </section>
+        )
+      ))}
+
+      {/* TRUST SECTION */}
+      <section className="bg-black text-white py-16">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Why Shop With Us</h2>
+            <p className="text-lg text-gray-300">Experience the Black Locust difference</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8-4m8-4l8 4m0-10l-8 4m8 4l8 4m0-10v10" />
+                </svg>
               </div>
+              <h3 className="text-xl font-bold mb-2">Free Shipping</h3>
+              <p className="text-gray-300">On orders above ₹999</p>
+            </div>
+            
+            <div className="text-center">
+              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 15v-1a4 4 0 00-4-4H8m0 0l4 4m-4-4v4m0 0V8a4 4 0 014-4h4a4 4 0 014 4v0" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold mb-2">15 Days Return</h3>
+              <p className="text-gray-300">Easy returns and exchanges</p>
+            </div>
+            
+            <div className="text-center">
+              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold mb-2">Secure Payment</h3>
+              <p className="text-gray-300">100% secure transactions</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* TESTIMONIALS */}
-      <section className="bl-section pt-0">
-        <div className="bl-container">
-          <div>
-            <h2 className="font-heading text-3xl font-semibold text-white md:text-4xl">Loved by Customers</h2>
-            <p className="mt-2 text-sm text-white/60">High trust, high conversion.</p>
-          </div>
-
-          <div className="mt-8 grid gap-6 md:grid-cols-3">
-            {[
-              { name: 'Aman', text: 'Premium feel and perfect fit. Packaging looked luxury.' },
-              { name: 'Rohit', text: 'Fast delivery. The fabric quality is way above the price.' },
-              { name: 'Neha', text: 'Bought kids sets—super comfortable and stylish.' },
-            ].map((t) => (
-              <div
-                key={t.name}
-                className="rounded-2xl border border-white/10 bg-white/5 p-6 transition duration-300 hover:translate-y-[-2px]"
-              >
-                <div className="flex items-center gap-1 text-blacklocust-gold">
-                  {'★★★★★'.split('').map((s, i) => (
-                    <span key={i} className="text-sm">
-                      {s}
-                    </span>
-                  ))}
-                </div>
-                <p className="mt-4 text-sm leading-7 text-white/70">“{t.text}”</p>
-                <div className="mt-6 text-xs font-semibold tracking-[0.18em] text-white/60">
-                  {t.name.toUpperCase()}
-                </div>
-              </div>
-            ))}
+      {/* NEWSLETTER SECTION */}
+      <section className="bg-gray-50 py-16">
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Stay in Style</h2>
+          <p className="text-lg text-gray-600 mb-8">Subscribe to our newsletter for exclusive offers and new arrivals</p>
+          
+          <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+            <input
+              type="email"
+              placeholder="Enter your email"
+              className="flex-1 px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+            />
+            <button className="bg-black text-white px-6 py-3 rounded-md font-medium hover:bg-gray-800 transition-colors">
+              SUBSCRIBE
+            </button>
           </div>
         </div>
       </section>
-
-      {showAuth && (
-        <AuthModal
-          isOpen={showAuth}
-          onClose={() => setShowAuth(false)}
-          onLogin={() => navigate('/login')}
-          onRegister={() => navigate('/register')}
-        />
-      )}
     </div>
   );
 }
