@@ -1,9 +1,36 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import api from '../api/axios';
+
+// ─── Unsplash fallback per category (never 404) ─────────────────────────────
+const IMG_FALLBACK = {
+  men:     'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=600&auto=format&fit=crop',
+  kids:    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&auto=format&fit=crop',
+  default: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=600&auto=format&fit=crop',
+};
+
+// Safe image component — swaps to fallback silently on any error
+const SafeImg = ({ src, alt, className, fallback, onClick }) => {
+  const [errored, setErrored] = useState(false);
+  
+  // Ensure src is a string before calling .includes()
+  const srcString = typeof src === 'string' ? src : '';
+  const resolvedSrc = (errored || !srcString || srcString.includes('placeholder')) ? fallback : srcString;
+  
+  return (
+    <img
+      src={resolvedSrc}
+      alt={alt}
+      className={className}
+      onClick={onClick}
+      onError={() => setErrored(true)}
+      loading="lazy"
+    />
+  );
+};
 
 function ProductDetailPage() {
   const { id } = useParams();
@@ -12,6 +39,7 @@ function ProductDetailPage() {
   const { addToCart } = useCart();
 
   const [product, setProduct] = useState(null);
+  const [relatedProducts, setRelatedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
@@ -19,16 +47,65 @@ function ProductDetailPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
-  useEffect(() => {
-    fetchProduct();
-  }, [id]);
-
-  const fetchProduct = async () => {
+  const fetchProduct = useCallback(async () => {
     try {
       setLoading(true);
       const response = await api.get(`/products/${id}`);
       if (response.data.success) {
         setProduct(response.data.product);
+        
+        // Fetch related products (same category or collection)
+        try {
+          const allProductsResponse = await api.get('/products');
+          if (allProductsResponse.data.success) {
+            const allProducts = allProductsResponse.data.products || [];
+            const currentProduct = response.data.product;
+            
+            // Filter related products (same category, collection, or exclude current product)
+            let related = allProducts.filter(p => {
+              // Exclude current product
+              if (p._id === currentProduct._id) return false;
+              
+              // Check if same collection (most products have collections)
+              if (currentProduct.collection && p.collection) {
+                if (typeof currentProduct.collection === 'object' && typeof p.collection === 'object') {
+                  if (currentProduct.collection._id === p.collection._id) return true;
+                }
+              }
+              
+              // Check if same category (some products have categories)
+              if (currentProduct.category && p.category) {
+                if (typeof currentProduct.category === 'object' && typeof p.category === 'object') {
+                  if (currentProduct.category._id === p.category._id) return true;
+                }
+                if (typeof currentProduct.category === 'string' && typeof p.category === 'string') {
+                  if (currentProduct.category === p.category) return true;
+                }
+              }
+              
+              return false;
+            });
+            
+            // Debug logging
+            console.log('Current product:', currentProduct.name, 'Collection:', currentProduct.collection?.name, 'Category:', currentProduct.category?.name);
+            console.log('Found related products:', related.length);
+            
+            // If no related products found, show some random products as fallback
+            if (related.length === 0) {
+              console.log('No related products found, using random fallback');
+              const otherProducts = allProducts.filter(p => p._id !== currentProduct._id);
+              // Shuffle and take first 4
+              related = otherProducts.sort(() => 0.5 - Math.random()).slice(0, 4);
+            }
+            
+            // Take first 4 related products
+            setRelatedProducts(related.slice(0, 4));
+          }
+        } catch (error) {
+          console.error('Error fetching related products:', error);
+          // If error, set empty array
+          setRelatedProducts([]);
+        }
       }
     } catch (error) {
       console.error('Error fetching product:', error);
@@ -36,6 +113,53 @@ function ProductDetailPage() {
     } finally {
       setLoading(false);
     }
+  }, [id]);
+
+  useEffect(() => {
+    fetchProduct();
+  }, [fetchProduct]);
+
+  // ─── Helper to get product image ───────────────────────────────────────────────
+  const getProductImage = (product) => {
+    if (product.images && product.images.length > 0) {
+      const img = product.images[0];
+      return typeof img === 'string' ? img : img.url;
+    }
+    return product.image || product.imageUrl || IMG_FALLBACK.default;
+  };
+
+  // ─── Helper to handle related product click ───────────────────────────────────────
+  const handleRelatedProductClick = (productId) => {
+    navigate(`/product/${productId}`);
+  };
+  const getProductImages = (product) => {
+    const images = [];
+    
+    // Try different image properties and ensure they're strings
+    if (product.images && Array.isArray(product.images)) {
+      product.images.forEach((img, index) => {
+        if (index < 4) { // Only get first 4 images
+          const imgSrc = typeof img === 'string' ? img : 
+                         (img && typeof img.url === 'string') ? img.url : 
+                         null;
+          if (imgSrc) images.push(imgSrc);
+        }
+      });
+    } else {
+      // Fallback to single image properties
+      const singleImage = product.image || product.imageUrl || null;
+      if (singleImage && typeof singleImage === 'string') {
+        images.push(singleImage);
+      }
+    }
+  
+    // Ensure we have exactly 4 images by duplicating if needed
+    while (images.length < 4) {
+      const lastImage = images[images.length - 1] || IMG_FALLBACK[product.category] || IMG_FALLBACK.default;
+      images.push(lastImage);
+    }
+    
+    return images;
   };
 
   const handleAddToCart = () => {
@@ -109,23 +233,24 @@ function ProductDetailPage() {
     );
   }
 
-  const productImages = product.images && product.images.length > 0 
-    ? product.images 
-    : [product.image];
+  const productImages = getProductImages(product);
+  const fallback = IMG_FALLBACK[product.category] || IMG_FALLBACK.default;
 
   return (
     <div className="min-h-screen bg-white">
       {/* Breadcrumb */}
       <div className="max-w-7xl mx-auto px-4 py-4">
-        <nav className="flex text-sm text-gray-600">
+        <nav className="breadcrumb">
           <button onClick={() => navigate('/')} className="hover:text-black">Home</button>
-          <span className="mx-2">/</span>
+          <span className="separator">/</span>
           <button onClick={() => navigate('/products')} className="hover:text-black">Products</button>
-          <span className="mx-2">/</span>
-          <span className="text-black font-medium">{product.name}</span>
+          <span className="separator">/</span>
+          <span className="current" title={product.name}>
+            {product.name.length > 30 ? product.name.substring(0, 30) + '...' : product.name}
+          </span>
         </nav>
       </div>
-
+      
       {/* Product Detail Section */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
@@ -133,33 +258,45 @@ function ProductDetailPage() {
           <div className="space-y-4">
             {/* Main Image */}
             <div className="aspect-[3/4] overflow-hidden bg-gray-50 rounded-lg">
-              <img
-                src={productImages[currentImageIndex]?.url || "/images/placeholder.jpg"}
+              <SafeImg
+                src={productImages[currentImageIndex]}
                 alt={product.name}
                 className="w-full h-full object-cover"
+                fallback={fallback}
               />
             </div>
-
-            {/* Thumbnail Images */}
-            {productImages.length > 1 && (
-              <div className="flex space-x-2">
-                {productImages.map((image, index) => (
-                  <button
+            
+            {/* 4 Small Images Grid - Always show */}
+            <div className="bg-gray-50 p-2">
+              <div className="grid grid-cols-4 gap-1">
+                {productImages.slice(0, 4).map((image, index) => (
+                  <div
                     key={index}
-                    onClick={() => setCurrentImageIndex(index)}
-                    className={`flex-shrink-0 w-20 h-20 overflow-hidden rounded-md border-2 ${
-                      index === currentImageIndex ? 'border-black' : 'border-gray-200'
+                    className={`aspect-square cursor-pointer border-2 transition-all duration-200 relative ${
+                      currentImageIndex === index 
+                        ? 'border-black scale-105' 
+                        : 'border-gray-200 hover:border-gray-400'
                     }`}
+                    onClick={(e) => {
+                      setCurrentImageIndex(index);
+                    }}
+                    title={`View image ${index + 1}`}
                   >
-                    <img
-                      src={image.url}
-                      alt={`${product.name} ${index + 1}`}
+                    <SafeImg
+                      src={image}
+                      alt={`${product.name} - Image ${index + 1}`}
                       className="w-full h-full object-cover"
+                      fallback={fallback}
                     />
-                  </button>
+                    {currentImageIndex === index && (
+                      <div className="absolute top-1 right-1 bg-black text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        {index + 1}
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
-            )}
+            </div>
           </div>
 
           {/* Product Information */}
@@ -325,28 +462,69 @@ function ProductDetailPage() {
       {/* Related Products */}
       <div className="max-w-7xl mx-auto px-4 py-12">
         <h2 className="text-2xl font-bold text-gray-900 mb-8">You May Also Like</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[1, 2, 3, 4].map((item) => (
-            <div key={item} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden group">
-              <div className="aspect-[3/4] overflow-hidden">
-                <img
-                  src={`https://images.unsplash.com/photo-1594634311268-0be55f8a4f2b?w=400&q=80&auto=format&fit=crop&random=${item}`}
-                  alt="Related product"
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                />
-              </div>
-              <div className="p-4">
-                <h3 className="font-medium text-gray-900 mb-2">Related Product {item}</h3>
-                <div className="flex items-center justify-between">
-                  <span className="text-lg font-bold text-gray-900">₹{999 + item * 100}</span>
-                  <button className="bg-black text-white px-3 py-1 text-sm hover:bg-gray-800 transition-colors">
-                    Add to Cart
-                  </button>
+        {relatedProducts.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {relatedProducts.map((relatedProduct) => (
+              <div key={relatedProduct._id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden group cursor-pointer" onClick={() => handleRelatedProductClick(relatedProduct._id)}>
+                <div className="aspect-[3/4] overflow-hidden">
+                  <SafeImg
+                    src={getProductImage(relatedProduct)}
+                    alt={relatedProduct.name}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    fallback={IMG_FALLBACK[relatedProduct.category] || IMG_FALLBACK.default}
+                  />
+                  {(relatedProduct.isNewArrival || relatedProduct.newArrival) && (
+                    <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-0.5 text-xs font-medium rounded">NEW</div>
+                  )}
+                  {(relatedProduct.isFeatured || relatedProduct.featured) && (
+                    <div className="absolute top-2 left-2 bg-blue-500 text-white px-2 py-0.5 text-xs font-medium rounded">FEATURED</div>
+                  )}
+                  {relatedProduct.mrp && relatedProduct.mrp > relatedProduct.price && (
+                    <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-0.5 text-xs font-medium rounded">
+                      {Math.round(((relatedProduct.mrp - relatedProduct.price) / relatedProduct.mrp) * 100)}% OFF
+                    </div>
+                  )}
+                </div>
+                <div className="p-4">
+                  <h3 className="font-medium text-gray-900 mb-2 line-clamp-2">{relatedProduct.name}</h3>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-lg font-bold text-gray-900">₹{relatedProduct.price}</span>
+                      {relatedProduct.mrp && (
+                        <span className="text-sm text-gray-500 line-through ml-1">₹{relatedProduct.mrp}</span>
+                      )}
+                    </div>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent navigation to product page
+                        handleAddToCart(relatedProduct);
+                      }}
+                      className="bg-black text-white px-3 py-1 text-sm hover:bg-gray-800 transition-colors"
+                    >
+                      Add to Cart
+                    </button>
+                  </div>
                 </div>
               </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-16">
+            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
             </div>
-          ))}
-        </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No related products found</h3>
+            <p className="text-gray-600 mb-6">Check out our other collections</p>
+            <button
+              onClick={() => navigate('/products')}
+              className="bg-black text-white px-6 py-3 rounded-md hover:bg-gray-800 transition-colors"
+            >
+              View All Products
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Auth Modal */}

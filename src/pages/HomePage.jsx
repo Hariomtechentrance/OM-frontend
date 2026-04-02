@@ -14,7 +14,11 @@ const IMG_FALLBACK = {
 // Safe image component — swaps to fallback silently on any error
 const SafeImg = ({ src, alt, className, fallback, onClick }) => {
   const [errored, setErrored] = useState(false);
-  const resolvedSrc = (errored || !src || src.includes('placeholder')) ? fallback : src;
+  
+  // Ensure src is a string before calling .includes()
+  const srcString = typeof src === 'string' ? src : '';
+  const resolvedSrc = (errored || !srcString || srcString.includes('placeholder')) ? fallback : srcString;
+  
   return (
     <img
       src={resolvedSrc}
@@ -40,41 +44,39 @@ function HomePage() {
   const { isAuthenticated } = useAuth();
   const { addToCart } = useCart();
 
-  // ─── Hero images (ImageKit) ─────────────────────────────────────────────────
+  // ─── Hero images (Local Public Images) ─────────────────────────────────────────────────
   const desktopHeroImages = useMemo(() => [
-    { src: 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Hero/hero-17.jpg', alt: 'Collection 1' },
-    { src: 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Hero/hero-18.jpg', alt: 'Collection 2' },
-    { src: 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Hero/hero-19.jpg', alt: 'Collection 3' },
-    { src: 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Hero/hero-20.jpg', alt: 'Collection 4' },
-    { src: 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Hero/hero-21.jpg', alt: 'Collection 5' },
-    { src: 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Hero/hero-22.jpg', alt: 'Collection 6' },
-    { src: 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Hero/hero-23.jpg', alt: 'Collection 7' },
+    { src: '/images/hero/17.jpg', alt: 'Collection 1' },
+    { src: '/images/hero/18.jpg', alt: 'Collection 2' },
+    { src: '/images/hero/19.jpg', alt: 'Collection 3' },
+    { src: '/images/hero/20.jpg', alt: 'Collection 4' },
+    { src: '/images/hero/21.jpg', alt: 'Collection 5' },
+    { src: '/images/hero/22.jpg', alt: 'Collection 6' },
+    { src: '/images/hero/23.jpg', alt: 'Collection 7' },
   ], []);
 
   const mobileHeroImages = useMemo(() => [
-    { src: 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Hero/hero-24.jpg', alt: 'Mobile 1' },
-    { src: 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Hero/hero-25.jpg', alt: 'Mobile 2' },
-    { src: 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Hero/hero-26.jpg', alt: 'Mobile 3' },
-    { src: 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Hero/hero-27.jpg', alt: 'Mobile 4' },
-    { src: 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Hero/hero-28.jpg', alt: 'Mobile 5' },
-    { src: 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Hero/hero-29.jpg', alt: 'Mobile 6' },
-    { src: 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Hero/hero-30.jpg', alt: 'Mobile 7' },
+    { src: '/images/hero/24.jpg', alt: 'Mobile 1' },
+    { src: '/images/hero/25.jpg', alt: 'Mobile 2' },
+    { src: '/images/hero/26.jpg', alt: 'Mobile 3' },
+    { src: '/images/hero/27.jpg', alt: 'Mobile 4' },
+    { src: '/images/hero/28.jpg', alt: 'Mobile 5' },
+    { src: '/images/hero/29.jpg', alt: 'Mobile 6' },
+    { src: '/images/hero/30.jpg', alt: 'Mobile 7' },
   ], []);
 
-  // Fallback desktop hero images (Unsplash) if ImageKit ones fail
+  // Fallback hero images (local) if primary ones fail
   const heroFallbacks = [
-    'https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?w=1400&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1400&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?w=1400&auto=format&fit=crop',
+    '/images/hero/17.jpg',
+    '/images/hero/18.jpg', 
+    '/images/hero/19.jpg'
   ];
 
   const [heroImages, setHeroImages] = useState(desktopHeroImages);
-  const [isMobile, setIsMobile]     = useState(false);
 
   useEffect(() => {
     const check = () => {
       const mobile = window.innerWidth < 768;
-      setIsMobile(mobile);
       setHeroImages(mobile ? mobileHeroImages : desktopHeroImages);
     };
     check();
@@ -123,6 +125,33 @@ function HomePage() {
       return IMG_FALLBACK[product.category] || IMG_FALLBACK.default;
     }
     return src;
+  };
+
+  // ─── Collection image helper ───────────────────────────────────────────────────
+  const getCollectionImage = (collection) => {
+    const imageMap = {
+      'cargo-collection': '/images/collections/cargo-collection.jpg',
+      'casual-collection': '/images/collections/casual-collection.jpg',
+      'checked-collection': '/images/collections/checked-collection.jpg',
+      'denim-collection': '/images/collections/denim-collection.jpg',
+      'denim': '/images/collections/denim-collection.jpg',
+      'formal-collection': '/images/collections/formal-collection.jpg',
+      'formal-pants': '/images/collections/formal-collection.jpg',
+      'new-collection': '/images/collections/new-collection.jpg',
+      'office-collection': '/images/collections/office-collection.jpg',
+      'party-wear-collection': '/images/collections/party-collection.jpg',
+      'polos': '/images/collections/polo-collection.jpg',
+      'striped-collection': '/images/collections/striped-collection.jpg',
+      'summer-collection': '/images/collections/summer-collection.jpg',
+      'trousers-collection': '/images/collections/trousers-collection.jpg',
+      'winter-collection': '/images/collections/winter-collection.jpg'
+    };
+    
+    const mappedImage = imageMap[collection.slug] || 
+           imageMap[collection.name?.toLowerCase().replace(/\s+/g, '-')] ||
+           '/images/collections/casual-collection.jpg';
+    
+    return mappedImage;
   };
 
   if (loading) {
@@ -224,10 +253,10 @@ function HomePage() {
                   <Link to={`/collection/${col.slug}`} className="block mb-3">
                     <div className="w-32 h-32 md:w-36 md:h-36 rounded-full overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 group-hover:scale-105 border-2 border-gray-100 group-hover:border-gray-400">
                       <SafeImg
-                        src={col.image}
+                        src={getCollectionImage(col)}
                         alt={col.name}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                        fallback={`https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=400&h=400&auto=format&fit=crop`}
+                        fallback="/images/collections/casual-collection.jpg"
                       />
                     </div>
                   </Link>
@@ -342,14 +371,45 @@ function HomePage() {
 
 // ─── Reusable Product Card ─────────────────────────────────────────────────────
 function ProductCard({ product, getImg, onAddToCart, navigate, isNew = false }) {
-  const imgSrc = getImg(product);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const fallback = IMG_FALLBACK[product.category] || IMG_FALLBACK.default;
+  
+  // Get all product images with better error handling
+  const productImages = [];
+  
+  // Try different image properties and ensure they're strings
+  if (product.images && Array.isArray(product.images)) {
+    product.images.forEach((img, index) => {
+      if (index < 4) { // Only get first 4 images
+        const imgSrc = typeof img === 'string' ? img : 
+                     (img && typeof img.url === 'string') ? img.url : 
+                     null;
+        if (imgSrc) productImages.push(imgSrc);
+      }
+    });
+  } else {
+    // Fallback to single image properties
+    const singleImage = product.image || product.imageUrl || null;
+    if (singleImage && typeof singleImage === 'string') {
+      productImages.push(singleImage);
+    }
+  }
+  
+  // Ensure we have exactly 4 images by duplicating if needed
+  while (productImages.length < 4) {
+    const lastImage = productImages[productImages.length - 1] || getImg(product) || fallback;
+    productImages.push(lastImage);
+  }
+  
+  // Get current selected image
+  const currentImage = productImages[selectedImageIndex] || getImg(product) || fallback;
 
   return (
     <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden group">
+      {/* Big Image Display */}
       <div className="aspect-[3/4] overflow-hidden cursor-pointer relative" onClick={() => navigate(`/product/${product._id}`)}>
         <SafeImg
-          src={imgSrc}
+          src={currentImage}
           alt={product.name}
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           fallback={fallback}
@@ -358,6 +418,40 @@ function ProductCard({ product, getImg, onAddToCart, navigate, isNew = false }) 
           <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-0.5 text-xs font-medium rounded">NEW</div>
         )}
       </div>
+      
+      {/* 4 Small Images Grid - Always show with indicators */}
+      <div className="bg-gray-50 p-2">
+        <div className="grid grid-cols-4 gap-1">
+          {productImages.slice(0, 4).map((image, index) => (
+            <div
+              key={index}
+              className={`aspect-square cursor-pointer border-2 transition-all duration-200 relative ${
+                selectedImageIndex === index 
+                  ? 'border-black scale-105' 
+                  : 'border-gray-200 hover:border-gray-400'
+              }`}
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent navigation to product page
+                setSelectedImageIndex(index);
+              }}
+              title={`View image ${index + 1}`}
+            >
+              <SafeImg
+                src={image}
+                alt={`${product.name} - Image ${index + 1}`}
+                className="w-full h-full object-cover"
+                fallback={fallback}
+              />
+              {selectedImageIndex === index && (
+                <div className="absolute top-1 right-1 bg-black text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {index + 1}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+      
       <div className="p-3 md:p-4">
         <h3 className="font-medium text-gray-900 mb-2 text-sm md:text-base line-clamp-2">{product.name}</h3>
         <div className="flex items-center justify-between gap-2">

@@ -4,6 +4,137 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import DataService from '../services/dataService';
 
+// ─── Unsplash fallback per category (never 404) ─────────────────────────────
+const IMG_FALLBACK = {
+  men:     'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=600&auto=format&fit=crop',
+  kids:    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&auto=format&fit=crop',
+  default: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=600&auto=format&fit=crop',
+};
+
+// Safe image component — swaps to fallback silently on any error
+const SafeImg = ({ src, alt, className, fallback, onClick }) => {
+  const [errored, setErrored] = useState(false);
+  
+  // Ensure src is a string before calling .includes()
+  const srcString = typeof src === 'string' ? src : '';
+  const resolvedSrc = (errored || !srcString || srcString.includes('placeholder')) ? fallback : srcString;
+  
+  return (
+    <img
+      src={resolvedSrc}
+      alt={alt}
+      className={className}
+      onClick={onClick}
+      onError={() => setErrored(true)}
+      loading="lazy"
+    />
+  );
+};
+
+// ─── Reusable Product Card ─────────────────────────────────────────────────────
+function ProductCard({ product, getImg, onAddToCart, navigate, isNew = false }) {
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const fallback = IMG_FALLBACK[product.category] || IMG_FALLBACK.default;
+  
+  // Get all product images with better error handling
+  const productImages = [];
+  
+  // Try different image properties and ensure they're strings
+  if (product.images && Array.isArray(product.images)) {
+    product.images.forEach((img, index) => {
+      if (index < 4) { // Only get first 4 images
+        const imgSrc = typeof img === 'string' ? img : 
+                     (img && typeof img.url === 'string') ? img.url : 
+                     null;
+        if (imgSrc) productImages.push(imgSrc);
+      }
+    });
+  } else {
+    // Fallback to single image properties
+    const singleImage = product.image || product.imageUrl || null;
+    if (singleImage && typeof singleImage === 'string') {
+      productImages.push(singleImage);
+    }
+  }
+  
+  // Ensure we have exactly 4 images by duplicating if needed
+  while (productImages.length < 4) {
+    const lastImage = productImages[productImages.length - 1] || getImg(product) || fallback;
+    productImages.push(lastImage);
+  }
+  
+  // Get current selected image
+  const currentImage = productImages[selectedImageIndex] || getImg(product) || fallback;
+
+  return (
+    <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden group">
+      {/* Big Image Display */}
+      <div className="aspect-[3/4] overflow-hidden cursor-pointer relative" onClick={() => navigate(`/product/${product._id}`)}>
+        <SafeImg
+          src={currentImage}
+          alt={product.name}
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          fallback={fallback}
+        />
+        {isNew && (
+          <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-0.5 text-xs font-medium rounded">NEW</div>
+        )}
+      </div>
+      
+      {/* 4 Small Images Grid - Always show with indicators */}
+      <div className="bg-gray-50 p-2">
+        <div className="grid grid-cols-4 gap-1">
+          {productImages.slice(0, 4).map((image, index) => (
+            <div
+              key={index}
+              className={`aspect-square cursor-pointer border-2 transition-all duration-200 relative ${
+                selectedImageIndex === index 
+                  ? 'border-black scale-105' 
+                  : 'border-gray-200 hover:border-gray-400'
+              }`}
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent navigation to product page
+                setSelectedImageIndex(index);
+              }}
+              title={`View image ${index + 1}`}
+            >
+              <SafeImg
+                src={image}
+                alt={`${product.name} - Image ${index + 1}`}
+                className="w-full h-full object-cover"
+                fallback={fallback}
+              />
+              {selectedImageIndex === index && (
+                <div className="absolute top-1 right-1 bg-black text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {index + 1}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+      
+      <div className="p-3 md:p-4">
+        <h3 className="font-medium text-gray-900 mb-2 text-sm md:text-base line-clamp-2">{product.name}</h3>
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <span className="text-base font-bold text-gray-900">₹{product.price}</span>
+            {product.mrp && product.mrp > product.price && (
+              <span className="text-xs text-gray-400 line-through ml-1">₹{product.mrp}</span>
+            )}
+          </div>
+          <button
+            onClick={() => onAddToCart(product)}
+            className="bg-black text-white px-3 py-1.5 text-xs hover:bg-gray-800 transition-colors whitespace-nowrap"
+          >
+            Add to Cart
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ProductsPage() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
@@ -78,8 +209,13 @@ function ProductsPage() {
     addToCart(product);
   };
 
-  const handleProductClick = (productId) => {
-    navigate(`/product/${productId}`);
+  // ─── Helper to get product image ───────────────────────────────────────────────
+  const getProductImage = (product) => {
+    if (product.images && product.images.length > 0) {
+      const img = product.images[0];
+      return typeof img === 'string' ? img : img.url;
+    }
+    return product.image || product.imageUrl || IMG_FALLBACK.default;
   };
 
   if (loading) {
@@ -156,89 +292,16 @@ function ProductsPage() {
 
         {/* Products Grid */}
         {filteredProducts.length > 0 ? (
-          <div className="space-y-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {filteredProducts.map((product) => (
-              <div key={product._id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-all duration-300">
-                <div className="flex flex-col sm:flex-row gap-4">
-                  {/* Product Image */}
-                  <div className="w-full sm:w-48 h-48 bg-gray-50 rounded-md overflow-hidden flex-shrink-0 cursor-pointer" onClick={() => handleProductClick(product._id)}>
-                    <div className="relative w-full h-full">
-                      <img
-                        src={product.images?.[0]?.url || "/images/placeholder.jpg"}
-                        alt={product.name}
-                        className="w-full h-full object-cover rounded-lg transition-transform duration-300 hover:scale-105"
-                      />
-                      {(product.isNewArrival || product.newArrival) && (
-                        <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 text-xs font-medium rounded">
-                          NEW
-                        </div>
-                      )}
-                      {(product.isFeatured || product.featured) && (
-                        <div className="absolute top-2 left-2 bg-blue-500 text-white px-2 py-1 text-xs font-medium rounded">
-                          FEATURED
-                        </div>
-                      )}
-                      {product.mrp && product.mrp > product.price && (
-                        <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 text-xs font-medium rounded">
-                          {Math.round(((product.mrp - product.price) / product.mrp) * 100)}% OFF
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Product Details */}
-                  <div className="flex-1 flex flex-col justify-between">
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-900 mb-2 cursor-pointer hover:text-black" onClick={() => handleProductClick(product._id)}>
-                        {product.name}
-                      </h3>
-                      <p className="text-sm text-gray-600 mb-4 overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                        {product.description || 'High-quality product from Black Locust collection'}
-                      </p>
-                      
-                      {/* Product Meta */}
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {product.category && typeof product.category === 'object' && product.category.name && (
-                          <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
-                            {product.category.name}
-                          </span>
-                        )}
-                        {product.category && typeof product.category === 'string' && (
-                          <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
-                            {product.category}
-                          </span>
-                        )}
-                        {product.brand && typeof product.brand === 'object' && product.brand.name && (
-                          <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
-                            {product.brand.name}
-                          </span>
-                        )}
-                        {product.brand && typeof product.brand === 'string' && (
-                          <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
-                            {product.brand}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Price and Actions */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div>
-                        <span className="text-xl font-bold text-gray-900">₹{product.price}</span>
-                        {product.mrp && (
-                          <span className="text-sm text-gray-500 line-through ml-2">₹{product.mrp}</span>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => handleAddToCart(product)}
-                        className="bg-black text-white px-6 py-2 text-sm hover:bg-gray-800 transition-colors"
-                      >
-                        Add to Cart
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <ProductCard
+                key={product._id}
+                product={product}
+                getImg={getProductImage}
+                onAddToCart={handleAddToCart}
+                navigate={navigate}
+                isNew={product.isNewArrival || product.newArrival}
+              />
             ))}
           </div>
         ) : (

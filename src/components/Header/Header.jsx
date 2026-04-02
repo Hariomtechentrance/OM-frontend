@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaBars, FaHeart, FaRegHeart, FaSearch, FaShoppingBag, FaUser } from 'react-icons/fa';
+import { FaBars, FaRegHeart, FaSearch, FaShoppingBag } from 'react-icons/fa';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import logo from '../../assets/images/new-logo.png';
@@ -9,12 +9,8 @@ import HamburgerMenu from './HamburgerMenu';
 const Header = () => {
   const [hamburgerOpen, setHamburgerOpen] = useState(false);
   const { totalItems } = useCart();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
-
-  const accountInitial = useMemo(() => {
-    return (user?.name || user?.email || '').trim().charAt(0).toUpperCase();
-  }, [user]);
 
   const toggleHamburger = () => {
     setHamburgerOpen(!hamburgerOpen);
@@ -62,6 +58,9 @@ const Header = () => {
               </Link>
               <Link to="/products" className="text-sm font-medium text-red-600 hover:text-red-700 uppercase tracking-wide">
                 SALE
+              </Link>
+              <Link to="/collections" className="text-sm font-medium text-gray-700 hover:text-black uppercase tracking-wide">
+                SHOP COLLECTION
               </Link>
             </nav>
 

@@ -272,11 +272,17 @@ class DataService {
     collections.forEach(collection => {
       organized[collection.slug] = {
         collection,
-        products: products.filter(product => 
-          product.collection === collection.slug || 
-          product.collectionId === collection._id ||
-          product.collectionName === collection.name
-        )
+        products: products.filter(product => {
+          // Handle both populated collection object and collection ID
+          if (product.collection && typeof product.collection === 'object') {
+            // Collection is populated - match by _id or slug
+            return product.collection._id === collection._id || 
+                   product.collection.slug === collection.slug;
+          } else {
+            // Collection is just an ID - match by ID
+            return product.collection === collection._id;
+          }
+        })
       };
     });
 
