@@ -5,20 +5,20 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 
 function CartPage() {
-  const { cart, removeFromCart, updateQuantity } = useCart();
+  const { items: cart, removeFromCart, updateQuantity } = useCart();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [promoCode, setPromoCode] = useState('');
   const [discount, setDiscount] = useState(0);
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login');
-    }
-  }, [isAuthenticated, navigate]);
+  // Safe cart handling
+  const safeCart = Array.isArray(cart) ? cart : [];
+
+  console.log("Cart:", safeCart);
+  console.log("Auth:", isAuthenticated);
 
   const calculateSubtotal = () => {
-    return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+    return safeCart.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
 
   const calculateTotal = () => {
@@ -47,7 +47,7 @@ function CartPage() {
   };
 
   const handleCheckout = () => {
-    if (cart.length === 0) {
+    if (safeCart.length === 0) {
       toast.error('Your cart is empty');
       return;
     }
@@ -62,7 +62,7 @@ function CartPage() {
           <p className="text-gray-600 mb-6">You need to be signed in to view your cart.</p>
           <Link
             to="/login"
-            className="bg-black text-white px-6 py-3 rounded-md hover:bg-gray-800 transition-colors"
+            className="bg-black text-white px-6 py-3 rounded-md font-medium hover:bg-gray-800 transition-colors"
           >
             Sign In
           </Link>
@@ -77,11 +77,11 @@ function CartPage() {
       <div className="max-w-7xl mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Shopping Cart</h1>
         <p className="text-gray-600">
-          {cart.length} {cart.length === 1 ? 'item' : 'items'} in your cart
+          {safeCart.length} {safeCart.length === 1 ? 'item' : 'items'} in your cart
         </p>
       </div>
 
-      {cart.length === 0 ? (
+      {safeCart.length === 0 ? (
         <div className="max-w-7xl mx-auto px-4 py-16">
           <div className="text-center">
             <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -104,7 +104,7 @@ function CartPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Cart Items */}
             <div className="lg:col-span-2 space-y-4">
-              {cart.map((item) => (
+              {safeCart.map((item) => (
                 <div key={item._id} className="bg-white border border-gray-200 rounded-lg p-6">
                   <div className="flex flex-col sm:flex-row gap-4">
                     {/* Product Image */}

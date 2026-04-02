@@ -19,7 +19,7 @@
   }
 
   body {
-    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-family: 'Poppins', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     background: var(--bl-black);
     color: var(--bl-white);
   }

@@ -23,20 +23,27 @@ function CollectionPage() {
   const fetchCollectionData = async () => {
     try {
       setLoading(true);
-      const data = await DataService.getHomepageData();
+      
+      // Fetch collection and products data from API
+      const [collectionsResponse, productsResponse] = await Promise.all([
+        fetch('/api/collections').then(res => res.json()),
+        fetch(`/api/products?collection=${collectionSlug}`).then(res => res.json())
+      ]);
+      
+      const collections = collectionsResponse.collections || [];
+      const products = productsResponse.products || [];
       
       // Find the collection
-      const foundCollection = data.collections.find(c => c.slug === collectionSlug);
+      const foundCollection = collections.find(c => c.slug === collectionSlug);
       if (!foundCollection) {
-        navigate('/404');
+        setCollection(null);
+        setProducts([]);
+        setLoading(false);
         return;
       }
 
       setCollection(foundCollection);
-      
-      // Get products for this collection
-      const collectionProducts = data.organizedByCollections[collectionSlug]?.products || [];
-      setProducts(collectionProducts);
+      setProducts(products);
     } catch (error) {
       console.error('Error fetching collection data:', error);
     } finally {
@@ -165,7 +172,7 @@ function CollectionPage() {
                 <div className="aspect-[3/4] overflow-hidden cursor-pointer" onClick={() => handleProductClick(product._id)}>
                   <div className="relative">
                     <img
-                      src={product.image}
+                      src={product.images?.[0]?.url || "/images/placeholder.jpg"}
                       alt={product.name}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />

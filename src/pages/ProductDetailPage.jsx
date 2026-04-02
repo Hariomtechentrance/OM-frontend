@@ -134,7 +134,7 @@ function ProductDetailPage() {
             {/* Main Image */}
             <div className="aspect-[3/4] overflow-hidden bg-gray-50 rounded-lg">
               <img
-                src={productImages[currentImageIndex]}
+                src={productImages[currentImageIndex]?.url || "/images/placeholder.jpg"}
                 alt={product.name}
                 className="w-full h-full object-cover"
               />
@@ -152,7 +152,7 @@ function ProductDetailPage() {
                     }`}
                   >
                     <img
-                      src={image}
+                      src={image.url}
                       alt={`${product.name} ${index + 1}`}
                       className="w-full h-full object-cover"
                     />

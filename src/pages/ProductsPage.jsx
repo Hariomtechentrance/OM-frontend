@@ -156,48 +156,86 @@ function ProductsPage() {
 
         {/* Products Grid */}
         {filteredProducts.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="space-y-4">
             {filteredProducts.map((product) => (
-              <div key={product._id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden group">
-                <div className="aspect-[3/4] overflow-hidden cursor-pointer" onClick={() => handleProductClick(product._id)}>
-                  <div className="relative">
-                    <img
-                      src={product.image}
-                      alt={product.name}
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                    {(product.isNewArrival || product.newArrival) && (
-                      <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 text-xs font-medium rounded">
-                        NEW
-                      </div>
-                    )}
-                    {(product.isFeatured || product.featured) && (
-                      <div className="absolute top-2 left-2 bg-blue-500 text-white px-2 py-1 text-xs font-medium rounded">
-                        FEATURED
-                      </div>
-                    )}
-                    {product.mrp && product.mrp > product.price && (
-                      <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 text-xs font-medium rounded">
-                        {Math.round(((product.mrp - product.price) / product.mrp) * 100)}% OFF
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="p-4">
-                  <h3 className="font-medium text-gray-900 mb-2">{product.name}</h3>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-lg font-bold text-gray-900">₹{product.price}</span>
-                      {product.mrp && (
-                        <span className="text-sm text-gray-500 line-through ml-2">₹{product.mrp}</span>
+              <div key={product._id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-all duration-300">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  {/* Product Image */}
+                  <div className="w-full sm:w-48 h-48 bg-gray-50 rounded-md overflow-hidden flex-shrink-0 cursor-pointer" onClick={() => handleProductClick(product._id)}>
+                    <div className="relative w-full h-full">
+                      <img
+                        src={product.images?.[0]?.url || "/images/placeholder.jpg"}
+                        alt={product.name}
+                        className="w-full h-full object-cover rounded-lg transition-transform duration-300 hover:scale-105"
+                      />
+                      {(product.isNewArrival || product.newArrival) && (
+                        <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 text-xs font-medium rounded">
+                          NEW
+                        </div>
+                      )}
+                      {(product.isFeatured || product.featured) && (
+                        <div className="absolute top-2 left-2 bg-blue-500 text-white px-2 py-1 text-xs font-medium rounded">
+                          FEATURED
+                        </div>
+                      )}
+                      {product.mrp && product.mrp > product.price && (
+                        <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 text-xs font-medium rounded">
+                          {Math.round(((product.mrp - product.price) / product.mrp) * 100)}% OFF
+                        </div>
                       )}
                     </div>
-                    <button
-                      onClick={() => handleAddToCart(product)}
-                      className="bg-black text-white px-3 py-1 text-sm hover:bg-gray-800 transition-colors"
-                    >
-                      Add to Cart
-                    </button>
+                  </div>
+
+                  {/* Product Details */}
+                  <div className="flex-1 flex flex-col justify-between">
+                    <div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2 cursor-pointer hover:text-black" onClick={() => handleProductClick(product._id)}>
+                        {product.name}
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-4 overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                        {product.description || 'High-quality product from Black Locust collection'}
+                      </p>
+                      
+                      {/* Product Meta */}
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {product.category && typeof product.category === 'object' && product.category.name && (
+                          <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                            {product.category.name}
+                          </span>
+                        )}
+                        {product.category && typeof product.category === 'string' && (
+                          <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                            {product.category}
+                          </span>
+                        )}
+                        {product.brand && typeof product.brand === 'object' && product.brand.name && (
+                          <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                            {product.brand.name}
+                          </span>
+                        )}
+                        {product.brand && typeof product.brand === 'string' && (
+                          <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                            {product.brand}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Price and Actions */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div>
+                        <span className="text-xl font-bold text-gray-900">₹{product.price}</span>
+                        {product.mrp && (
+                          <span className="text-sm text-gray-500 line-through ml-2">₹{product.mrp}</span>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleAddToCart(product)}
+                        className="bg-black text-white px-6 py-2 text-sm hover:bg-gray-800 transition-colors"
+                      >
+                        Add to Cart
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

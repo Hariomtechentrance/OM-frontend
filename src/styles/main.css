@@ -17,13 +17,16 @@
  * - Border: #E5E7EB
  * 
  * Typography:
- * - Heading: Playfair Display (serif luxury)
- * - Body: Inter
+ * - Heading: Poppins
+ * - Body: Poppins
  * 
  * Author: Development Team
  * Created: 2024
  * Last Modified: 2024
  */
+
+/* Import Google Fonts - Poppins */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
 /* Import CSS variables */
 @import './variables.css';
@@ -33,6 +36,7 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  font-family: 'Poppins', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
 }
 
 html, body {
@@ -43,7 +47,7 @@ html, body {
 }
 
 body {
-  font-family: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'Poppins', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
   line-height: 1.6;
   color: #111111; /* Primary Text */
   background-color: #FFFFFF; /* White Background */

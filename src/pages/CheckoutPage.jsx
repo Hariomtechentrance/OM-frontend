@@ -31,14 +31,14 @@ function CheckoutPage() {
       navigate('/login');
       return;
     }
-    if (cart.length === 0) {
+    if (!cart || cart.length === 0) {
       navigate('/cart');
       return;
     }
   }, [isAuthenticated, cart, navigate]);
 
   const calculateSubtotal = () => {
-    return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+    return (cart || []).reduce((total, item) => total + (item.price * item.quantity), 0);
   };
 
   const calculateTotal = () => {
@@ -56,13 +56,43 @@ function CheckoutPage() {
     e.preventDefault();
     setIsProcessing(true);
 
-    // Simulate order processing
-    setTimeout(() => {
-      setIsProcessing(false);
+    try {
+      // Create order data
+      const orderData = {
+        items: cart || [],
+        shippingAddress: {
+          fullName: shippingAddress.fullName,
+          address: shippingAddress.address,
+          city: shippingAddress.city,
+          state: shippingAddress.state,
+          pincode: shippingAddress.pincode,
+          country: shippingAddress.country
+        },
+        paymentMethod: paymentMethod,
+        subtotal: calculateSubtotal(),
+        shipping: calculateSubtotal() > 999 ? 0 : 50,
+        discount: discount,
+        total: calculateTotal()
+      };
+
+      // Here you would normally send order to backend
+      // For now, we'll simulate successful order
+      console.log('Order placed:', orderData);
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Clear cart and redirect
       clearCart();
       navigate('/order-success');
       toast.success('Order placed successfully!');
-    }, 2000);
+      
+    } catch (error) {
+      console.error('Order placement error:', error);
+      toast.error('Failed to place order. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleApplyPromoCode = () => {
@@ -74,7 +104,7 @@ function CheckoutPage() {
     }
   };
 
-  if (!isAuthenticated || cart.length === 0) {
+  if (!isAuthenticated || !cart || cart.length === 0) {
     return null;
   }
 
@@ -84,7 +114,7 @@ function CheckoutPage() {
       <div className="max-w-7xl mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Checkout</h1>
         <p className="text-gray-600">
-          {cart.length} {cart.length === 1 ? 'item' : 'items'} in your order
+          {cart?.length || 0} {cart?.length === 1 ? 'item' : 'items'} in your order
         </p>
       </div>
 

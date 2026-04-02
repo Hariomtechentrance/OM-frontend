@@ -30,21 +30,6 @@ const Header = () => {
       {/* PETER ENGLAND STYLE HEADER */}
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4">
-          {/* Top Bar */}
-          <div className="flex justify-between items-center py-2 text-xs text-gray-600 border-b border-gray-100">
-            <div className="flex items-center space-x-4">
-              <span>FREE SHIPPING</span>
-              <span className="border-l border-gray-300 pl-4">RETURN WITHIN 15 DAYS</span>
-              <span className="border-l border-gray-300 pl-4">EXPRESS DELIVERY IN STORE MODE</span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span>NEED HELP?</span>
-              <button onClick={() => navigate('/track-order')} className="hover:text-black">Track Order</button>
-              <button onClick={() => navigate('/profile')} className="hover:text-black">My Account</button>
-              <button onClick={() => navigate('/store-locator')} className="hover:text-black">Find a Store</button>
-            </div>
-          </div>
-
           {/* Main Header */}
           <div className="flex items-center justify-between py-4">
             {/* Mobile Menu Button */}
@@ -68,15 +53,12 @@ const Header = () => {
             </div>
 
             {/* Navigation - Desktop */}
-            <nav className="hidden lg:flex space-x-6">
+            <nav className="hidden md:flex space-x-6">
               <Link to="/products" className="text-sm font-medium text-gray-700 hover:text-black uppercase tracking-wide">
                 MEN
               </Link>
               <Link to="/products" className="text-sm font-medium text-gray-700 hover:text-black uppercase tracking-wide">
                 KIDS
-              </Link>
-              <Link to="/new-arrivals" className="text-sm font-medium text-gray-700 hover:text-black uppercase tracking-wide">
-                NEW IN
               </Link>
               <Link to="/products" className="text-sm font-medium text-red-600 hover:text-red-700 uppercase tracking-wide">
                 SALE
@@ -115,7 +97,7 @@ const Header = () => {
               </button>
 
               {/* User Account */}
-              <button
+              {/* <button
                 onClick={() => navigate(isAuthenticated ? '/profile' : '/login')}
                 className="p-2 text-gray-600 hover:text-black"
                 aria-label="Account"
@@ -127,7 +109,7 @@ const Header = () => {
                 ) : (
                   <FaUser className="w-5 h-5" />
                 )}
-              </button>
+              </button> */}
 
               {isAuthenticated && (
                 <button

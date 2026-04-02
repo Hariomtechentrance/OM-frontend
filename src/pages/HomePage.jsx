@@ -22,39 +22,158 @@ function HomePage() {
   const { isAuthenticated } = useAuth();
   const { addToCart } = useCart();
 
+  // Function to get collection image filename
+  const getCollectionImage = (collection) => {
+    const imageMap = {
+      'denim-collection': 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/denim-collection.jpg',
+      'trouser-collection': 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/trousers-collection.jpg',
+      'cargo-collection': 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/cargo-collection.jpg',
+      'casual-collection': 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/casual-collection.jpg',
+      'formal-collection': 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/formal-collection.jpg',
+      'formal-pants': 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/formal-pants.jpg?updatedAt=1775035891099',
+      'party-collection': 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/party-collection.jpg',
+      'party-wear-collection': 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/party-wear-collection.jpg?updatedAt=1775035958472',
+      'polo-collection': 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/polo-collection.jpg',
+      'polos': 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/polos.jpg?updatedAt=1775036002489',
+      'office-collection': 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/office-collection.jpg',
+      'summer-collection': 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/summer-collection.jpg',
+      'winter-collection': 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/winter-collection.jpg',
+      'new-collection': 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/new-collection.jpg',
+      'checked-collection': 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/checked-collection.jpg',
+      'striped-collection': 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/striped-collection.jpg'
+    };
+    
+    // Try exact match first
+    if (imageMap[collection.slug]) {
+      return imageMap[collection.slug];
+    }
+    
+    // Try name-based matching
+    const nameKey = collection.name.toLowerCase().replace(/\s+/g, '-');
+    if (imageMap[nameKey]) {
+      return imageMap[nameKey];
+    }
+    
+    // Try direct name match for common collections
+    if (collection.name === 'Denim collection') {
+      return 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/denim-collection.jpg';
+    }
+    if (collection.name === 'Trouser collection') {
+      return 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/trousers-collection.jpg';
+    }
+    
+    // Fallback to slug-based filename
+    return `/images/collections/${collection.slug}.jpg`;
+  };
+
   // Hero images array (Peter England Style)
-  const heroImages = useMemo(() => [
-    {
-      src: '/images/hero/15.jpg',
-      alt: 'Black Locust Premium Fashion Collection 1',
-      title: 'India\'s Most Trusted Fashion Destination',
-      subtitle: 'Discover premium quality clothing for men and kids'
-    },
-    {
-      src: '/images/hero/16.jpg',
-      alt: 'Black Locust Premium Fashion Collection 2',
-      title: 'Unmatched Value Proposition',
-      subtitle: 'International fashion standards at affordable prices'
-    },
+  const desktopHeroImages = useMemo(() => [
     {
       src: '/images/hero/17.jpg',
       alt: 'Black Locust Premium Fashion Collection 3',
-      title: 'Crafted for Excellence',
-      subtitle: 'Premium fabrics tailored to perfection'
+      title: '',
+      subtitle: ''
     },
     {
       src: '/images/hero/18.jpg',
       alt: 'Black Locust Premium Fashion Collection 4',
-      title: 'Effortless Style',
-      subtitle: 'Casual and formal outfits for every occasion'
+      title: '',
+      subtitle: ''
     },
     {
       src: '/images/hero/19.jpg',
       alt: 'Black Locust Premium Fashion Collection 5',
-      title: 'Timeless Fashion',
-      subtitle: 'Trendsetting clothing that lasts'
+      title: '',
+      subtitle: ''
+    },
+    {
+      src: '/images/hero/20.jpg',
+      alt: 'Black Locust Premium Fashion Collection 6',
+      title: '',
+      subtitle: ''
+    },
+    {
+      src: '/images/hero/21.jpg',
+      alt: 'Black Locust Premium Fashion Collection 7',
+      title: '',
+      subtitle: ''
+    },
+    {
+      src: '/images/hero/22.jpg',
+      alt: 'Black Locust Premium Fashion Collection 8',
+      title: '',
+      subtitle: ''
+    },
+    {
+      src: '/images/hero/23.jpg',
+      alt: 'Black Locust Premium Fashion Collection 9',
+      title: '',
+      subtitle: ''
     }
   ], []);
+
+  const mobileHeroImages = useMemo(() => [
+    {
+      src: '/images/hero/24.jpg',
+      alt: 'Black Locust Mobile Fashion Collection 1',
+      title: '',
+      subtitle: ''
+    },
+    {
+      src: '/images/hero/25.jpg',
+      alt: 'Black Locust Mobile Fashion Collection 2',
+      title: '',
+      subtitle: ''
+    },
+    {
+      src: '/images/hero/26.jpg',
+      alt: 'Black Locust Mobile Fashion Collection 3',
+      title: '',
+      subtitle: ''
+    },
+    {
+      src: '/images/hero/27.jpg',
+      alt: 'Black Locust Mobile Fashion Collection 4',
+      title: '',
+      subtitle: ''
+    },
+    {
+      src: '/images/hero/28.jpg',
+      alt: 'Black Locust Mobile Fashion Collection 5',
+      title: '',
+      subtitle: ''
+    },
+    {
+      src: '/images/hero/29.jpg',
+      alt: 'Black Locust Mobile Fashion Collection 6',
+      title: '',
+      subtitle: ''
+    },
+    {
+      src: '/images/hero/30.jpg',
+      alt: 'Black Locust Mobile Fashion Collection 7',
+      title: '',
+      subtitle: ''
+    }
+  ], []);
+
+  // Responsive hero images based on screen size
+  const [heroImages, setHeroImages] = useState(desktopHeroImages);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect screen size and set appropriate images
+  useEffect(() => {
+    const checkScreenSize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      setHeroImages(mobile ? mobileHeroImages : desktopHeroImages);
+    };
+
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, [desktopHeroImages, mobileHeroImages]);
 
   // Auto-rotate hero carousel
   useEffect(() => {
@@ -95,7 +214,7 @@ function HomePage() {
     }
   };
 
-  const currentHeroImage = heroImages[currentHeroSlide];
+  const currentHeroImage = heroImages[currentHeroSlide] || heroImages[0] || desktopHeroImages[0];
 
   const handleAddToCart = (product) => {
     if (!isAuthenticated) {
@@ -124,7 +243,7 @@ function HomePage() {
     <div className="min-h-screen bg-white">
       {/* HERO SECTION - Peter England Style */}
       <section className="relative">
-        <div className="relative h-[600px] w-full overflow-hidden">
+        <div className="relative h-[80vh] w-full overflow-hidden">
           {/* Hero Image */}
           <img
             src={currentHeroImage.src}
@@ -132,23 +251,6 @@ function HomePage() {
             className="w-full h-full object-cover"
           />
           
-          {/* Overlay */}
-          <div className="absolute inset-0 bg-black bg-opacity-30"></div>
-          
-          {/* Hero Content */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center text-white px-4">
-              <h1 className="text-5xl md:text-6xl font-bold mb-4">{currentHeroImage.title}</h1>
-              <p className="text-xl md:text-2xl mb-8">{currentHeroImage.subtitle}</p>
-              <Link
-                to="/products"
-                className="bg-white text-black px-8 py-3 rounded-md font-medium hover:bg-gray-100 transition-colors inline-block"
-              >
-                SHOP NOW
-              </Link>
-            </div>
-          </div>
-
           {/* Slide Navigation */}
           <button
             onClick={prevSlide}
@@ -256,35 +358,44 @@ function HomePage() {
 
       {/* COLLECTIONS SECTION */}
       {homepageData.collections.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 py-16">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Shop by Collection</h2>
-            <p className="text-lg text-gray-600">Curated collections for every occasion</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {homepageData.collections.map((collection) => (
-              <div key={collection._id} className="group relative overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-all duration-300">
-                <div className="aspect-[4/5] overflow-hidden">
-                  <img
-                    src={collection.image}
-                    alt={collection.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60"></div>
-                <div className="absolute bottom-0 left-0 right-0 p-6">
-                  <h3 className="text-2xl font-bold text-white mb-2">{collection.name}</h3>
-                  <p className="text-gray-200 mb-4">{collection.description}</p>
-                  <Link
-                    to={`/collection/${collection.slug}`}
-                    className="bg-white text-black px-6 py-2 rounded-md font-medium hover:bg-gray-100 transition-colors inline-block"
-                  >
-                    EXPLORE
-                  </Link>
-                </div>
+        <section className="bg-white py-16">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Shop by Collection</h2>
+              <p className="text-lg text-gray-600">Curated collections for every occasion</p>
+            </div>
+            
+            <div className="flex flex-wrap justify-center gap-8">
+            {homepageData.collections
+              .filter(collection => collection.name !== 'Denim' && collection.name !== 'Denim collection' && collection.name !== 'Trouser' && collection.name !== 'Printed collection')
+              .map((collection) => (
+              <div key={collection._id} className="group relative flex flex-col items-center">
+                <Link 
+                  to={`/collection/${collection.slug}`}
+                  className="block mb-4"
+                >
+                  <div className="w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 group-hover:scale-105">
+                    <img
+                      src={getCollectionImage(collection)}
+                      alt={collection.name}
+                      className="w-full h-full object-cover transition-transform duration-500"
+                      onError={(e) => {
+                        console.log('Failed to load image for:', collection.name, 'slug:', collection.slug);
+                        e.target.src = '/images/placeholder.jpg'; // Fallback image
+                      }}
+                    />
+                  </div>
+                </Link>
+                <h3 className="text-lg font-semibold text-gray-900 mb-1 text-center">{collection.name}</h3>
+                <Link
+                  to={`/collection/${collection.slug}`}
+                  className="text-sm text-gray-600 hover:text-black font-medium transition-colors text-center"
+                >
+                  Explore Collection →
+                </Link>
               </div>
             ))}
+          </div>
           </div>
         </section>
       )}
@@ -334,23 +445,23 @@ function HomePage() {
             <p className="text-lg text-gray-600">Handpicked favorites from our collection</p>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {homepageData.featuredProducts.map((product) => (
               <div key={product._id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden group">
                 <div className="aspect-[3/4] overflow-hidden cursor-pointer" onClick={() => handleProductClick(product._id)}>
                   <img
-                    src={product.image}
+                    src={product.images?.[0]?.url || "/images/placeholder.jpg"}
                     alt={product.name}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    className="w-full h-full object-cover rounded-lg transition-transform duration-300 group-hover:scale-105"
                   />
                 </div>
                 <div className="p-4">
-                  <h3 className="font-medium text-gray-900 mb-2">{product.name}</h3>
+                  <h3 className="font-medium text-gray-900 mb-2 text-sm md:text-base">{product.name}</h3>
                   <div className="flex items-center justify-between">
                     <span className="text-lg font-bold text-gray-900">₹{product.price}</span>
                     <button
                       onClick={() => handleAddToCart(product)}
-                      className="bg-black text-white px-3 py-1 text-sm hover:bg-gray-800 transition-colors"
+                      className="bg-black text-white px-3 py-1 text-xs md:text-sm hover:bg-gray-800 transition-colors"
                     >
                       Add to Cart
                     </button>
@@ -364,7 +475,7 @@ function HomePage() {
 
       {/* NEW ARRIVALS SECTION */}
       {homepageData.newArrivals.length > 0 && (
-        <section className="bg-gray-50 py-16">
+        <section className="bg-white py-16">
           <div className="max-w-7xl mx-auto px-4">
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">New Arrivals</h2>
@@ -377,7 +488,7 @@ function HomePage() {
                   <div className="aspect-[3/4] overflow-hidden cursor-pointer" onClick={() => handleProductClick(product._id)}>
                     <div className="relative">
                       <img
-                        src={product.image}
+                        src={product.images?.[0]?.url || "/images/placeholder.jpg"}
                         alt={product.name}
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
@@ -442,7 +553,7 @@ function HomePage() {
                 <div key={product._id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden group">
                   <div className="aspect-[3/4] overflow-hidden cursor-pointer" onClick={() => handleProductClick(product._id)}>
                     <img
-                      src={product.image}
+                      src={product.images?.[0]?.url || "/images/placeholder.jpg"}
                       alt={product.name}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
@@ -489,7 +600,7 @@ function HomePage() {
                   <div key={product._id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden group">
                     <div className="aspect-[3/4] overflow-hidden cursor-pointer" onClick={() => handleProductClick(product._id)}>
                       <img
-                        src={product.image}
+                        src={product.images?.[0]?.url || "/images/placeholder.jpg"}
                         alt={product.name}
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
@@ -513,67 +624,6 @@ function HomePage() {
           </section>
         )
       ))}
-
-      {/* TRUST SECTION */}
-      <section className="bg-black text-white py-16">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Why Shop With Us</h2>
-            <p className="text-lg text-gray-300">Experience the Black Locust difference</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8-4m8-4l8 4m0-10l-8 4m8 4l8 4m0-10v10" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold mb-2">Free Shipping</h3>
-              <p className="text-gray-300">On orders above ₹999</p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 15v-1a4 4 0 00-4-4H8m0 0l4 4m-4-4v4m0 0V8a4 4 0 014-4h4a4 4 0 014 4v0" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold mb-2">15 Days Return</h3>
-              <p className="text-gray-300">Easy returns and exchanges</p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold mb-2">Secure Payment</h3>
-              <p className="text-gray-300">100% secure transactions</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* NEWSLETTER SECTION */}
-      <section className="bg-gray-50 py-16">
-        <div className="max-w-4xl mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Stay in Style</h2>
-          <p className="text-lg text-gray-600 mb-8">Subscribe to our newsletter for exclusive offers and new arrivals</p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-            <input
-              type="email"
-              placeholder="Enter your email"
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-            />
-            <button className="bg-black text-white px-6 py-3 rounded-md font-medium hover:bg-gray-800 transition-colors">
-              SUBSCRIBE
-            </button>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }

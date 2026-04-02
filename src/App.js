@@ -31,6 +31,7 @@ const ContactPage = lazy(() => import('./pages/ContactPage'));
 const NewArrivalsPage = lazy(() => import('./pages/NewArrivalsPage'));
 const ShopSummerPage = lazy(() => import('./pages/ShopSummerPage'));
 const ShopCollectionPage = lazy(() => import('./pages/ShopCollectionPage'));
+const ShopCollectionsPage = lazy(() => import('./pages/ShopCollectionsPage'));
 const CollectionPage = lazy(() => import('./pages/CollectionPage'));
 const SearchPage = lazy(() => import('./pages/SearchPage'));
 const AdminLogin = lazy(() => import('./pages/Admin/AdminLogin'));
@@ -59,8 +60,8 @@ const AppLayout = () => {
           <Route path="/product/:id" element={<ProductDetailPage />} />
           <Route path="/new-arrivals" element={<NewArrivalsPage />} />
           <Route path="/shop-summer" element={<ShopSummerPage />} />
-          <Route path="/shop-collection" element={<ShopCollectionPage />} />
-          <Route path="/collections" element={<ShopCollectionPage />} />
+          <Route path="/shop-collection" element={<ShopCollectionsPage />} />
+          <Route path="/collections" element={<ShopCollectionsPage />} />
           <Route path="/collection/:slug" element={<CollectionPage />} />
           <Route path="/category/:slug" element={<CategoryPage />} />
           <Route path="/search" element={<SearchPage />} />

@@ -16,6 +16,15 @@ function CategoryPage() {
   const [sortBy, setSortBy] = useState('name');
   const [filterBy, setFilterBy] = useState('all');
 
+  // Function to get category-specific images
+  const getCategoryImage = (category) => {
+    if (categorySlug === 'men') {
+      // Use Unsplash placeholder for now (you can replace with ImageKit later)
+      return 'https://images.unsplash.com/photo-1490114538077-0a7f8cb49891?w=1200&q=80';
+    }
+    return category.image;
+  };
+
   useEffect(() => {
     fetchCategoryData();
   }, [categorySlug]);
@@ -111,7 +120,7 @@ function CategoryPage() {
       {/* Category Header */}
       <div className="relative h-[300px] w-full overflow-hidden">
         <img
-          src={category.image}
+          src={getCategoryImage(category)}
           alt={category.name}
           className="w-full h-full object-cover"
         />
@@ -165,7 +174,7 @@ function CategoryPage() {
                 <div className="aspect-[3/4] overflow-hidden cursor-pointer" onClick={() => handleProductClick(product._id)}>
                   <div className="relative">
                     <img
-                      src={product.image}
+                      src={product.images?.[0]?.url || "/images/placeholder.jpg"}
                       alt={product.name}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />

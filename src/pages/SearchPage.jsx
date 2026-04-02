@@ -83,7 +83,7 @@ const SearchPage = () => {
       id: product.id || product._id,
       name: product.name,
       price: product.price,
-      image: product.images?.[0]?.url,
+      image: product.images?.[0]?.url || "/images/placeholder.jpg",
       quantity: 1
     });
   };

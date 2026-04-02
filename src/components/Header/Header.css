@@ -704,7 +704,7 @@
 }
 
 .filter-dropdown-header h3 {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Poppins', sans-serif;
   font-size: 1.2rem;
   color: var(--gold);
   margin: 0;
@@ -841,7 +841,7 @@
 }
 
 .nav-section-title {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Poppins', sans-serif;
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--gold);
