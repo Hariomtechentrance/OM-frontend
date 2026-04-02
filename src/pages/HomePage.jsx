@@ -4,228 +4,125 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import DataService from '../services/dataService';
 
+// ─── Unsplash fallback per category (never 404) ─────────────────────────────
+const IMG_FALLBACK = {
+  men:     'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=600&auto=format&fit=crop',
+  kids:    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&auto=format&fit=crop',
+  default: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=600&auto=format&fit=crop',
+};
+
+// Safe image component — swaps to fallback silently on any error
+const SafeImg = ({ src, alt, className, fallback, onClick }) => {
+  const [errored, setErrored] = useState(false);
+  const resolvedSrc = (errored || !src || src.includes('placeholder')) ? fallback : src;
+  return (
+    <img
+      src={resolvedSrc}
+      alt={alt}
+      className={className}
+      onClick={onClick}
+      onError={() => setErrored(true)}
+      loading="lazy"
+    />
+  );
+};
+
 function HomePage() {
   const [homepageData, setHomepageData] = useState({
-    products: [],
-    categories: [],
-    collections: [],
-    organizedByCategories: {},
-    organizedByCollections: {},
-    featuredProducts: [],
-    newArrivals: [],
-    trendingProducts: []
+    products: [], categories: [], collections: [],
+    organizedByCategories: {}, organizedByCollections: {},
+    featuredProducts: [], newArrivals: [], trendingProducts: [],
   });
   const [loading, setLoading] = useState(true);
   const [currentHeroSlide, setCurrentHeroSlide] = useState(0);
-  
+
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const { addToCart } = useCart();
 
-  // Function to get collection image filename
-  const getCollectionImage = (collection) => {
-    const imageMap = {
-      'denim-collection': 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/denim-collection.jpg',
-      'trouser-collection': 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/trousers-collection.jpg',
-      'cargo-collection': 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/cargo-collection.jpg',
-      'casual-collection': 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/casual-collection.jpg',
-      'formal-collection': 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/formal-collection.jpg',
-      'formal-pants': 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/formal-pants.jpg?updatedAt=1775035891099',
-      'party-collection': 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/party-collection.jpg',
-      'party-wear-collection': 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/party-wear-collection.jpg?updatedAt=1775035958472',
-      'polo-collection': 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/polo-collection.jpg',
-      'polos': 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/polos.jpg?updatedAt=1775036002489',
-      'office-collection': 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/office-collection.jpg',
-      'summer-collection': 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/summer-collection.jpg',
-      'winter-collection': 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/winter-collection.jpg',
-      'new-collection': 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/new-collection.jpg',
-      'checked-collection': 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/checked-collection.jpg',
-      'striped-collection': 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/striped-collection.jpg'
-    };
-    
-    // Try exact match first
-    if (imageMap[collection.slug]) {
-      return imageMap[collection.slug];
-    }
-    
-    // Try name-based matching
-    const nameKey = collection.name.toLowerCase().replace(/\s+/g, '-');
-    if (imageMap[nameKey]) {
-      return imageMap[nameKey];
-    }
-    
-    // Try direct name match for common collections
-    if (collection.name === 'Denim collection') {
-      return 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/denim-collection.jpg';
-    }
-    if (collection.name === 'Trouser collection') {
-      return 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Collections/trousers-collection.jpg';
-    }
-    
-    // Fallback to slug-based filename
-    return `/images/collections/${collection.slug}.jpg`;
-  };
-
-  // Hero images array (Peter England Style)
+  // ─── Hero images (ImageKit) ─────────────────────────────────────────────────
   const desktopHeroImages = useMemo(() => [
-    {
-      src: '/images/hero/17.jpg',
-      alt: 'Black Locust Premium Fashion Collection 3',
-      title: '',
-      subtitle: ''
-    },
-    {
-      src: '/images/hero/18.jpg',
-      alt: 'Black Locust Premium Fashion Collection 4',
-      title: '',
-      subtitle: ''
-    },
-    {
-      src: '/images/hero/19.jpg',
-      alt: 'Black Locust Premium Fashion Collection 5',
-      title: '',
-      subtitle: ''
-    },
-    {
-      src: '/images/hero/20.jpg',
-      alt: 'Black Locust Premium Fashion Collection 6',
-      title: '',
-      subtitle: ''
-    },
-    {
-      src: '/images/hero/21.jpg',
-      alt: 'Black Locust Premium Fashion Collection 7',
-      title: '',
-      subtitle: ''
-    },
-    {
-      src: '/images/hero/22.jpg',
-      alt: 'Black Locust Premium Fashion Collection 8',
-      title: '',
-      subtitle: ''
-    },
-    {
-      src: '/images/hero/23.jpg',
-      alt: 'Black Locust Premium Fashion Collection 9',
-      title: '',
-      subtitle: ''
-    }
+    { src: 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Hero/hero-17.jpg', alt: 'Collection 1' },
+    { src: 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Hero/hero-18.jpg', alt: 'Collection 2' },
+    { src: 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Hero/hero-19.jpg', alt: 'Collection 3' },
+    { src: 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Hero/hero-20.jpg', alt: 'Collection 4' },
+    { src: 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Hero/hero-21.jpg', alt: 'Collection 5' },
+    { src: 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Hero/hero-22.jpg', alt: 'Collection 6' },
+    { src: 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Hero/hero-23.jpg', alt: 'Collection 7' },
   ], []);
 
   const mobileHeroImages = useMemo(() => [
-    {
-      src: '/images/hero/24.jpg',
-      alt: 'Black Locust Mobile Fashion Collection 1',
-      title: '',
-      subtitle: ''
-    },
-    {
-      src: '/images/hero/25.jpg',
-      alt: 'Black Locust Mobile Fashion Collection 2',
-      title: '',
-      subtitle: ''
-    },
-    {
-      src: '/images/hero/26.jpg',
-      alt: 'Black Locust Mobile Fashion Collection 3',
-      title: '',
-      subtitle: ''
-    },
-    {
-      src: '/images/hero/27.jpg',
-      alt: 'Black Locust Mobile Fashion Collection 4',
-      title: '',
-      subtitle: ''
-    },
-    {
-      src: '/images/hero/28.jpg',
-      alt: 'Black Locust Mobile Fashion Collection 5',
-      title: '',
-      subtitle: ''
-    },
-    {
-      src: '/images/hero/29.jpg',
-      alt: 'Black Locust Mobile Fashion Collection 6',
-      title: '',
-      subtitle: ''
-    },
-    {
-      src: '/images/hero/30.jpg',
-      alt: 'Black Locust Mobile Fashion Collection 7',
-      title: '',
-      subtitle: ''
-    }
+    { src: 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Hero/hero-24.jpg', alt: 'Mobile 1' },
+    { src: 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Hero/hero-25.jpg', alt: 'Mobile 2' },
+    { src: 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Hero/hero-26.jpg', alt: 'Mobile 3' },
+    { src: 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Hero/hero-27.jpg', alt: 'Mobile 4' },
+    { src: 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Hero/hero-28.jpg', alt: 'Mobile 5' },
+    { src: 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Hero/hero-29.jpg', alt: 'Mobile 6' },
+    { src: 'https://ik.imagekit.io/lt7mwv7fv/New%20Products%202/Hero/hero-30.jpg', alt: 'Mobile 7' },
   ], []);
 
-  // Responsive hero images based on screen size
-  const [heroImages, setHeroImages] = useState(desktopHeroImages);
-  const [isMobile, setIsMobile] = useState(false);
+  // Fallback desktop hero images (Unsplash) if ImageKit ones fail
+  const heroFallbacks = [
+    'https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?w=1400&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1400&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?w=1400&auto=format&fit=crop',
+  ];
 
-  // Detect screen size and set appropriate images
+  const [heroImages, setHeroImages] = useState(desktopHeroImages);
+  const [isMobile, setIsMobile]     = useState(false);
+
   useEffect(() => {
-    const checkScreenSize = () => {
+    const check = () => {
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
       setHeroImages(mobile ? mobileHeroImages : desktopHeroImages);
     };
-
-    checkScreenSize();
-    window.addEventListener('resize', checkScreenSize);
-    
-    return () => window.removeEventListener('resize', checkScreenSize);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
   }, [desktopHeroImages, mobileHeroImages]);
 
-  // Auto-rotate hero carousel
+  // Auto-rotate hero
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentHeroSlide((prev) => (prev + 1) % heroImages.length);
-    }, 5000);
-
-    return () => clearInterval(interval);
+    const t = setInterval(() => setCurrentHeroSlide((p) => (p + 1) % heroImages.length), 5000);
+    return () => clearInterval(t);
   }, [heroImages.length]);
 
-  // Manual slide navigation
-  const goToSlide = (index) => {
-    setCurrentHeroSlide(index);
-  };
+  const goToSlide  = (i) => setCurrentHeroSlide(i);
+  const nextSlide  = () => setCurrentHeroSlide((p) => (p + 1) % heroImages.length);
+  const prevSlide  = () => setCurrentHeroSlide((p) => (p - 1 + heroImages.length) % heroImages.length);
 
-  const nextSlide = () => {
-    setCurrentHeroSlide((prev) => (prev + 1) % heroImages.length);
-  };
-
-  const prevSlide = () => {
-    setCurrentHeroSlide((prev) => (prev - 1 + heroImages.length) % heroImages.length);
-  };
-
-  // Fetch homepage data
-  useEffect(() => {
-    fetchHomepageData();
-  }, []);
-
-  const fetchHomepageData = async () => {
+  // Fetch data
+  useEffect(() => { fetchData(); }, []);
+  const fetchData = async () => {
     try {
       setLoading(true);
       const data = await DataService.getHomepageData();
       setHomepageData(data);
-    } catch (error) {
-      console.error('Error fetching homepage data:', error);
+    } catch (e) {
+      console.error('Homepage data error:', e);
     } finally {
       setLoading(false);
     }
   };
 
-  const currentHeroImage = heroImages[currentHeroSlide] || heroImages[0] || desktopHeroImages[0];
-
   const handleAddToCart = (product) => {
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
+    if (!isAuthenticated) { navigate('/login'); return; }
     addToCart(product);
   };
 
-  const handleProductClick = (productId) => {
-    navigate(`/product/${productId}`);
+  // ─── Product image helper ───────────────────────────────────────────────────
+  const getProductImage = (product) => {
+    const src =
+      product.images?.[0]?.url ||
+      product.images?.[0] ||
+      product.image ||
+      product.imageUrl ||
+      null;
+    if (!src || src.includes('placeholder') || src.trim() === '') {
+      return IMG_FALLBACK[product.category] || IMG_FALLBACK.default;
+    }
+    return src;
   };
 
   if (loading) {
@@ -239,124 +136,80 @@ function HomePage() {
     );
   }
 
+  const currentHero = heroImages[currentHeroSlide] || heroImages[0] || desktopHeroImages[0];
+
   return (
     <div className="min-h-screen bg-white">
-      {/* HERO SECTION - Peter England Style */}
+
+      {/* ═════════════ HERO ═════════════ */}
       <section className="relative">
         <div className="relative h-[80vh] w-full overflow-hidden">
-          {/* Hero Image */}
-          <img
-            src={currentHeroImage.src}
-            alt={currentHeroImage.alt}
+          <SafeImg
+            src={currentHero.src}
+            alt={currentHero.alt}
             className="w-full h-full object-cover"
+            fallback={heroFallbacks[currentHeroSlide % heroFallbacks.length]}
           />
-          
-          {/* Slide Navigation */}
-          <button
-            onClick={prevSlide}
-            className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 hover:bg-opacity-100 rounded-full p-2 transition-all"
-          >
-            <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+
+          {/* Arrows */}
+          <button onClick={prevSlide} className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 transition-all z-10">
+            <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
           </button>
-          <button
-            onClick={nextSlide}
-            className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 hover:bg-opacity-100 rounded-full p-2 transition-all"
-          >
-            <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+          <button onClick={nextSlide} className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 transition-all z-10">
+            <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
           </button>
 
-          {/* Slide Indicators */}
-          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
-            {heroImages.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => goToSlide(index)}
-                className={`w-3 h-3 rounded-full transition-all ${
-                  index === currentHeroSlide ? 'bg-white' : 'bg-white bg-opacity-50'
-                }`}
+          {/* Dots */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2 z-10">
+            {heroImages.map((_, i) => (
+              <button key={i} onClick={() => goToSlide(i)}
+                className={`w-3 h-3 rounded-full transition-all ${i === currentHeroSlide ? 'bg-white scale-125' : 'bg-white/50'}`}
               />
             ))}
           </div>
         </div>
       </section>
 
-      {/* MEN'S CATEGORY SECTION */}
-      <section className="bg-gray-50 py-16">
+      {/* ═════════════ MEN / KIDS CATEGORY TILES ═════════════ */}
+      <section className="py-10 bg-white">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Left Content - Text */}
-            <div className="flex flex-col justify-center">
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Men's Collection</h2>
-              <p className="text-lg text-gray-600 mb-6">Discover our latest men's fashion collection featuring premium quality shirts, pants, and more. Designed for the modern man who values style and comfort.</p>
-              <Link
-                to="/category/men"
-                className="inline-flex items-center bg-black text-white px-8 py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors duration-200"
-              >
-                Shop Men
-                <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5-5m5 5v6m-5-6h6" />
-                </svg>
-              </Link>
-            </div>
-            
-            {/* Right Content - Image */}
-            <div className="relative overflow-hidden rounded-lg shadow-lg">
-              <img
-                src="https://images.unsplash.com/photo-1617137968032-f6e7b6d5e9a?w=600&q=80"
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Men */}
+            <Link to="/category/men" className="group relative overflow-hidden rounded-lg shadow-lg h-64 block">
+              <SafeImg
+                src="https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?w=800&auto=format&fit=crop"
                 alt="Men's Collection"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                fallback={IMG_FALLBACK.men}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-40"></div>
-              <div className="absolute bottom-6 left-6 text-white">
-                <h3 className="text-2xl font-bold mb-2">Premium Men's Wear</h3>
-                <p className="text-gray-200">From casual to formal</p>
+              <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors" />
+              <div className="absolute bottom-0 left-0 p-6">
+                <h3 className="text-3xl font-bold text-white">Men</h3>
+                <p className="text-white/80 text-sm mt-1">Premium clothing for modern man</p>
+                <span className="inline-block mt-4 bg-white text-black px-5 py-2 text-xs font-semibold uppercase tracking-wider hover:bg-gray-100">SHOP NOW</span>
               </div>
-            </div>
+            </Link>
+
+            {/* Kids */}
+            <Link to="/category/kids" className="group relative overflow-hidden rounded-lg shadow-lg h-64 block">
+              <SafeImg
+                src="https://images.unsplash.com/photo-1471286174890-9c112ffca5b4?w=800&auto=format&fit=crop"
+                alt="Kids Collection"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                fallback={IMG_FALLBACK.kids}
+              />
+              <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors" />
+              <div className="absolute bottom-0 left-0 p-6">
+                <h3 className="text-3xl font-bold text-white">Kids</h3>
+                <p className="text-white/80 text-sm mt-1">Fun & comfortable styles</p>
+                <span className="inline-block mt-4 bg-white text-black px-5 py-2 text-xs font-semibold uppercase tracking-wider hover:bg-gray-100">SHOP NOW</span>
+              </div>
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* KIDS' CATEGORY SECTION */}
-      <section className="bg-white py-16">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Left Content - Image */}
-            <div className="relative overflow-hidden rounded-lg shadow-lg">
-              <img
-                src="https://images.unsplash.com/photo-1509631179647-0177331693ae?w=600&q=80"
-                alt="Kids' Collection"
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-40"></div>
-              <div className="absolute bottom-6 left-6 text-white">
-                <h3 className="text-2xl font-bold mb-2">Kids Collection</h3>
-                <p className="text-gray-200">Fun & comfortable styles</p>
-              </div>
-            </div>
-            
-            {/* Right Content - Text */}
-            <div className="flex flex-col justify-center">
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Kids' Collection</h2>
-              <p className="text-lg text-gray-600 mb-6">Explore our vibrant kids' collection with comfortable and stylish outfits for every occasion. From playful casual wear to elegant party outfits, we have it all.</p>
-              <Link
-                to="/category/kids"
-                className="inline-flex items-center bg-black text-white px-8 py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors duration-200"
-              >
-                Shop Kids
-                <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5-5m5 5v6m-5-6h6" />
-                </svg>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* COLLECTIONS SECTION */}
+      {/* ═════════════ SHOP BY COLLECTION — circles ═════════════ */}
       {homepageData.collections.length > 0 && (
         <section className="bg-white py-16">
           <div className="max-w-7xl mx-auto px-4">
@@ -364,43 +217,32 @@ function HomePage() {
               <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Shop by Collection</h2>
               <p className="text-lg text-gray-600">Curated collections for every occasion</p>
             </div>
-            
+
             <div className="flex flex-wrap justify-center gap-8">
-            {homepageData.collections
-              .filter(collection => collection.name !== 'Denim' && collection.name !== 'Denim collection' && collection.name !== 'Trouser' && collection.name !== 'Printed collection')
-              .map((collection) => (
-              <div key={collection._id} className="group relative flex flex-col items-center">
-                <Link 
-                  to={`/collection/${collection.slug}`}
-                  className="block mb-4"
-                >
-                  <div className="w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 group-hover:scale-105">
-                    <img
-                      src={getCollectionImage(collection)}
-                      alt={collection.name}
-                      className="w-full h-full object-cover transition-transform duration-500"
-                      onError={(e) => {
-                        console.log('Failed to load image for:', collection.name, 'slug:', collection.slug);
-                        e.target.src = '/images/placeholder.jpg'; // Fallback image
-                      }}
-                    />
-                  </div>
-                </Link>
-                <h3 className="text-lg font-semibold text-gray-900 mb-1 text-center">{collection.name}</h3>
-                <Link
-                  to={`/collection/${collection.slug}`}
-                  className="text-sm text-gray-600 hover:text-black font-medium transition-colors text-center"
-                >
-                  Explore Collection →
-                </Link>
-              </div>
-            ))}
-          </div>
+              {homepageData.collections.map((col) => (
+                <div key={col._id} className="group flex flex-col items-center">
+                  <Link to={`/collection/${col.slug}`} className="block mb-3">
+                    <div className="w-32 h-32 md:w-36 md:h-36 rounded-full overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 group-hover:scale-105 border-2 border-gray-100 group-hover:border-gray-400">
+                      <SafeImg
+                        src={col.image}
+                        alt={col.name}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        fallback={`https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=400&h=400&auto=format&fit=crop`}
+                      />
+                    </div>
+                  </Link>
+                  <h3 className="text-sm font-semibold text-gray-900 text-center">{col.name}</h3>
+                  <Link to={`/collection/${col.slug}`} className="text-xs text-gray-500 hover:text-black font-medium mt-0.5 transition-colors">
+                    Explore Collection →
+                  </Link>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       )}
 
-      {/* CATEGORIES SECTION */}
+      {/* ═════════════ SHOP BY CATEGORY ═════════════ */}
       {homepageData.categories.length > 0 && (
         <section className="bg-gray-50 py-16">
           <div className="max-w-7xl mx-auto px-4">
@@ -408,25 +250,22 @@ function HomePage() {
               <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Shop by Category</h2>
               <p className="text-lg text-gray-600">Find exactly what you're looking for</p>
             </div>
-            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {homepageData.categories.map((category) => (
-                <div key={category._id} className="group relative overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-all duration-300">
+              {homepageData.categories.map((cat) => (
+                <div key={cat._id} className="group relative overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-all duration-300">
                   <div className="aspect-[3/2] overflow-hidden">
-                    <img
-                      src={category.image}
-                      alt={category.name}
+                    <SafeImg
+                      src={cat.image}
+                      alt={cat.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      fallback={IMG_FALLBACK[cat.slug] || IMG_FALLBACK.default}
                     />
                   </div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60" />
                   <div className="absolute bottom-0 left-0 right-0 p-6">
-                    <h3 className="text-2xl font-bold text-white mb-2">{category.name}</h3>
-                    <p className="text-gray-200 mb-4">{category.description}</p>
-                    <Link
-                      to={`/category/${category.slug}`}
-                      className="bg-white text-black px-6 py-2 rounded-md font-medium hover:bg-gray-100 transition-colors inline-block"
-                    >
+                    <h3 className="text-2xl font-bold text-white mb-1">{cat.name}</h3>
+                    <p className="text-gray-200 text-sm mb-4">{cat.description}</p>
+                    <Link to={`/category/${cat.slug}`} className="bg-white text-black px-6 py-2 text-sm font-medium hover:bg-gray-100 transition-colors inline-block">
                       SHOP NOW
                     </Link>
                   </div>
@@ -437,193 +276,105 @@ function HomePage() {
         </section>
       )}
 
-      {/* FEATURED PRODUCTS SECTION */}
+      {/* ═════════════ FEATURED PRODUCTS ═════════════ */}
       {homepageData.featuredProducts.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 py-16">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Featured Products</h2>
             <p className="text-lg text-gray-600">Handpicked favorites from our collection</p>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {homepageData.featuredProducts.map((product) => (
-              <div key={product._id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden group">
-                <div className="aspect-[3/4] overflow-hidden cursor-pointer" onClick={() => handleProductClick(product._id)}>
-                  <img
-                    src={product.images?.[0]?.url || "/images/placeholder.jpg"}
-                    alt={product.name}
-                    className="w-full h-full object-cover rounded-lg transition-transform duration-300 group-hover:scale-105"
-                  />
-                </div>
-                <div className="p-4">
-                  <h3 className="font-medium text-gray-900 mb-2 text-sm md:text-base">{product.name}</h3>
-                  <div className="flex items-center justify-between">
-                    <span className="text-lg font-bold text-gray-900">₹{product.price}</span>
-                    <button
-                      onClick={() => handleAddToCart(product)}
-                      className="bg-black text-white px-3 py-1 text-xs md:text-sm hover:bg-gray-800 transition-colors"
-                    >
-                      Add to Cart
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <ProductCard key={product._id} product={product} getImg={getProductImage} onAddToCart={handleAddToCart} navigate={navigate} />
             ))}
           </div>
         </section>
       )}
 
-      {/* NEW ARRIVALS SECTION */}
+      {/* ═════════════ NEW ARRIVALS ═════════════ */}
       {homepageData.newArrivals.length > 0 && (
-        <section className="bg-white py-16">
+        <section className="bg-gray-50 py-16">
           <div className="max-w-7xl mx-auto px-4">
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">New Arrivals</h2>
               <p className="text-lg text-gray-600">Fresh styles just landed</p>
             </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {homepageData.newArrivals.map((product) => (
-                <div key={product._id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden group">
-                  <div className="aspect-[3/4] overflow-hidden cursor-pointer" onClick={() => handleProductClick(product._id)}>
-                    <div className="relative">
-                      <img
-                        src={product.images?.[0]?.url || "/images/placeholder.jpg"}
-                        alt={product.name}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-                      <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 text-xs font-medium rounded">
-                        NEW
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-4">
-                    <h3 className="font-medium text-gray-900 mb-2">{product.name}</h3>
-                    <div className="flex items-center justify-between">
-                      <span className="text-lg font-bold text-gray-900">₹{product.price}</span>
-                      <button
-                        onClick={() => handleAddToCart(product)}
-                        className="bg-black text-white px-3 py-1 text-sm hover:bg-gray-800 transition-colors"
-                      >
-                        Add to Cart
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <ProductCard key={product._id} product={product} getImg={getProductImage} onAddToCart={handleAddToCart} navigate={navigate} isNew />
               ))}
             </div>
           </div>
         </section>
       )}
 
-      {/* VIEW ALL PRODUCTS BUTTON */}
+      {/* ═════════════ VIEW ALL ═════════════ */}
       <section className="bg-white py-8">
         <div className="max-w-7xl mx-auto px-4 text-center">
-          <Link
-            to="/shop"
-            className="inline-flex items-center justify-center bg-black text-white px-8 py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-          >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
+          <Link to="/shop" className="inline-flex items-center justify-center bg-black text-white px-8 py-3 font-medium hover:bg-gray-800 transition-colors shadow-lg hover:shadow-xl">
             View All Products
           </Link>
         </div>
       </section>
 
-      {/* COLLECTIONS WITH PRODUCTS SECTION */}
-      {Object.entries(homepageData.organizedByCollections).map(([slug, data]) => (
+      {/* ═════════════ COLLECTIONS WITH PRODUCTS ═════════════ */}
+      {Object.entries(homepageData.organizedByCollections).map(([slug, data]) =>
         data.products.length > 0 && (
           <section key={slug} className="max-w-7xl mx-auto px-4 py-16">
-            <div className="flex items-center justify-between mb-12">
+            <div className="flex items-center justify-between mb-10">
               <div>
-                <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">{data.collection.name}</h2>
-                <p className="text-lg text-gray-600">{data.collection.description}</p>
+                <h2 className="text-3xl font-bold text-gray-900">{data.collection.name}</h2>
+                <p className="text-gray-600 mt-1">{data.collection.description}</p>
               </div>
-              <Link
-                to={`/collection/${slug}`}
-                className="bg-black text-white px-6 py-3 rounded-md font-medium hover:bg-gray-800 transition-colors"
-              >
-                VIEW ALL
-              </Link>
+              <Link to={`/collection/${slug}`} className="bg-black text-white px-6 py-2 text-sm font-medium hover:bg-gray-800 transition-colors">VIEW ALL</Link>
             </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {data.products.slice(0, 8).map((product) => (
-                <div key={product._id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden group">
-                  <div className="aspect-[3/4] overflow-hidden cursor-pointer" onClick={() => handleProductClick(product._id)}>
-                    <img
-                      src={product.images?.[0]?.url || "/images/placeholder.jpg"}
-                      alt={product.name}
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                  </div>
-                  <div className="p-4">
-                    <h3 className="font-medium text-gray-900 mb-2">{product.name}</h3>
-                    <div className="flex items-center justify-between">
-                      <span className="text-lg font-bold text-gray-900">₹{product.price}</span>
-                      <button
-                        onClick={() => handleAddToCart(product)}
-                        className="bg-black text-white px-3 py-1 text-sm hover:bg-gray-800 transition-colors"
-                      >
-                        Add to Cart
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <ProductCard key={product._id} product={product} getImg={getProductImage} onAddToCart={handleAddToCart} navigate={navigate} />
               ))}
             </div>
           </section>
         )
-      ))}
+      )}
+    </div>
+  );
+}
 
-      {/* CATEGORIES WITH PRODUCTS SECTION */}
-      {Object.entries(homepageData.organizedByCategories).map(([slug, data]) => (
-        data.products.length > 0 && (
-          <section key={slug} className="bg-gray-50 py-16">
-            <div className="max-w-7xl mx-auto px-4">
-              <div className="flex items-center justify-between mb-12">
-                <div>
-                  <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">{data.category.name}</h2>
-                  <p className="text-lg text-gray-600">{data.category.description}</p>
-                </div>
-                <Link
-                  to={`/category/${slug}`}
-                  className="bg-black text-white px-6 py-3 rounded-md font-medium hover:bg-gray-800 transition-colors"
-                >
-                  VIEW ALL
-                </Link>
-              </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {data.products.slice(0, 8).map((product) => (
-                  <div key={product._id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden group">
-                    <div className="aspect-[3/4] overflow-hidden cursor-pointer" onClick={() => handleProductClick(product._id)}>
-                      <img
-                        src={product.images?.[0]?.url || "/images/placeholder.jpg"}
-                        alt={product.name}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-                    </div>
-                    <div className="p-4">
-                      <h3 className="font-medium text-gray-900 mb-2">{product.name}</h3>
-                      <div className="flex items-center justify-between">
-                        <span className="text-lg font-bold text-gray-900">₹{product.price}</span>
-                        <button
-                          onClick={() => handleAddToCart(product)}
-                          className="bg-black text-white px-3 py-1 text-sm hover:bg-gray-800 transition-colors"
-                        >
-                          Add to Cart
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        )
-      ))}
+// ─── Reusable Product Card ─────────────────────────────────────────────────────
+function ProductCard({ product, getImg, onAddToCart, navigate, isNew = false }) {
+  const imgSrc = getImg(product);
+  const fallback = IMG_FALLBACK[product.category] || IMG_FALLBACK.default;
+
+  return (
+    <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden group">
+      <div className="aspect-[3/4] overflow-hidden cursor-pointer relative" onClick={() => navigate(`/product/${product._id}`)}>
+        <SafeImg
+          src={imgSrc}
+          alt={product.name}
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          fallback={fallback}
+        />
+        {isNew && (
+          <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-0.5 text-xs font-medium rounded">NEW</div>
+        )}
+      </div>
+      <div className="p-3 md:p-4">
+        <h3 className="font-medium text-gray-900 mb-2 text-sm md:text-base line-clamp-2">{product.name}</h3>
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <span className="text-base font-bold text-gray-900">₹{product.price}</span>
+            {product.mrp && product.mrp > product.price && (
+              <span className="text-xs text-gray-400 line-through ml-1">₹{product.mrp}</span>
+            )}
+          </div>
+          <button
+            onClick={() => onAddToCart(product)}
+            className="bg-black text-white px-3 py-1.5 text-xs hover:bg-gray-800 transition-colors whitespace-nowrap"
+          >
+            Add to Cart
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
