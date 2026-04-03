@@ -12,12 +12,12 @@ const Footer = () => {
           <div>
             <h3 className="font-bold text-gray-900 mb-4">NEED HELP?</h3>
             <ul className="space-y-2 text-sm text-gray-600">
-              <li><Link to="/track-order" className="hover:text-black">Order Status</Link></li>
+              <li><Link to="/order-status" className="hover:text-black">Order Status</Link></li>
               <li><Link to="/delivery" className="hover:text-black">Delivery</Link></li>
               <li><Link to="/returns" className="hover:text-black">Returns</Link></li>
               <li><Link to="/faq" className="hover:text-black">FAQs</Link></li>
               <li><Link to="/shipping-policy" className="hover:text-black">Shipping Policy</Link></li>
-              <li><Link to="/contact" className="hover:text-black">Contact Us</Link></li>
+              <li><Link to="/contact-us" className="hover:text-black">Contact Us</Link></li>
             </ul>
           </div>
 
@@ -25,7 +25,7 @@ const Footer = () => {
           <div>
             <h3 className="font-bold text-gray-900 mb-4">ABOUT US</h3>
             <ul className="space-y-2 text-sm text-gray-600">
-              <li><Link to="/about" className="hover:text-black">Our Story</Link></li>
+              <li><Link to="/our-story" className="hover:text-black">Our Story</Link></li>
               <li><Link to="/store-locator" className="hover:text-black">Find a Store</Link></li>
               <li><Link to="/blog" className="hover:text-black">Blog</Link></li>
               <li><Link to="/careers" className="hover:text-black">Careers</Link></li>
@@ -38,8 +38,8 @@ const Footer = () => {
           <div>
             <h3 className="font-bold text-gray-900 mb-4">SHOP BY</h3>
             <ul className="space-y-2 text-sm text-gray-600">
-              <li><Link to="/products" className="hover:text-black">Men</Link></li>
-              <li><Link to="/products" className="hover:text-black">Kids</Link></li>
+              <li><Link to="/category/men" className="hover:text-black">Men</Link></li>
+              <li><Link to="/category/kids" className="hover:text-black">Kids</Link></li>
               <li><Link to="/new-arrivals" className="hover:text-black">New Arrivals</Link></li>
               <li><Link to="/products" className="hover:text-black">Best Sellers</Link></li>
               <li><Link to="/products" className="hover:text-black">Sale</Link></li>

@@ -40,20 +40,17 @@ const Header = () => {
 
             {/* Logo */}
             <div className="flex-shrink-0">
-              <Link to="/" className="flex items-center gap-2">
-                <img src={logo} alt="Blacklocust" className="h-8 w-auto" />
-                <span className="text-2xl font-bold text-black">
-                  BLACK LOCUST
-                </span>
+              <Link to="/" className="flex items-center">
+                <img src={logo} alt="Black Locust" className="h-10 w-auto" />
               </Link>
             </div>
 
             {/* Navigation - Desktop */}
             <nav className="hidden md:flex space-x-6">
-              <Link to="/products" className="text-sm font-medium text-gray-700 hover:text-black uppercase tracking-wide">
+              <Link to="/category/men" className="text-sm font-medium text-gray-700 hover:text-black uppercase tracking-wide">
                 MEN
               </Link>
-              <Link to="/products" className="text-sm font-medium text-gray-700 hover:text-black uppercase tracking-wide">
+              <Link to="/category/kids" className="text-sm font-medium text-gray-700 hover:text-black uppercase tracking-wide">
                 KIDS
               </Link>
               <Link to="/products" className="text-sm font-medium text-red-600 hover:text-red-700 uppercase tracking-wide">

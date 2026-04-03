@@ -5,7 +5,7 @@ import { useCart } from '../context/CartContext';
 import DataService from '../services/dataService';
 
 function CategoryPage() {
-  const { categorySlug } = useParams();
+  const { slug: categorySlug } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const { addToCart } = useCart();
@@ -36,16 +36,31 @@ function CategoryPage() {
       
       // Find the category
       const foundCategory = data.categories.find(c => c.slug === categorySlug);
-      if (!foundCategory) {
-        navigate('/404');
+      if (foundCategory) {
+        setCategory(foundCategory);
+        const categoryProducts = data.organizedByCategories[categorySlug]?.products || [];
+        setProducts(categoryProducts);
         return;
       }
 
-      setCategory(foundCategory);
-      
-      // Get products for this category
-      const categoryProducts = data.organizedByCategories[categorySlug]?.products || [];
-      setProducts(categoryProducts);
+      // Fallback: build a temporary category for common slugs (men/kids/etc)
+      const fallbackProducts = (data.products || []).filter((product) => {
+        const categoryValue =
+          (product?.categorySlug || product?.category || '').toString().toLowerCase();
+        return categoryValue.includes((categorySlug || '').toLowerCase());
+      });
+
+      if (fallbackProducts.length > 0) {
+        setCategory({
+          slug: categorySlug,
+          name: categorySlug?.charAt(0).toUpperCase() + categorySlug?.slice(1),
+          description: `Explore ${categorySlug} collection`
+        });
+        setProducts(fallbackProducts);
+        return;
+      }
+
+      navigate('/products');
     } catch (error) {
       console.error('Error fetching category data:', error);
     } finally {

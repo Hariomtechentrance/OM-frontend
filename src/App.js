@@ -30,6 +30,7 @@ const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
+const InfoPage = lazy(() => import('./pages/InfoPage'));
 const NewArrivalsPage = lazy(() => import('./pages/NewArrivalsPage'));
 const ShopSummerPage = lazy(() => import('./pages/ShopSummerPage'));
 const ShopCollectionsPage = lazy(() => import('./pages/ShopCollectionsPage'));
@@ -85,6 +86,55 @@ const AppLayout = () => {
           {/* OTHER */}
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
+          <Route path="/contact-us" element={<ContactPage />} />
+          <Route
+            path="/order-status"
+            element={<InfoPage title="Order Status" subtitle="Track your order and shipping progress." />}
+          />
+          <Route
+            path="/faq"
+            element={<InfoPage title="Frequently Asked Questions" subtitle="Common questions from Black Locust customers." />}
+          />
+          <Route
+            path="/shipping-policy"
+            element={<InfoPage title="Shipping Policy" subtitle="Shipping timelines, service levels, and delivery regions." />}
+          />
+          <Route
+            path="/returns"
+            element={<InfoPage title="Returns & Exchanges" subtitle="How returns, exchanges, and refunds work." />}
+          />
+          <Route
+            path="/delivery"
+            element={<InfoPage title="Delivery Information" subtitle="Delivery windows and dispatch process details." />}
+          />
+          <Route
+            path="/privacy"
+            element={<InfoPage title="Privacy Policy" subtitle="How we collect, use, and protect customer data." />}
+          />
+          <Route
+            path="/terms"
+            element={<InfoPage title="Terms & Conditions" subtitle="Guidelines and legal terms for using our platform." />}
+          />
+          <Route
+            path="/our-story"
+            element={<InfoPage title="Our Story" subtitle="The journey and values behind Black Locust." />}
+          />
+          <Route
+            path="/store-locator"
+            element={<InfoPage title="Store Locator" subtitle="Find a Black Locust store near you." />}
+          />
+          <Route
+            path="/blog"
+            element={<InfoPage title="Blog" subtitle="Style stories, trends, and seasonal updates." />}
+          />
+          <Route
+            path="/careers"
+            element={<InfoPage title="Careers" subtitle="Build your career with Black Locust." />}
+          />
+          <Route
+            path="/gift-cards"
+            element={<InfoPage title="Gift Cards" subtitle="Gift style with Black Locust digital cards." />}
+          />
 
           {/* USER */}
           <Route path="/cart" element={<CartPage />} />
