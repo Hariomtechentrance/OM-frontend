@@ -276,67 +276,6 @@ function CollectionPage() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Left Sidebar - Filters (Always visible on desktop) */}
-          <div className="hidden lg:block w-64 flex-shrink-0">
-            <div className="bg-white border border-gray-200 rounded-lg p-6 sticky top-4">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
-              </div>
-              
-              {/* Product Count */}
-              <div className="mb-6">
-                <h3 className="text-sm font-medium text-gray-700 mb-2">
-                  {displayedProducts.length} Products
-                </h3>
-                <p className="text-xs text-gray-600">From {collection.name}</p>
-              </div>
-
-              {/* Filter Options */}
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Filter By
-                  </label>
-                  <select
-                    value={filterBy}
-                    onChange={(e) => setFilterBy(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
-                  >
-                    <option value="all">All Products</option>
-                    <option value="new">New Arrivals</option>
-                    <option value="sale">On Sale</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Sort By
-                  </label>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
-                  >
-                    <option value="name">Sort by Name</option>
-                    <option value="price-low">Price: Low to High</option>
-                    <option value="price-high">Price: High to Low</option>
-                  </select>
-                </div>
-
-                {/* Clear Filters */}
-                <button
-                  onClick={() => {
-                    setFilterBy('all');
-                    setSortBy('name');
-                  }}
-                  className="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors"
-                >
-                  Clear Filters
-                </button>
-              </div>
-            </div>
-          </div>
-
           {/* Mobile Filter Toggle */}
           <div className="lg:hidden mb-6">
             <button
@@ -351,14 +290,14 @@ function CollectionPage() {
             </button>
           </div>
 
-          {/* Mobile Filter Panel */}
-          <div className={`${isFilterOpen ? 'block' : 'hidden'} lg:hidden w-full mb-6`}>
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
+          {/* Left Sidebar - Filters */}
+          <div className={`${isFilterOpen ? 'block' : 'hidden'} lg:block w-64 flex-shrink-0`}>
+            <div className="bg-white border border-gray-200 rounded-lg p-6 sticky top-4">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
                 <button
                   onClick={() => setIsFilterOpen(false)}
-                  className="p-2 text-gray-400 hover:text-gray-600"
+                  className="lg:hidden p-2 text-gray-400 hover:text-gray-600"
                 >
                   <FaTimes />
                 </button>

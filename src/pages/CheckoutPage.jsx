@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import api from '../api/axios';
 
 function CheckoutPage() {
-  const { cart, clearCart } = useCart();
+  const { items: cart, clearCart } = useCart();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -25,16 +26,29 @@ function CheckoutPage() {
   const [promoCode, setPromoCode] = useState('');
   const [discount, setDiscount] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
-    if (!cart || cart.length === 0) {
-      navigate('/cart');
-      return;
-    }
+    // Add a small delay to allow navigation to complete
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+      
+      // Check authentication after loading
+      if (!isAuthenticated) {
+        toast.error('Please login to continue');
+        navigate('/login', { state: { redirectTo: '/checkout' } });
+        return;
+      }
+      
+      // Check cart after loading
+      if (!cart || cart.length === 0) {
+        toast.error('Your cart is empty');
+        navigate('/cart');
+        return;
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
   }, [isAuthenticated, cart, navigate]);
 
   const calculateSubtotal = () => {
@@ -55,43 +69,233 @@ function CheckoutPage() {
   const handlePaymentSubmit = async (e) => {
     e.preventDefault();
     setIsProcessing(true);
+    let razorpayFlow = false;
 
     try {
-      // Create order data
-      const orderData = {
-        items: cart || [],
+      if (!cart || cart.length === 0) {
+        toast.error('Your cart is empty');
+        navigate('/cart');
+        return;
+      }
+
+      const subtotal = calculateSubtotal();
+      const shippingPrice = subtotal > 999 ? 0 : 50;
+      const totalPrice = calculateTotal();
+
+      // Backend StoreOrder expects `orderItems` + `shippingAddress` + `paymentMethod`
+      const orderItems = (cart || []).map((item) => ({
+        product: item.product || item.productId,
+        name: item.name,
+        image: item.image,
+        price: item.price,
+        quantity: item.quantity,
+        size: item.size || 'Default',
+        color: item.color || 'Default',
+        // storeOrderController calculates `subtotal` internally using price * quantity,
+        // but we can still include it for clarity.
+        subtotal: item.price * item.quantity
+      }));
+
+      const fullName = `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim();
+
+      const orderPayload = {
+        orderItems,
         shippingAddress: {
-          fullName: shippingAddress.fullName,
+          fullName: fullName || shippingAddress.email, // fallback to prevent missing field
+          firstName: shippingAddress.firstName,
+          lastName: shippingAddress.lastName,
+          email: shippingAddress.email,
+          phone: shippingAddress.phone,
           address: shippingAddress.address,
           city: shippingAddress.city,
           state: shippingAddress.state,
           pincode: shippingAddress.pincode,
           country: shippingAddress.country
         },
-        paymentMethod: paymentMethod,
-        subtotal: calculateSubtotal(),
-        shipping: calculateSubtotal() > 999 ? 0 : 50,
-        discount: discount,
-        total: calculateTotal()
+        // Map UI payment methods to backend StoreOrder paymentMethod values
+        paymentMethod: paymentMethod === 'cod' ? 'cod' : 'razorpay',
+        itemsPrice: subtotal,
+        taxPrice: 0,
+        shippingPrice,
+        totalPrice,
+        ...(paymentMethod === 'cod'
+          ? {
+              // storeOrderController currently enforces min amount >= 100 for COD;
+              // we send a valid confirmation object.
+              codConfirmation: {
+                paid: true,
+                amount: Math.max(100, Math.round(totalPrice)),
+                razorpayPaymentId: 'cod'
+              }
+            }
+          : {})
+      };
+      razorpayFlow = orderPayload.paymentMethod === 'razorpay';
+
+      // 1) Create order record in our DB first
+      const orderRes = await api.post('/orders', orderPayload);
+      const createdOrder = orderRes.data;
+
+      const shiprocketIfPossible = async () => {
+        try {
+          await api.post('/shipping/shiprocket/shipment', { orderId: createdOrder._id });
+        } catch (err) {
+          // Shipping integration should not block successful payment/order completion.
+          console.warn('Shiprocket shipment creation failed:', err?.response?.data || err.message);
+        }
       };
 
-      // Here you would normally send order to backend
-      // For now, we'll simulate successful order
-      console.log('Order placed:', orderData);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Clear cart and redirect
-      clearCart();
-      navigate('/order-success');
-      toast.success('Order placed successfully!');
+      // 2) COD: finalize immediately
+      if (orderPayload.paymentMethod === 'cod') {
+        await shiprocketIfPossible();
+        clearCart();
+        navigate('/order-success', { state: { orderId: createdOrder._id } });
+        toast.success('Order placed successfully!');
+        return;
+      }
+
+      // 3) Razorpay: open checkout and verify payment server-side
+      const loadRazorpayScript = () =>
+        new Promise((resolve, reject) => {
+          if (window.Razorpay) return resolve(window.Razorpay);
+          const script = document.createElement('script');
+          script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+          script.onload = () => resolve(window.Razorpay);
+          script.onerror = () => reject(new Error('Failed to load Razorpay script'));
+          document.body.appendChild(script);
+        });
+
+      const [{ data: keyData }, { data: razorpayOrderResp }] = await Promise.all([
+        api.get('/payments/razorpay/key'),
+        api.post('/payments/razorpay/order', {
+          amount: Math.round(totalPrice),
+          currency: 'INR',
+          receipt: createdOrder.orderNumber
+        })
+      ]);
+
+      if (!keyData?.keyId) {
+        toast.error('Razorpay is not configured on the server.');
+        return;
+      }
+
+      await loadRazorpayScript();
+
+      const rzpOrderId =
+        razorpayOrderResp?.order?.id ||
+        razorpayOrderResp?.order?.order_id ||
+        razorpayOrderResp?.order?.orderId;
+      const rzpAmount = razorpayOrderResp?.order?.amount;
+      const rzpCurrency = razorpayOrderResp?.order?.currency || 'INR';
+
+      if (!rzpOrderId || !Number.isFinite(Number(rzpAmount))) {
+        throw new Error(
+          `Razorpay order response missing fields: orderId=${rzpOrderId}, amount=${rzpAmount}`
+        );
+      }
+
+      const rzpOptions = {
+        key: keyData.keyId,
+        order_id: rzpOrderId,
+        amount: rzpAmount,
+        currency: rzpCurrency,
+        name: 'Black Locust',
+        description: `Order ${createdOrder.orderNumber}`,
+        prefill: {
+          name: fullName,
+          email: shippingAddress.email,
+          contact: shippingAddress.phone
+        },
+        theme: { color: '#000000' },
+        config:
+          paymentMethod === 'card'
+            ? {
+                display: {
+                  blocks: {
+                    cards_only: {
+                      name: 'Pay via Card',
+                      instruments: [{ method: 'card' }]
+                    }
+                  }
+                },
+                sequence: ['block.cards_only'],
+                preferences: { show_default_blocks: false }
+              }
+            : paymentMethod === 'upi'
+            ? {
+                display: {
+                  blocks: {
+                    upi_only: {
+                      name: 'Pay via UPI',
+                      instruments: [{ method: 'upi' }]
+                    }
+                  }
+                },
+                sequence: ['block.upi_only'],
+                preferences: { show_default_blocks: false }
+              }
+            : paymentMethod === 'wallet'
+            ? {
+                display: {
+                  blocks: {
+                    wallets_only: {
+                      name: 'Pay via Wallet',
+                      instruments: [{ method: 'wallet' }]
+                    }
+                  }
+                },
+                sequence: ['block.wallets_only'],
+                preferences: { show_default_blocks: false }
+              }
+            : undefined,
+        handler: async function (response) {
+          try {
+            await api.post('/payments/razorpay/verify', {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              orderId: createdOrder._id
+            });
+
+            await shiprocketIfPossible();
+            clearCart();
+            navigate('/order-success', { state: { orderId: createdOrder._id } });
+            toast.success('Order placed successfully!');
+          } catch (err) {
+            console.error('Razorpay verify failed:', err?.response?.data || err.message);
+            toast.error('Payment verification failed.');
+          } finally {
+            setIsProcessing(false);
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            // User closed the Razorpay modal; allow re-trying checkout.
+            setIsProcessing(false);
+          }
+        }
+      };
+
+      const rzp = new window.Razorpay(rzpOptions);
+
+      rzp.on('payment.failed', function (response) {
+        console.error('Razorpay payment failed:', response);
+        toast.error('Payment failed. Please try again.');
+        setIsProcessing(false);
+      });
+
+      rzp.open();
       
     } catch (error) {
       console.error('Order placement error:', error);
-      toast.error('Failed to place order. Please try again.');
-    } finally {
+      toast.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          'Failed to place order. Please try again.'
+      );
       setIsProcessing(false);
+    } finally {
+      if (!razorpayFlow) setIsProcessing(false);
     }
   };
 
@@ -104,12 +308,23 @@ function CheckoutPage() {
     }
   };
 
-  if (!isAuthenticated || !cart || cart.length === 0) {
-    return null;
-  }
+  if (!isAuthenticated || !cart || cart.length === 0) return null;
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Loading State */}
+      {isLoading && (
+        <div className="min-h-screen bg-white flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading checkout...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content */}
+      {!isLoading && (
+        <>
       {/* Page Header */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Checkout</h1>
@@ -379,7 +594,7 @@ function CheckoutPage() {
               {/* Cart Items */}
               <div className="space-y-4 mb-6">
                 {cart.map((item) => (
-                  <div key={item._id} className="flex items-center space-x-4">
+                  <div key={item.uniqueId || item._id || item.product} className="flex items-center space-x-4">
                     <div className="w-16 h-20 bg-gray-50 rounded-md overflow-hidden flex-shrink-0">
                       <img
                         src={item.image}
@@ -477,6 +692,8 @@ function CheckoutPage() {
           </div>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }

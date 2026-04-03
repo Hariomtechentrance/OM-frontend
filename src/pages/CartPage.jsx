@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useCart } from '../context/CartContext';
@@ -18,7 +18,7 @@ function CartPage() {
   console.log("Auth:", isAuthenticated);
 
   const calculateSubtotal = () => {
-    return safeCart.reduce((total, item) => total + (item.price * item.quantity), 0);
+    return safeCart.reduce((total, item) => total + (Number(item.price || 0) * Number(item.quantity || 0)), 0);
   };
 
   const calculateTotal = () => {
@@ -51,7 +51,24 @@ function CartPage() {
       toast.error('Your cart is empty');
       return;
     }
-    navigate('/checkout');
+    
+    // Ensure cart is properly structured before navigation
+    const validCart = safeCart.filter(item => 
+      item && 
+      (item.uniqueId || item.product) &&
+      Number(item.price) > 0 &&
+      Number(item.quantity) > 0
+    );
+    
+    if (validCart.length === 0) {
+      toast.error('Invalid items in cart');
+      return;
+    }
+    
+    // Add small delay to ensure smooth navigation
+    setTimeout(() => {
+      navigate('/checkout');
+    }, 100);
   };
 
   if (!isAuthenticated) {
@@ -62,6 +79,7 @@ function CartPage() {
           <p className="text-gray-600 mb-6">You need to be signed in to view your cart.</p>
           <Link
             to="/login"
+            state={{ redirectTo: '/checkout' }}
             className="bg-black text-white px-6 py-3 rounded-md font-medium hover:bg-gray-800 transition-colors"
           >
             Sign In
@@ -105,7 +123,7 @@ function CartPage() {
             {/* Cart Items */}
             <div className="lg:col-span-2 space-y-4">
               {safeCart.map((item) => (
-                <div key={item._id} className="bg-white border border-gray-200 rounded-lg p-6">
+                <div key={item.uniqueId || item._id || item.product} className="bg-white border border-gray-200 rounded-lg p-6">
                   <div className="flex flex-col sm:flex-row gap-4">
                     {/* Product Image */}
                     <div className="w-32 h-40 bg-gray-50 rounded-md overflow-hidden flex-shrink-0">
@@ -121,7 +139,7 @@ function CartPage() {
                       <div className="flex justify-between mb-2">
                         <h3 className="text-lg font-medium text-gray-900">{item.name}</h3>
                         <button
-                          onClick={() => handleRemoveItem(item._id)}
+                          onClick={() => handleRemoveItem(item.uniqueId || item._id)}
                           className="text-gray-400 hover:text-red-500"
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -132,11 +150,11 @@ function CartPage() {
 
                       {/* Size and Color */}
                       <div className="flex gap-4 mb-4 text-sm text-gray-600">
-                        {item.selectedSize && (
-                          <span>Size: <span className="font-medium">{item.selectedSize}</span></span>
+                        {item.size && (
+                          <span>Size: <span className="font-medium">{item.size}</span></span>
                         )}
-                        {item.selectedColor && (
-                          <span>Color: <span className="font-medium">{item.selectedColor}</span></span>
+                        {item.color && (
+                          <span>Color: <span className="font-medium">{item.color}</span></span>
                         )}
                       </div>
 
@@ -152,7 +170,7 @@ function CartPage() {
                         {/* Quantity Controls */}
                         <div className="flex items-center space-x-2">
                           <button
-                            onClick={() => handleQuantityChange(item._id, item.quantity - 1)}
+                            onClick={() => handleQuantityChange(item.uniqueId || item._id, item.quantity - 1)}
                             className="w-8 h-8 border border-gray-300 rounded flex items-center justify-center hover:border-black"
                           >
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -161,7 +179,7 @@ function CartPage() {
                           </button>
                           <span className="w-8 text-center font-medium">{item.quantity}</span>
                           <button
-                            onClick={() => handleQuantityChange(item._id, item.quantity + 1)}
+                            onClick={() => handleQuantityChange(item.uniqueId || item._id, item.quantity + 1)}
                             className="w-8 h-8 border border-gray-300 rounded flex items-center justify-center hover:border-black"
                           >
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

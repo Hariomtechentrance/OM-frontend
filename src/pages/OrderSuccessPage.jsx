@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import api from '../api/axios';
 
 function OrderSuccessPage() {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const orderId = location.state?.orderId || '';
   const [orderNumber, setOrderNumber] = useState('');
+  const [orderStatus, setOrderStatus] = useState('');
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -13,10 +17,26 @@ function OrderSuccessPage() {
       return;
     }
 
-    // Generate random order number
-    const generatedOrderNumber = 'BL' + Math.random().toString(36).substr(2, 9).toUpperCase();
-    setOrderNumber(generatedOrderNumber);
-  }, [isAuthenticated, navigate]);
+    if (!orderId) {
+      // Fallback if user lands here without orderId
+      const generatedOrderNumber = 'BL' + Math.random().toString(36).substr(2, 9).toUpperCase();
+      setOrderNumber(generatedOrderNumber);
+      return;
+    }
+
+    const loadOrder = async () => {
+      try {
+        const order = await api.get(`/orders/${orderId}`);
+        setOrderNumber(order.data?.orderNumber || '');
+        setOrderStatus(order.data?.status || '');
+      } catch (err) {
+        console.warn('Failed to load order for success page:', err?.response?.data || err.message);
+        // Keep existing fallback if order load fails
+      }
+    };
+
+    loadOrder();
+  }, [isAuthenticated, navigate, orderId]);
 
   if (!isAuthenticated) {
     return null;
@@ -47,6 +67,9 @@ function OrderSuccessPage() {
             <p className="text-sm text-gray-600 mt-2">
               A confirmation email has been sent to your registered email address.
             </p>
+            {orderStatus ? (
+              <p className="text-sm text-gray-600 mt-2">Current status: {orderStatus}</p>
+            ) : null}
           </div>
 
           {/* Order Details */}
@@ -95,6 +118,7 @@ function OrderSuccessPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               to="/track-order"
+              state={{ orderId }}
               className="bg-black text-white px-8 py-3 rounded-md font-medium hover:bg-gray-800 transition-colors"
             >
               Track Order

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FaEye, FaEyeSlash, FaGoogle, FaFacebook, FaTimes, FaCheck, FaMobileAlt } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
@@ -26,21 +26,22 @@ const LoginPage = () => {
   
   const { login, loading, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     if (
       !loading &&
       isAuthenticated &&
       user &&
-      window.location.pathname === '/login'
+      location.pathname === '/login'
     ) {
-      if (user.role === 'admin') {
-        navigate('/admin');
-      } else {
-        navigate('/');
-      }
+      const redirectTo = location.state?.redirectTo;
+      if (redirectTo) return navigate(redirectTo);
+
+      if (user.role === 'admin') return navigate('/admin');
+      return navigate('/');
     }
-  }, [loading, isAuthenticated, user, navigate]);
+  }, [loading, isAuthenticated, user, navigate, location.pathname, location.state]);
 
   const handleChange = (e) => {
     setFormData({

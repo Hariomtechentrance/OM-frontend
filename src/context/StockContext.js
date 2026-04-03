@@ -178,9 +178,9 @@ const stockReducer = (state, action) => {
         return {
           ...state,
           [productId]: {
-            ...state[productId],
+            ...(state[productId] || {}),
             [size]: {
-              ...state[productId][size],
+              ...(state[productId]?.[size] || {}),
               stock: currentStock - quantity
             }
           }
@@ -199,9 +199,9 @@ const stockReducer = (state, action) => {
       return {
         ...state,
         [incProductId]: {
-          ...state[incProductId],
+          ...(state[incProductId] || {}),
           [incSize]: {
-            ...state[incProductId][incSize],
+            ...(state[incProductId]?.[incSize] || {}),
             stock: newStock
           }
         }

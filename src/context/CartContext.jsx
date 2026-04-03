@@ -149,31 +149,75 @@ export const CartProvider = ({ children }) => {
   useEffect(() => {
     const loadCart = async () => {
       const token = localStorage.getItem("token");
-      
-      // For both guest and logged-in users, start with empty cart
-      // Only load from backend if user has active session items
-      const sessionCart = sessionStorage.getItem('sessionCart');
-      if (sessionCart) {
-        // User has items in current session
-        const cartData = JSON.parse(sessionCart);
+
+      const sessionCartRaw = sessionStorage.getItem('sessionCart');
+      const sessionCart = sessionCartRaw ? JSON.parse(sessionCartRaw) : null;
+      const sessionItems = Array.isArray(sessionCart?.items) ? sessionCart.items : [];
+
+      // Logged-in: always load persistent cart from backend so items stay
+      // for that login until the user removes them.
+      if (token) {
+        try {
+          const res = await api.get('/cart');
+          const backendItems = Array.isArray(res.data?.cart?.items)
+            ? res.data.cart.items
+            : [];
+
+          const mappedBackendItems = backendItems
+            .map((line) => {
+              const productObj = line?.product;
+              const productId =
+                typeof productObj === 'object' && productObj
+                  ? productObj._id || productObj.id
+                  : productObj;
+
+              if (!productId) return null;
+
+              const size = line?.size;
+              const color = line?.color;
+              const uniqueId = `${productId}-${size || 'default'}-${color || 'default'}`;
+
+              return {
+                uniqueId,
+                product: productId,
+                name: productObj?.name || 'Product',
+                price: productObj?.price ?? 0,
+                image: getImageUrl(productObj),
+                quantity: Number(line?.quantity || 1),
+                size,
+                color
+              };
+            })
+            .filter(Boolean);
+
+          // Merge with session cart (if any) to avoid losing items added before login.
+          const localCartForMerge = { items: sessionItems };
+          const backendCartForMerge = { items: mappedBackendItems };
+          const merged = mergeCarts(localCartForMerge, backendCartForMerge);
+
+          dispatch({
+            type: 'SET_CART',
+            payload: {
+              items: merged.items || []
+            }
+          });
+          return;
+        } catch (error) {
+          console.error('❌ GET /api/cart failed:', error?.response?.data || error.message);
+          // Fall through to session items only
+        }
+      }
+
+      // Guest: use session storage cart only
+      if (sessionItems.length) {
         dispatch({
           type: 'SET_CART',
-          payload: cartData
-        });
-        
-        // If logged in, sync to backend
-        if (token) {
-          try {
-            await saveCartToBackend();
-          } catch (error) {
-            console.error('❌ Cart sync error:', error);
+          payload: {
+            items: sessionItems
           }
-        }
-      } else {
-        // Start with empty cart for all users
-        dispatch({
-          type: 'CLEAR_CART'
         });
+      } else {
+        dispatch({ type: 'CLEAR_CART' });
       }
     };
 

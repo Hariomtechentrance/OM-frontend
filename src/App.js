@@ -23,6 +23,8 @@ const ProductDetailPage = lazy(() => import('./pages/ProductDetailPage'));
 const CategoryPage = lazy(() => import('./pages/CategoryPage'));
 const CartPage = lazy(() => import('./pages/CartPage'));
 const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
+const OrderSuccessPage = lazy(() => import('./pages/OrderSuccessPage'));
+const TrackOrderPage = lazy(() => import('./pages/TrackOrderPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
@@ -30,7 +32,6 @@ const AboutPage = lazy(() => import('./pages/AboutPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
 const NewArrivalsPage = lazy(() => import('./pages/NewArrivalsPage'));
 const ShopSummerPage = lazy(() => import('./pages/ShopSummerPage'));
-const ShopCollectionPage = lazy(() => import('./pages/ShopCollectionPage'));
 const ShopCollectionsPage = lazy(() => import('./pages/ShopCollectionsPage'));
 const CollectionPage = lazy(() => import('./pages/CollectionPage'));
 const SearchPage = lazy(() => import('./pages/SearchPage'));
@@ -88,6 +89,8 @@ const AppLayout = () => {
           {/* USER */}
           <Route path="/cart" element={<CartPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/order-success" element={<OrderSuccessPage />} />
+          <Route path="/track-order" element={<TrackOrderPage />} />
           <Route path="/profile" element={<ProfilePage />} />
 
           {/* ADMIN */}
