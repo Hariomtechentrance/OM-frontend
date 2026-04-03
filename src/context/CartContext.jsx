@@ -224,6 +224,18 @@ export const CartProvider = ({ children }) => {
     loadCart();
   }, []);
 
+  // Ensure UI cart clears immediately on logout without needing page refresh.
+  useEffect(() => {
+    const handleLogout = () => {
+      dispatch({ type: 'CLEAR_CART' });
+      sessionStorage.removeItem('sessionCart');
+      clearCartFromLocalStorage();
+    };
+
+    window.addEventListener('blacklocust:logout', handleLogout);
+    return () => window.removeEventListener('blacklocust:logout', handleLogout);
+  }, []);
+
   // Save cart to sessionStorage and backend for logged-in users
   useEffect(() => {
     const token = localStorage.getItem("token");

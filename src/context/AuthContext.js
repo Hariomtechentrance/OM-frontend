@@ -389,6 +389,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('otpMethod');
     setAuthToken(null);
     dispatch({ type: LOGOUT });
+    window.dispatchEvent(new Event('blacklocust:logout'));
     
     // ❌ REMOVED: window.location.href = '/login';
     // ✅ React Router will handle redirect

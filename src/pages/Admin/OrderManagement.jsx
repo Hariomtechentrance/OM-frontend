@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import axios from 'axios';
+import api from '../../api/axios';
 
 const OrderManagement = () => {
   const [orders, setOrders] = useState([]);
@@ -15,8 +15,8 @@ const OrderManagement = () => {
 
   const fetchOrders = async () => {
     try {
-      const response = await axios.get('/api/orders/admin/all');
-      setOrders(response.data.orders);
+      const response = await api.get('/orders/admin/all');
+      setOrders(response.data.orders || []);
       setLoading(false);
     } catch (error) {
       toast.error('Failed to fetch orders');
@@ -26,7 +26,7 @@ const OrderManagement = () => {
 
   const handleStatusUpdate = async (orderId, newStatus) => {
     try {
-      await axios.put(`/api/orders/${orderId}`, { status: newStatus });
+      await api.put(`/orders/${orderId}/status`, { status: newStatus });
       toast.success('Order status updated successfully');
       fetchOrders();
     } catch (error) {
@@ -104,11 +104,11 @@ const OrderManagement = () => {
                       <span className="customer-email">{order.user?.email || 'N/A'}</span>
                     </div>
                   </td>
-                  <td>{new Date(order.createdAt).toLocaleDateString()}</td>
+                  <td>{order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}</td>
                   <td>
                     <span className="item-count">{order.items?.length || 0} items</span>
                   </td>
-                  <td className="order-total">₹{order.totalAmount?.toFixed(2) || '0.00'}</td>
+                  <td className="order-total">₹{Number(order.totalPrice || 0).toFixed(2)}</td>
                   <td>
                     <span className={`status-badge ${getStatusColor(order.status)}`}>
                       {order.status || 'pending'}
@@ -196,9 +196,9 @@ const OrderManagement = () => {
                 
                 <h5>Shipping Address</h5>
                 <div className="address">
-                  <p>{selectedOrder.shippingAddress?.street}</p>
+                  <p>{selectedOrder.shippingAddress?.address || selectedOrder.shippingAddress?.street || 'N/A'}</p>
                   <p>
-                    {selectedOrder.shippingAddress?.city}, {selectedOrder.shippingAddress?.state} {selectedOrder.shippingAddress?.zipCode}
+                    {selectedOrder.shippingAddress?.city}, {selectedOrder.shippingAddress?.state} {selectedOrder.shippingAddress?.pincode || selectedOrder.shippingAddress?.zipCode}
                   </p>
                   <p>{selectedOrder.shippingAddress?.country}</p>
                 </div>
@@ -210,14 +210,14 @@ const OrderManagement = () => {
                   {(selectedOrder.items || []).map((item, index) => (
                     <div key={index} className="order-item">
                       <div className="item-image">
-                        {item.product?.images?.[0] ? (
-                          <img src={item.product.images[0]?.url} alt={item.product?.name} />
+                        {item.image ? (
+                          <img src={item.image} alt={item.name || 'Product'} />
                         ) : (
                           <div className="no-image">No Image</div>
                         )}
                       </div>
                       <div className="item-details">
-                        <h6>{item.product?.name || 'Product'}</h6>
+                        <h6>{item.name || 'Product'}</h6>
                         <p>Size: {item.size || 'N/A'}</p>
                         <p>Color: {item.color || 'N/A'}</p>
                         <p>Quantity: {item.quantity}</p>
@@ -234,19 +234,19 @@ const OrderManagement = () => {
               <div className="order-summary">
                 <div className="summary-row">
                   <span>Subtotal:</span>
-                  <span>₹{selectedOrder.subtotal || 0}</span>
+                  <span>₹{selectedOrder.itemsPrice || 0}</span>
                 </div>
                 <div className="summary-row">
                   <span>Shipping:</span>
-                  <span>₹{selectedOrder.shippingCost || 0}</span>
+                  <span>₹{selectedOrder.shippingPrice || 0}</span>
                 </div>
                 <div className="summary-row">
                   <span>Tax:</span>
-                  <span>₹{selectedOrder.tax || 0}</span>
+                  <span>₹{selectedOrder.taxPrice || 0}</span>
                 </div>
                 <div className="summary-row total">
                   <span>Total:</span>
-                  <span>₹{selectedOrder.totalAmount || 0}</span>
+                  <span>₹{selectedOrder.totalPrice || 0}</span>
                 </div>
               </div>
             </div>

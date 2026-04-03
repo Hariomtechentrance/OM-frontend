@@ -389,8 +389,8 @@ const ProductManagement = () => {
         name: formData.name,
         description: formData.description,
         price: Number(formData.price),
-        category: "69b9147bbe3f9e9f0fd25647", // ✅ TEMP FIX: Hardcoded for testing
-        collection: formData.category, // Use selected collection
+        category: formData.category,
+        collection: formData.collection || formData.category,
         brand: formData.brand,
         images: formData.images.map(img => ({
           ...img,
@@ -451,8 +451,8 @@ const ProductManagement = () => {
       name: product?.name || '',
       description: product?.description || '',
       price: product?.price || '',
-      category: product?.category || '',
-      collection: product?.collection || '',
+      category: product?.category?._id || product?.category || '',
+      collection: product?.collection?._id || product?.collection || '',
       brand: product?.brand || 'Black Locust',
       subcategory: product?.subcategory || '',
       sizes: product?.sizes || [],
@@ -809,10 +809,10 @@ const ProductManagement = () => {
                       )}
                     </div>
                   </td>
-                  <td>{product?.skuCode || 'N/A'}</td>
+                  <td>{product?.skuCode || product?.sku || 'N/A'}</td>
                   <td>
                     <span className="collection-badge">
-                      {collections.find(c => c._id === product?.collection)?.name || 'Uncategorized'}
+                      {collections.find(c => c._id === (product?.collection?._id || product?.collection))?.name || product?.collection?.name || 'Uncategorized'}
                     </span>
                   </td>
                   <td className="price">₹{product?.price}</td>
@@ -844,31 +844,31 @@ const ProductManagement = () => {
                         className="btn btn-sm btn-primary"
                         onClick={() => handleEdit(product)}
                       >
-                        <i className="fas fa-edit"></i>
+                        Edit
                       </button>
                       <button
                         className="btn btn-sm btn-info"
                         onClick={() => window.open(`/product/${product?._id}`, '_blank')}
                       >
-                        <i className="fas fa-eye"></i>
+                        View
                       </button>
                       <button
                         className="btn btn-sm btn-warning"
                         onClick={() => toggleNewArrival(product)}
                       >
-                        <i className={`fas fa-star ${product?.isNewArrival ? 'active' : ''}`}></i>
+                        {product?.isNewArrival ? 'Remove New' : 'Mark New'}
                       </button>
                       <button
                         className="btn btn-sm btn-success"
                         onClick={() => toggleTrending(product)}
                       >
-                        <i className={`fas fa-fire ${product?.isTrending ? 'active' : ''}`}></i>
+                        {product?.isTrending ? 'Unmark Trend' : 'Mark Trend'}
                       </button>
                       <button
                         className="btn btn-sm btn-danger"
                         onClick={() => handleDelete(product?._id)}
                       >
-                        <i className="fas fa-trash"></i>
+                        Delete
                       </button>
                     </div>
                   </td>
@@ -966,6 +966,21 @@ const ProductManagement = () => {
                             ))}
                           </optgroup>
                         )}
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Collection</label>
+                      <select
+                        name="collection"
+                        value={formData.collection}
+                        onChange={handleInputChange}
+                      >
+                        <option value="">Select Collection</option>
+                        {(collections || []).map(collection => (
+                          <option key={collection._id} value={collection._id}>
+                            {collection.name}
+                          </option>
+                        ))}
                       </select>
                     </div>
                     <div className="form-group">
