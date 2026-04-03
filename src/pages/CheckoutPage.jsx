@@ -118,6 +118,7 @@ function CheckoutPage() {
         taxPrice: 0,
         shippingPrice,
         totalPrice,
+        promoCode,
         ...(paymentMethod === 'cod'
           ? {
               // storeOrderController currently enforces min amount >= 100 for COD;
@@ -167,11 +168,7 @@ function CheckoutPage() {
 
       const [{ data: keyData }, { data: razorpayOrderResp }] = await Promise.all([
         api.get('/payments/razorpay/key'),
-        api.post('/payments/razorpay/order', {
-          amount: Math.round(totalPrice),
-          currency: 'INR',
-          receipt: createdOrder.orderNumber
-        })
+        api.post('/payments/razorpay/order', { orderId: createdOrder._id, currency: 'INR' })
       ]);
 
       if (!keyData?.keyId) {
