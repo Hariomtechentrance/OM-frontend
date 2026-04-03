@@ -80,7 +80,22 @@ const ProductManagement = () => {
   });
 
   const [imageFiles, setImageFiles] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
   const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    if (!imageFiles?.length) {
+      setImagePreviews([]);
+      return;
+    }
+
+    const urls = imageFiles.map((f) => URL.createObjectURL(f));
+    setImagePreviews(urls);
+
+    return () => {
+      urls.forEach((u) => URL.revokeObjectURL(u));
+    };
+  }, [imageFiles]);
 
   // Clothing categories with their specific measurements
   const clothingCategories = {
@@ -340,6 +355,22 @@ const ProductManagement = () => {
     return uploadedImages;
   };
 
+  const handleImageFilesChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) {
+      setImageFiles([]);
+      return;
+    }
+
+    if (files.length > 5) {
+      toast.error('Please select up to 5 images');
+      setImageFiles(files.slice(0, 5));
+      return;
+    }
+
+    setImageFiles(files);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -392,10 +423,7 @@ const ProductManagement = () => {
         category: formData.category,
         collection: formData.collection || formData.category,
         brand: formData.brand,
-        images: formData.images.map(img => ({
-          ...img,
-          url: convertDropboxUrl(img.url)
-        })),
+        images: [],
         
         // New fields you requested
         skuCode: formData.skuCode,
@@ -420,6 +448,24 @@ const ProductManagement = () => {
         isActive: true
       };
 
+      // Upload selected images (up to 5) and merge with any URL-based images
+      const existingImages = (formData.images || [])
+        .filter((img) => img?.url)
+        .map((img) => ({
+          ...img,
+          url: convertDropboxUrl(img.url)
+        }));
+
+      const uploaded = imageFiles?.length ? await uploadImages(imageFiles) : [];
+      const mergedImages = [...uploaded, ...existingImages].slice(0, 5);
+
+      if (!mergedImages.length) {
+        toast.error('Please add at least 1 product image (upload or URL)');
+        return;
+      }
+
+      payload.images = mergedImages;
+
       if (selectedProduct) {
         await api.put(`/products/${selectedProduct._id}`, payload);
         toast.success('Product updated successfully');
@@ -432,6 +478,7 @@ const ProductManagement = () => {
       setShowAddModal(false);
       setShowEditModal(false);
       resetForm();
+      setImageFiles([]);
     } catch (error) {
       console.error('❌ Product save error:', error);
       console.error('❌ Error response:', error.response?.data);
@@ -1115,87 +1162,6 @@ const ProductManagement = () => {
                   </div>
 
                   <div className="form-section">
-                    <h4>Available Sizes</h4>
-                    <div className="sizes-management">
-                      <div className="default-sizes">
-                        {['S', 'M', 'L', 'XL', 'XXL'].map(size => (
-                          <div key={size} className="size-item">
-                            <label>
-                              <input
-                                type="checkbox"
-                                checked={formData.productSpecs.availableSizes.some(s => s.size === size)}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    const existingSize = formData.productSpecs.availableSizes.find(s => s.size === size);
-                                    if (!existingSize) {
-                                      handleInputChange({
-                                        target: {
-                                          name: 'productSpecs.availableSizes',
-                                          value: [...formData.productSpecs.availableSizes, { size, stock: 0 }]
-                                        }
-                                      });
-                                    }
-                                  } else {
-                                    handleInputChange({
-                                      target: {
-                                        name: 'productSpecs.availableSizes',
-                                        value: formData.productSpecs.availableSizes.filter(s => s.size !== size)
-                                      }
-                                    });
-                                  }
-                                }}
-                              />
-                              {size}
-                            </label>
-                            {formData.productSpecs.availableSizes.find(s => s.size === size) && (
-                              <input
-                                type="number"
-                                placeholder="Stock"
-                                value={formData.productSpecs.availableSizes.find(s => s.size === size)?.stock || 0}
-                                onChange={(e) => {
-                                  const updatedSizes = formData.productSpecs.availableSizes.map(s => 
-                                    s.size === size ? { ...s, stock: parseInt(e.target.value) || 0 } : s
-                                  );
-                                  handleInputChange({
-                                    target: {
-                                      name: 'productSpecs.availableSizes',
-                                      value: updatedSizes
-                                    }
-                                  });
-                                }}
-                                className="size-stock-input"
-                                min="0"
-                              />
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                      
-                      <div className="custom-size">
-                        <input
-                          type="text"
-                          placeholder="Add custom size..."
-                          onKeyPress={(e) => {
-                            if (e.key === "Enter" && e.target.value.trim()) {
-                              e.preventDefault();
-                              const newSize = e.target.value.trim().toUpperCase();
-                              if (!formData.productSpecs.availableSizes.some(s => s.size === newSize)) {
-                                handleInputChange({
-                                  target: {
-                                    name: "productSpecs.availableSizes",
-                                    value: [...formData.productSpecs.availableSizes, { size: newSize, stock: 0 }]
-                                  }
-                                });
-                                e.target.value = "";
-                              }
-                            }
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="form-section">
                     <h4>Technical Specifications</h4>
                     <div className="form-grid">
                       <div className="form-group">
@@ -1455,8 +1421,20 @@ const ProductManagement = () => {
 
                 {/* Images */}
                 <div className="form-section">
-                  <h4>Product Images</h4>
+                  <h4>Product Images (up to 5)</h4>
                   <div className="images-section">
+                    {/* Upload previews */}
+                    {imagePreviews.length > 0 && (
+                      <div className="image-previews">
+                        {imagePreviews.map((src, idx) => (
+                          <div key={`preview-${idx}`} className="image-preview">
+                            <img src={src} alt={`Selected ${idx + 1}`} />
+                            <span className="image-preview-badge">{idx + 1}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
                     {/* Existing images */}
                     {(formData.images || []).map((image, index) => (
                       <div key={`existing-${index}`} className="image-input-group">
@@ -1489,15 +1467,15 @@ const ProductManagement = () => {
                           type="file"
                           accept="image/*"
                           multiple
-                          onChange={(e) => setImageFiles([...e.target.files])}
+                          onChange={handleImageFilesChange}
                           disabled={uploading}
                         />
                         <i className="fas fa-cloud-upload-alt"></i>
-                        {uploading ? 'Uploading...' : 'Upload Images'}
+                        {uploading ? 'Uploading...' : 'Select Images'}
                       </label>
                       {imageFiles.length > 0 && (
                         <div className="selected-files">
-                          Selected: {imageFiles.length} file(s)
+                          Selected: {imageFiles.length} file(s) (max 5)
                         </div>
                       )}
                     </div>

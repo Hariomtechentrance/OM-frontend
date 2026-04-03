@@ -1739,6 +1739,72 @@
   background: #218838;
 }
 
+/* Order + Promotion table readability */
+.order-management,
+.promotion-management {
+  padding: 30px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  margin: 20px;
+}
+
+.orders-table,
+.promotions-table {
+  background: #ffffff;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  overflow-x: auto;
+}
+
+.orders-table table,
+.promotions-table table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+}
+
+.orders-table th,
+.promotions-table th {
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  padding: 12px 14px;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.orders-table td,
+.promotions-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #eef2f7;
+  font-size: 13px;
+  color: #0f172a;
+  vertical-align: middle;
+}
+
+.orders-table tbody tr:hover,
+.promotions-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.order-management .actions,
+.promotion-management .actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.order-management .status-select {
+  min-width: 140px;
+  padding: 7px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+}
+
 /* Modal Styles */
 .modal {
   position: fixed;

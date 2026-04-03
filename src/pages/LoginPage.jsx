@@ -5,8 +5,6 @@ import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import OTPLogin from '../components/Auth/OTPLogin';
 import logo from '../assets/images/new-logo.png';
-import { API_BASE } from '../config/api';
-import axios from 'axios';
 import './LoginPage.css';
 
 const LoginPage = () => {
@@ -24,7 +22,7 @@ const LoginPage = () => {
     rememberMe: false
   });
   
-  const { login, loading, isAuthenticated, user } = useAuth();
+  const { login, loginWithSocial, loading, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -51,18 +49,15 @@ const LoginPage = () => {
   };
 
   const handleSocialLogin = (provider) => {
-    if (provider === 'Facebook') {
-      toast.info('Facebook login is temporarily unavailable. Please use email login.');
-      return;
-    }
-    
-    if (provider === 'Google') {
-      toast.info('Google login is being updated. Please use email login for now.');
-      return;
-    }
-    
-    // For future social login implementations
-    toast.info(`${provider} login will be available soon.`);
+    const providerKey = provider.toLowerCase();
+    loginWithSocial(providerKey).then((result) => {
+      if (result.success) {
+        toast.success(`${provider} login successful`);
+        navigate('/');
+      } else {
+        toast.error(result.error || `${provider} login failed`);
+      }
+    });
   };
 
   const handleOtpLogin = async (e) => {

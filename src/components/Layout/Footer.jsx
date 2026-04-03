@@ -19,7 +19,6 @@ const Footer = () => {
             <div className="footer-column">
               <h4>Shop</h4>
               <ul>
-                <li><Link to="/new-arrivals">New Arrivals</Link></li>
                 <li><Link to="/shop-summer">Shop Summer</Link></li>
                 <li><Link to="/shop-collection">Collections</Link></li>
                 <li><Link to="/products">All Products</Link></li>

@@ -16,7 +16,7 @@ const UserManagement = () => {
   const fetchUsers = async () => {
     try {
       const response = await api.get('/users');
-      setUsers(response.data.users);
+      setUsers(response.data.users || []);
       setLoading(false);
     } catch (error) {
       toast.error('Failed to fetch users');
@@ -91,7 +91,7 @@ const UserManagement = () => {
                 </td>
                 <td>{user.email}</td>
                 <td>
-                  <span className={`role-badge ${user.role}`}>
+                  <span className={`role-badge ${String(user.role || 'user').replace(/\s+/g, '-')}`}>
                     {user.role}
                   </span>
                 </td>
@@ -111,13 +111,13 @@ const UserManagement = () => {
                         setShowRoleModal(true);
                       }}
                     >
-                      <i className="fas fa-user-tag"></i>
+                      Change Role
                     </button>
                     <button
                       className={`btn btn-sm ${user.isActive ? 'btn-warning' : 'btn-success'}`}
                       onClick={() => handleToggleUserStatus(user._id)}
                     >
-                      <i className={`fas ${user.isActive ? 'fa-ban' : 'fa-check'}`}></i>
+                      {user.isActive ? 'Deactivate' : 'Activate'}
                     </button>
                   </div>
                 </td>

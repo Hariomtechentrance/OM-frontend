@@ -1,5 +1,9 @@
 import React, { createContext, useContext, useReducer, useEffect, useState } from 'react';
 import api from '../utils/axios';
+import {
+  signInWithGooglePopup,
+  signInWithFacebookPopup
+} from '../services/firebaseAuth';
 
 const ACCESS_TOKEN_TTL_MS = 14 * 60 * 1000; // Slightly under backend 15m JWT expiry
 
@@ -491,6 +495,51 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Social login via Firebase popup
+  const loginWithSocial = async (provider) => {
+    try {
+      dispatch({ type: SET_LOADING, payload: true });
+
+      const firebaseUser =
+        provider === 'google'
+          ? await signInWithGooglePopup()
+          : await signInWithFacebookPopup();
+
+      const socialUser = {
+        id: firebaseUser.uid,
+        name: firebaseUser.displayName || 'User',
+        email: firebaseUser.email || '',
+        mobile: firebaseUser.phoneNumber || '',
+        photoURL: firebaseUser.photoURL || '',
+        loginMethod: provider,
+        role: 'user',
+        loginTime: new Date().toISOString()
+      };
+
+      localStorage.setItem('user', JSON.stringify(socialUser));
+      localStorage.setItem('isAuthenticated', 'true');
+
+      dispatch({
+        type: AUTH_SUCCESS,
+        payload: {
+          user: socialUser,
+          token: `social-token-${Date.now()}`,
+          refreshToken: `social-refresh-${Date.now()}`,
+          tokenExpiry: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+        }
+      });
+
+      dispatch({ type: SET_LOADING, payload: false });
+      return { success: true, user: socialUser };
+    } catch (error) {
+      dispatch({ type: SET_LOADING, payload: false });
+      return {
+        success: false,
+        error: error?.message || 'Social login failed'
+      };
+    }
+  };
+
   const value = {
     ...state,
     register,
@@ -502,7 +551,8 @@ export const AuthProvider = ({ children }) => {
     refreshAuthToken,
     getTimeUntilExpiry,
     sendOTP,
-    verifyOTP
+    verifyOTP,
+    loginWithSocial
   };
 
   return (

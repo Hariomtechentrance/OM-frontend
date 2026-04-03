@@ -23,7 +23,7 @@ const RegisterPage = () => {
   const [showSocialLogin, setShowSocialLogin] = useState(false);
   const [socialLoginMethod, setSocialLoginMethod] = useState('');
 
-  const { register, isAuthenticated, error, clearError } = useAuth();
+  const { register, loginWithSocial, isAuthenticated, error, clearError } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -45,18 +45,15 @@ const RegisterPage = () => {
   };
 
   const handleSocialLogin = (provider) => {
-    if (provider === 'Facebook') {
-      toast.info('Facebook registration is temporarily unavailable. Please use email registration.');
-      return;
-    }
-    
-    if (provider === 'Google') {
-      toast.info('Google registration is being updated. Please use email registration for now.');
-      return;
-    }
-    
-    // For future social login implementations
-    toast.info(`${provider} registration will be available soon.`);
+    const providerKey = provider.toLowerCase();
+    loginWithSocial(providerKey).then((result) => {
+      if (result.success) {
+        toast.success(`${provider} signup successful`);
+        navigate('/');
+      } else {
+        toast.error(result.error || `${provider} signup failed`);
+      }
+    });
   };
 
   const handleOtpRegistration = async (e) => {

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import axios from 'axios';
 
 const PromotionManagement = () => {
   const [promotions, setPromotions] = useState([]);
@@ -29,8 +28,7 @@ const PromotionManagement = () => {
 
   const fetchPromotions = async () => {
     try {
-      // Since there's no promotion API in the backend, I'll simulate it
-      // In a real application, this would call an API endpoint
+      // Fallback mock list (backend promotions API not available yet).
       const mockPromotions = [
         {
           _id: '1',
@@ -215,13 +213,13 @@ const PromotionManagement = () => {
                         className="btn btn-sm btn-primary"
                         onClick={() => handleEdit(promotion)}
                       >
-                        <i className="fas fa-edit"></i>
+                        Edit
                       </button>
                       <button
                         className="btn btn-sm btn-danger"
                         onClick={() => handleDelete(promotion._id)}
                       >
-                        <i className="fas fa-trash"></i>
+                        Delete
                       </button>
                     </div>
                   </td>

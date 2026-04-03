@@ -1,14 +1,15 @@
 .contact-page {
   width: 100%;
   min-height: 100vh;
-  background: #000000; /* Ensure consistent black background */
+  background: #ffffff;
 }
 
 .hero-section {
-  background: linear-gradient(135deg, var(--dark) 0%, var(--gold) 100%);
-  color: var(--white);
+  background: #ffffff;
+  color: #111111;
   padding: 6rem 0;
   text-align: center;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .hero-content h1 {
@@ -21,7 +22,8 @@
 
 .hero-content p {
   font-size: 1.2rem;
-  opacity: 0.9;
+  opacity: 1;
+  color: #4b5563;
 }
 
 .container {

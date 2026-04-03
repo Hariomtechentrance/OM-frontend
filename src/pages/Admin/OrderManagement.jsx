@@ -120,7 +120,7 @@ const OrderManagement = () => {
                         className="btn btn-sm btn-primary"
                         onClick={() => handleViewOrder(order)}
                       >
-                        <i className="fas fa-eye"></i>
+                        View
                       </button>
                       <select
                         className="status-select"
