@@ -32,6 +32,7 @@ export default function ProductReviews({ productId, onReviewsChanged }) {
   });
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [loadError, setLoadError] = useState(null);
 
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
@@ -41,6 +42,7 @@ export default function ProductReviews({ productId, onReviewsChanged }) {
     if (!productId) return;
     try {
       setLoading(true);
+      setLoadError(null);
       const res = await api.get(`/products/${productId}/reviews`, {
         params: { page, limit: 8 }
       });
@@ -53,7 +55,8 @@ export default function ProductReviews({ productId, onReviewsChanged }) {
       }
     } catch (e) {
       console.error(e);
-      toast.error('Could not load reviews');
+      setLoadError('Reviews could not be loaded. You can still browse this product.');
+      setReviews([]);
     } finally {
       setLoading(false);
     }
@@ -144,6 +147,14 @@ export default function ProductReviews({ productId, onReviewsChanged }) {
 
       {open && (
         <div className="pb-8 space-y-8">
+          {loadError && (
+            <p
+              className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+              role="status"
+            >
+              {loadError}
+            </p>
+          )}
           {loading && reviews.length === 0 ? (
             <p className="text-gray-500 text-sm">Loading reviews…</p>
           ) : (

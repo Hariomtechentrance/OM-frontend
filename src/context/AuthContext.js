@@ -7,6 +7,15 @@ import {
 
 const ACCESS_TOKEN_TTL_MS = 14 * 60 * 1000; // Slightly under backend 15m JWT expiry
 
+function getApiErrorMessage(error, fallback) {
+  const data = error?.response?.data;
+  if (!data) return error?.message || fallback;
+  if (typeof data.message === 'string' && data.message.trim()) return data.message;
+  const first = Array.isArray(data.errors) ? data.errors[0] : null;
+  if (first && typeof first.msg === 'string') return first.msg;
+  return fallback;
+}
+
 // Create context
 const AuthContext = createContext();
 
@@ -314,13 +323,14 @@ export const AuthProvider = ({ children }) => {
 
       return { success: true, user, token };
     } catch (error) {
+      const msg = getApiErrorMessage(error, 'Registration failed');
       dispatch({
         type: AUTH_FAIL,
-        payload: error.response?.data?.message || 'Registration failed'
+        payload: msg
       });
-      return { 
-        success: false, 
-        error: error.response?.data?.message || 'Registration failed' 
+      return {
+        success: false,
+        error: msg
       };
     }
   };
@@ -364,15 +374,16 @@ export const AuthProvider = ({ children }) => {
 
     } catch (error) {
       console.error("❌ LOGIN ERROR:", error.response?.data || error.message);
+      const msg = getApiErrorMessage(error, 'Login failed');
 
       dispatch({
         type: AUTH_FAIL,
-        payload: error.response?.data?.message || 'Login failed'
+        payload: msg
       });
 
       return {
         success: false,
-        error: error.response?.data?.message || 'Unable to login'
+        error: msg
       };
     }
   };

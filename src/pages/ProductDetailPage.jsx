@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import api from '../api/axios';
 import ProductReviews from '../components/ProductReviews/ProductReviews';
@@ -36,7 +35,6 @@ const SafeImg = ({ src, alt, className, fallback, onClick }) => {
 function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
   const { addToCart } = useCart();
 
   const [product, setProduct] = useState(null);
@@ -46,8 +44,6 @@ function ProductDetailPage() {
   const [selectedColor, setSelectedColor] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [showAuthModal, setShowAuthModal] = useState(false);
-
   const fetchProduct = useCallback(async () => {
     try {
       setLoading(true);
@@ -170,48 +166,28 @@ function ProductDetailPage() {
     return images;
   };
 
-  const handleAddToCart = () => {
-    if (!isAuthenticated) {
-      setShowAuthModal(true);
-      return;
-    }
-
+  const handleAddToCart = async () => {
     if (!selectedSize) {
       toast.error('Please select a size');
       return;
     }
 
-    const cartItem = {
-      ...product,
-      selectedSize,
-      selectedColor,
-      quantity
-    };
-
-    addToCart(cartItem);
-    toast.success(`${product.name} added to cart!`);
+    await addToCart(product, quantity, selectedSize, selectedColor || 'Default');
   };
 
-  const handleBuyNow = () => {
-    if (!isAuthenticated) {
-      setShowAuthModal(true);
-      return;
-    }
-
+  const handleBuyNow = async () => {
     if (!selectedSize) {
       toast.error('Please select a size');
       return;
     }
 
-    const cartItem = {
-      ...product,
-      selectedSize,
-      selectedColor,
-      quantity
-    };
-
-    addToCart(cartItem);
+    await addToCart(product, quantity, selectedSize, selectedColor || 'Default');
     navigate('/checkout');
+  };
+
+  const handleAddRelatedToCart = async (relatedProduct, e) => {
+    e?.stopPropagation();
+    await addToCart(relatedProduct, 1, 'M', 'Default');
   };
 
   if (loading) {
@@ -494,7 +470,7 @@ function ProductDetailPage() {
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {relatedProducts.map((relatedProduct) => (
               <div key={relatedProduct._id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden group cursor-pointer" onClick={() => handleRelatedProductClick(relatedProduct._id)}>
-                <div className="aspect-[3/4] overflow-hidden">
+                <div className="aspect-[3/4] overflow-hidden relative">
                   <SafeImg
                     src={getProductImage(relatedProduct)}
                     alt={relatedProduct.name}
@@ -515,19 +491,19 @@ function ProductDetailPage() {
                 </div>
                 <div className="p-4">
                   <h3 className="font-medium text-gray-900 mb-2 line-clamp-2">{relatedProduct.name}</h3>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-lg font-bold text-gray-900">₹{relatedProduct.price}</span>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                    <div className="min-w-0">
+                      <span className="text-lg font-bold text-gray-900 tabular-nums">₹{relatedProduct.price}</span>
                       {relatedProduct.mrp && (
-                        <span className="text-sm text-gray-500 line-through ml-1">₹{relatedProduct.mrp}</span>
+                        <span className="ml-1 text-sm text-gray-500 line-through tabular-nums">
+                          ₹{relatedProduct.mrp}
+                        </span>
                       )}
                     </div>
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation(); // Prevent navigation to product page
-                        handleAddToCart(relatedProduct);
-                      }}
-                      className="bg-black text-white px-3 py-1 text-sm hover:bg-gray-800 transition-colors"
+                    <button
+                      type="button"
+                      onClick={(e) => handleAddRelatedToCart(relatedProduct, e)}
+                      className="w-full shrink-0 bg-black px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-gray-800 sm:w-auto"
                     >
                       Add to Cart
                     </button>
@@ -555,29 +531,6 @@ function ProductDetailPage() {
         )}
       </div>
 
-      {/* Auth Modal */}
-      {showAuthModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-md w-full">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Sign In Required</h2>
-            <p className="text-gray-600 mb-6">Please sign in to continue with your purchase.</p>
-            <div className="space-y-4">
-              <button
-                onClick={() => navigate('/login')}
-                className="w-full bg-black text-white py-3 rounded-md font-medium hover:bg-gray-800 transition-colors"
-              >
-                Sign In
-              </button>
-              <button
-                onClick={() => setShowAuthModal(false)}
-                className="w-full border border-gray-300 text-gray-700 py-3 rounded-md font-medium hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

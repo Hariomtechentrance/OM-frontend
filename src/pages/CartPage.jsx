@@ -2,20 +2,14 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useCart } from '../context/CartContext';
-import { useAuth } from '../context/AuthContext';
-
 function CartPage() {
   const { items: cart, removeFromCart, updateQuantity } = useCart();
-  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [promoCode, setPromoCode] = useState('');
   const [discount, setDiscount] = useState(0);
 
   // Safe cart handling
   const safeCart = Array.isArray(cart) ? cart : [];
-
-  console.log("Cart:", safeCart);
-  console.log("Auth:", isAuthenticated);
 
   const calculateSubtotal = () => {
     return safeCart.reduce((total, item) => total + (Number(item.price || 0) * Number(item.quantity || 0)), 0);
@@ -70,24 +64,6 @@ function CartPage() {
       navigate('/checkout');
     }, 100);
   };
-
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Please Sign In</h2>
-          <p className="text-gray-600 mb-6">You need to be signed in to view your cart.</p>
-          <Link
-            to="/login"
-            state={{ redirectTo: '/checkout' }}
-            className="bg-black text-white px-6 py-3 rounded-md font-medium hover:bg-gray-800 transition-colors"
-          >
-            Sign In
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-white">

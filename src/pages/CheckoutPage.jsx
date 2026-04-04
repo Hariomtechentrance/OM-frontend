@@ -29,27 +29,16 @@ function CheckoutPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Add a small delay to allow navigation to complete
     const timer = setTimeout(() => {
       setIsLoading(false);
-      
-      // Check authentication after loading
-      if (!isAuthenticated) {
-        toast.error('Please login to continue');
-        navigate('/login', { state: { redirectTo: '/checkout' } });
-        return;
-      }
-      
-      // Check cart after loading
       if (!cart || cart.length === 0) {
         toast.error('Your cart is empty');
         navigate('/cart');
-        return;
       }
-    }, 500);
+    }, 300);
 
     return () => clearTimeout(timer);
-  }, [isAuthenticated, cart, navigate]);
+  }, [cart, navigate]);
 
   const calculateSubtotal = () => {
     return (cart || []).reduce((total, item) => total + (item.price * item.quantity), 0);
@@ -75,6 +64,13 @@ function CheckoutPage() {
       if (!cart || cart.length === 0) {
         toast.error('Your cart is empty');
         navigate('/cart');
+        return;
+      }
+
+      if (!isAuthenticated) {
+        toast.info('Please sign in to complete payment');
+        navigate('/login', { state: { redirectTo: '/checkout' } });
+        setIsProcessing(false);
         return;
       }
 
@@ -305,7 +301,7 @@ function CheckoutPage() {
     }
   };
 
-  if (!isAuthenticated || !cart || cart.length === 0) return null;
+  if (!cart || cart.length === 0) return null;
 
   return (
     <div className="min-h-screen bg-white">
@@ -602,8 +598,9 @@ function CheckoutPage() {
                     <div className="flex-1">
                       <h4 className="text-sm font-medium text-gray-900">{item.name}</h4>
                       <p className="text-xs text-gray-600">
-                        {item.selectedSize && `Size: ${item.selectedSize}`}
-                        {item.selectedColor && ` • Color: ${item.selectedColor}`}
+                        {(item.size || item.selectedSize) && `Size: ${item.size || item.selectedSize}`}
+                        {(item.color || item.selectedColor) &&
+                          ` • Color: ${item.color || item.selectedColor}`}
                       </p>
                       <p className="text-sm text-gray-900">
                         ₹{item.price} × {item.quantity}

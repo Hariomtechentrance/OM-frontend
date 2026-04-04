@@ -39,11 +39,7 @@ const HamburgerMenu = ({ isOpen, onClose }) => {
             >
               Kids
             </Link>
-            <Link
-              to="/products"
-              className="hamburger-nav-link hamburger-nav-link--sale"
-              onClick={onClose}
-            >
+            <Link to="/products" className="hamburger-nav-link" onClick={onClose}>
               Sale
             </Link>
           </div>

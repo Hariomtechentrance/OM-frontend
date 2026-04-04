@@ -1,13 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import DataService from '../services/dataService';
 
 function CategoryPage() {
   const { slug: categorySlug } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
   const { addToCart } = useCart();
 
   const [category, setCategory] = useState(null);
@@ -69,11 +67,7 @@ function CategoryPage() {
   };
 
   const handleAddToCart = (product) => {
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
-    addToCart(product);
+    addToCart(product, 1, 'M', 'Default');
   };
 
   const handleProductClick = (productId) => {
@@ -207,16 +201,19 @@ function CategoryPage() {
                 </div>
                 <div className="p-4">
                   <h3 className="font-medium text-gray-900 mb-2">{product.name}</h3>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-lg font-bold text-gray-900">₹{product.price}</span>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                    <div className="min-w-0">
+                      <span className="text-lg font-bold text-gray-900 tabular-nums">₹{product.price}</span>
                       {product.mrp && (
-                        <span className="text-sm text-gray-500 line-through ml-2">₹{product.mrp}</span>
+                        <span className="ml-2 text-sm text-gray-500 line-through tabular-nums">
+                          ₹{product.mrp}
+                        </span>
                       )}
                     </div>
                     <button
+                      type="button"
                       onClick={() => handleAddToCart(product)}
-                      className="bg-black text-white px-3 py-1 text-sm hover:bg-gray-800 transition-colors"
+                      className="w-full shrink-0 bg-black px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-gray-800 sm:w-auto"
                     >
                       Add to Cart
                     </button>

@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import DataService from '../services/dataService';
 
@@ -41,7 +40,6 @@ function HomePage() {
   const [currentHeroSlide, setCurrentHeroSlide] = useState(0);
 
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
   const { addToCart } = useCart();
 
   // ─── Hero images (Local Public Images) ─────────────────────────────────────────────────
@@ -109,8 +107,7 @@ function HomePage() {
   };
 
   const handleAddToCart = (product) => {
-    if (!isAuthenticated) { navigate('/login'); return; }
-    addToCart(product);
+    addToCart(product, 1, 'M', 'Default');
   };
 
   // ─── Product image helper ───────────────────────────────────────────────────
@@ -454,16 +451,17 @@ function ProductCard({ product, getImg, onAddToCart, navigate, isNew = false }) 
       
       <div className="p-3 md:p-4">
         <h3 className="font-medium text-gray-900 mb-2 text-sm md:text-base line-clamp-2">{product.name}</h3>
-        <div className="flex items-center justify-between gap-2">
-          <div>
-            <span className="text-base font-bold text-gray-900">₹{product.price}</span>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          <div className="min-w-0">
+            <span className="text-base font-bold text-gray-900 tabular-nums">₹{product.price}</span>
             {product.mrp && product.mrp > product.price && (
-              <span className="text-xs text-gray-400 line-through ml-1">₹{product.mrp}</span>
+              <span className="ml-1 text-xs text-gray-400 line-through tabular-nums">₹{product.mrp}</span>
             )}
           </div>
           <button
+            type="button"
             onClick={() => onAddToCart(product)}
-            className="bg-black text-white px-3 py-1.5 text-xs hover:bg-gray-800 transition-colors whitespace-nowrap"
+            className="w-full shrink-0 bg-black px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-gray-800 sm:w-auto"
           >
             Add to Cart
           </button>
