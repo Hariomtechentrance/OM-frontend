@@ -47,14 +47,36 @@ function ProductDetailPage() {
   const fetchProduct = useCallback(async () => {
     try {
       setLoading(true);
-      // MongoDB ObjectIds are 24 hex chars; demo fallbacks used "1","2","4" and always 404 on the API.
-      if (id && !/^[a-fA-F0-9]{24}$/.test(String(id))) {
-        toast.error('This product link is invalid. Use Shop or Collections so the URL contains a real product id.');
+      
+      // Handle case where id is undefined or invalid
+      if (!id) {
+        console.error('No product ID provided');
+        toast.error('Product ID is missing');
         setProduct(null);
         setLoading(false);
         return;
       }
-      const response = await api.get(`/products/${id}`);
+      
+      // Convert id to string for validation
+      const idString = String(id).trim();
+      
+      // MongoDB ObjectIds are 24 hex chars; but be more flexible with validation
+      if (!idString || idString === 'undefined' || idString === 'null') {
+        console.error('Invalid product ID:', id);
+        toast.error('Invalid product ID format');
+        setProduct(null);
+        setLoading(false);
+        return;
+      }
+      
+      // For MongoDB ObjectIds, check if it's a valid format
+      if (!/^[a-fA-F0-9]{24}$/.test(idString)) {
+        console.warn('Product ID may not be a valid MongoDB ObjectId:', idString);
+        // Still try to fetch the product - the backend might handle different ID formats
+      }
+      
+      console.log('Fetching product with ID:', idString);
+      const response = await api.get(`/products/${idString}`);
       if (response.data.success) {
         setProduct(response.data.product);
         
@@ -113,7 +135,17 @@ function ProductDetailPage() {
       }
     } catch (error) {
       console.error('Error fetching product:', error);
-      toast.error('Failed to load product');
+      
+      // Handle different types of errors
+      if (error.response?.status === 404) {
+        toast.error('Product not found');
+      } else if (error.response?.status === 400) {
+        toast.error('Invalid product ID format');
+      } else {
+        toast.error('Failed to load product. Please try again.');
+      }
+      
+      setProduct(null);
     } finally {
       setLoading(false);
     }
@@ -204,14 +236,31 @@ function ProductDetailPage() {
   if (!product) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+            </svg>
+          </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Product Not Found</h2>
-          <button
-            onClick={() => navigate('/products')}
-            className="bg-black text-white px-6 py-3 rounded-md hover:bg-gray-800 transition-colors"
-          >
-            Continue Shopping
-          </button>
+          <p className="text-gray-600 mb-6">
+            The product you're looking for doesn't exist or has been removed.
+            Please check the product link or browse our collection.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              onClick={() => navigate('/products')}
+              className="bg-black text-white px-6 py-3 rounded-md hover:bg-gray-800 transition-colors"
+            >
+              Browse All Products
+            </button>
+            <button
+              onClick={() => navigate('/')}
+              className="border border-gray-300 text-gray-700 px-6 py-3 rounded-md hover:bg-gray-50 transition-colors"
+            >
+              Back to Home
+            </button>
+          </div>
         </div>
       </div>
     );
