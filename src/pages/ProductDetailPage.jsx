@@ -50,6 +50,13 @@ function ProductDetailPage() {
   const fetchProduct = useCallback(async () => {
     try {
       setLoading(true);
+      // MongoDB ObjectIds are 24 hex chars; demo fallbacks used "1","2","4" and always 404 on the API.
+      if (id && !/^[a-fA-F0-9]{24}$/.test(String(id))) {
+        toast.error('This product link is invalid. Use Shop or Collections so the URL contains a real product id.');
+        setProduct(null);
+        setLoading(false);
+        return;
+      }
       const response = await api.get(`/products/${id}`);
       if (response.data.success) {
         setProduct(response.data.product);
