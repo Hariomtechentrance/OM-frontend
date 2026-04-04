@@ -24,6 +24,10 @@ const ProductManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCollection, setFilterCollection] = useState('');
   const [filterAvailability, setFilterAvailability] = useState(''); 
+  const [shopSettings, setShopSettings] = useState({
+    globalDiscountEnabled: true,
+    globalDiscountPercent: 50
+  });
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -43,6 +47,8 @@ const ProductManagement = () => {
     tags: [],
     // New fields you requested
     skuCode: '',
+    discountMode: 'inherit',
+    discountPercent: 0,
     h1Heading: '',
     specifications: '', // Detailed specifications text
     productLink: '', // Dropbox link
@@ -152,24 +158,14 @@ const ProductManagement = () => {
   const styles = ['Casual', 'Formal', 'Business', 'Sport', 'Street', 'Vintage', 'Modern', 'Classic'];
   const careInstructions = ['Machine Wash', 'Hand Wash', 'Dry Clean Only', 'Spot Clean', 'Professional Clean'];
 
-  useEffect(() => {
-    fetchProducts();
-    fetchCategories(); // Fetch categories from API
-    fetchCollections(); // Fetch collections from API
-    
-    // Listen for storage changes to update collections when new ones are added
-    const handleStorageChange = (e) => {
-      if (e.key === 'collections') {
-        fetchCollections();
-      }
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []); // ✅ ONLY ONCE - no dependencies to prevent infinite loop
+  const fetchShopSettings = useCallback(async () => {
+    try {
+      const res = await api.get('/settings/shop');
+      if (res.data?.settings) setShopSettings(res.data.settings);
+    } catch (e) {
+      console.error('Shop settings:', e);
+    }
+  }, []);
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -205,6 +201,64 @@ const ProductManagement = () => {
       setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    fetchProducts();
+    fetchCategories(); // Fetch categories from API
+    fetchCollections(); // Fetch collections from API
+    fetchShopSettings();
+    
+    // Listen for storage changes to update collections when new ones are added
+    const handleStorageChange = (e) => {
+      if (e.key === 'collections') {
+        fetchCollections();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [fetchShopSettings, fetchCategories, fetchCollections, fetchProducts]);
+
+  const saveShopSettings = useCallback(async () => {
+    const pct = Number(shopSettings.globalDiscountPercent);
+    if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
+      toast.error("Global discount must be between 0 and 100");
+      return;
+    }
+    try {
+      const res = await api.put("/settings/shop", {
+        globalDiscountEnabled: shopSettings.globalDiscountEnabled,
+        globalDiscountPercent: pct
+      });
+      if (res.data?.settings) setShopSettings(res.data.settings);
+      toast.success("Shop-wide discount saved");
+      fetchProducts();
+    } catch (e) {
+      toast.error(e.response?.data?.message || "Failed to save shop settings");
+    }
+  }, [shopSettings, fetchProducts]);
+
+  const syncAllProductsToInheritDiscount = useCallback(async () => {
+    if (
+      !window.confirm(
+        "Set every product to follow the shop-wide discount? Per-product custom discounts will be cleared."
+      )
+    ) {
+      return;
+    }
+    try {
+      const res = await api.post("/products/admin/sync-discount-inherit");
+      toast.success(
+        `Synced: ${res.data?.modifiedCount ?? 0} product(s) now use shop-wide rules`
+      );
+      fetchProducts();
+    } catch (e) {
+      toast.error(e.response?.data?.message || "Could not sync products");
+    }
+  }, [fetchProducts]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -399,6 +453,14 @@ const ProductManagement = () => {
         toast.error('Valid price is required');
         return;
       }
+
+      if (formData.discountMode === 'custom') {
+        const d = Number(formData.discountPercent);
+        if (!Number.isFinite(d) || d < 0 || d > 100) {
+          toast.error('Custom discount must be between 0 and 100');
+          return;
+        }
+      }
       
       if (!formData.category) {
         toast.error('Please select a collection');
@@ -426,7 +488,12 @@ const ProductManagement = () => {
         images: [],
         
         // New fields you requested
-        skuCode: formData.skuCode,
+        skuCode: formData.skuCode.trim(),
+        discountMode: formData.discountMode,
+        discountPercent:
+          formData.discountMode === 'custom'
+            ? Math.min(100, Math.max(0, Number(formData.discountPercent) || 0))
+            : 0,
         h1Heading: formData.h1Heading,
         specifications: formData.specifications,
         productLink: formData.productLink,
@@ -497,7 +564,7 @@ const ProductManagement = () => {
     setFormData({
       name: product?.name || '',
       description: product?.description || '',
-      price: product?.price || '',
+      price: product?.listPrice ?? product?.price ?? '',
       category: product?.category?._id || product?.category || '',
       collection: product?.collection?._id || product?.collection || '',
       brand: product?.brand || 'Black Locust',
@@ -512,7 +579,10 @@ const ProductManagement = () => {
       isTrending: product?.isTrending || false,
       tags: product?.tags || [],
       // New fields you requested
-      skuCode: product?.skuCode || '',
+      skuCode: product?.skuCode || product?.sku || '',
+      discountMode: product?.discountMode === 'custom' ? 'custom' : 'inherit',
+      discountPercent:
+        product?.discountMode === 'custom' ? product?.discountPercent ?? 0 : 0,
       h1Heading: product?.h1Heading || '',
       specifications: product?.specifications || '',
       productLink: product?.productLink || '',
@@ -662,6 +732,8 @@ const ProductManagement = () => {
       tags: [],
       // New fields you requested
       skuCode: '',
+      discountMode: 'inherit',
+      discountPercent: 0,
       h1Heading: '',
       specifications: '', // Detailed specifications text
       productLink: '', // Dropbox link
@@ -759,6 +831,53 @@ const ProductManagement = () => {
         </button>
       </div>
 
+      <div className="shop-discount-panel">
+        <h3>Shop-wide discount</h3>
+        <p className="shop-discount-hint">
+          Applies to all products in <strong>inherit</strong> mode. Use per-product
+          &quot;Custom&quot; discount in Add/Edit when one item needs a different rate.
+        </p>
+        <label className="shop-discount-check">
+          <input
+            type="checkbox"
+            checked={!!shopSettings.globalDiscountEnabled}
+            onChange={(e) =>
+              setShopSettings((s) => ({
+                ...s,
+                globalDiscountEnabled: e.target.checked
+              }))
+            }
+          />
+          Enable global discount
+        </label>
+        <label className="shop-discount-pct">
+          Percent off (0–100)
+          <input
+            type="number"
+            min={0}
+            max={100}
+            step={1}
+            value={shopSettings.globalDiscountPercent ?? 0}
+            onChange={(e) =>
+              setShopSettings((s) => ({
+                ...s,
+                globalDiscountPercent: e.target.value
+              }))
+            }
+          />
+        </label>
+        <button type="button" className="btn btn-primary btn-sm" onClick={saveShopSettings}>
+          Save shop settings
+        </button>
+        <button
+          type="button"
+          className="btn btn-secondary btn-sm"
+          onClick={syncAllProductsToInheritDiscount}
+        >
+          Set all products to shop-wide (inherit)
+        </button>
+      </div>
+
       <div className="products-table">
         <div className="table-info">
           <p>Showing {filteredProducts.length} of {products.length} products</p>
@@ -825,7 +944,7 @@ const ProductManagement = () => {
               <th>Product Name</th>
               <th>SKU Code</th>
               <th>Collection</th>
-              <th>Price</th>
+              <th>MRP / sale</th>
               <th>Stock</th>
               <th>Availability</th>
               <th>Featured</th>
@@ -862,7 +981,21 @@ const ProductManagement = () => {
                       {collections.find(c => c._id === (product?.collection?._id || product?.collection))?.name || product?.collection?.name || 'Uncategorized'}
                     </span>
                   </td>
-                  <td className="price">₹{product?.price}</td>
+                  <td className="price pricing-cell">
+                    {product?.discountPercentApplied > 0 ? (
+                      <>
+                        <span className="pricing-mrp">₹{product?.listPrice}</span>
+                        <span className="pricing-sale"> ₹{product?.price}</span>
+                        <span className="pricing-pct">
+                          {product?.discountMode === "custom"
+                            ? `custom ${product?.discountPercentApplied}%`
+                            : `${product?.discountPercentApplied}% off`}
+                        </span>
+                      </>
+                    ) : (
+                      <span>₹{product?.listPrice ?? product?.price}</span>
+                    )}
+                  </td>
                   <td>
                     <span className={`stock-badge ${product?.totalStock > 0 ? 'in-stock' : 'out-of-stock'}`}>
                       {product?.totalStock || 0}
@@ -937,7 +1070,6 @@ const ProductManagement = () => {
       </div>
 
       {/* Add/Edit Product Modal */}
-      {console.log("🔍 Modal render check:", { showAddModal, showEditModal })}
       {(showAddModal || showEditModal) && (
         <div className="modal">
           <div className="modal-content product-form">
@@ -1040,7 +1172,7 @@ const ProductManagement = () => {
                       />
                     </div>
                     <div className="form-group">
-                      <label>Price *</label>
+                      <label>MRP (list price) *</label>
                       <input
                         type="number"
                         name="price"
@@ -1050,6 +1182,9 @@ const ProductManagement = () => {
                         min="0"
                         required
                       />
+                      <small className="text-muted">
+                        Customer pays this minus the effective discount (shop-wide or custom).
+                      </small>
                     </div>
                     <div className="form-group">
                       <label>SKU Code *</label>
@@ -1062,6 +1197,31 @@ const ProductManagement = () => {
                         required
                       />
                     </div>
+                    <div className="form-group">
+                      <label>Product discount</label>
+                      <select
+                        name="discountMode"
+                        value={formData.discountMode}
+                        onChange={handleInputChange}
+                      >
+                        <option value="inherit">Use shop-wide discount</option>
+                        <option value="custom">Custom % for this product only</option>
+                      </select>
+                    </div>
+                    {formData.discountMode === "custom" && (
+                      <div className="form-group">
+                        <label>Custom discount %</label>
+                        <input
+                          type="number"
+                          name="discountPercent"
+                          value={formData.discountPercent}
+                          onChange={handleInputChange}
+                          min={0}
+                          max={100}
+                          step={1}
+                        />
+                      </div>
+                    )}
                     <div className="form-group">
                       <label>H1 Heading *</label>
                       <input

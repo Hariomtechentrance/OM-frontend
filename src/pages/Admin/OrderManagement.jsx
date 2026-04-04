@@ -218,6 +218,9 @@ const OrderManagement = () => {
                       </div>
                       <div className="item-details">
                         <h6>{item.name || 'Product'}</h6>
+                        <p>
+                          <strong>SKU:</strong> {item.skuCode?.trim() || '—'}
+                        </p>
                         <p>Size: {item.size || 'N/A'}</p>
                         <p>Color: {item.color || 'N/A'}</p>
                         <p>Quantity: {item.quantity}</p>
