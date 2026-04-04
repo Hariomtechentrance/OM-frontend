@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import api from '../api/axios';
+import ProductReviews from '../components/ProductReviews/ProductReviews';
 
 // ─── Unsplash fallback per category (never 404) ─────────────────────────────
 const IMG_FALLBACK = {
@@ -311,6 +312,22 @@ function ProductDetailPage() {
             {/* Product Name and Price */}
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.name}</h1>
+              <div className="flex items-center gap-2 mb-2">
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <span
+                    key={s}
+                    className={`text-lg ${s <= Math.round(Number(product.rating) || 0) ? 'text-black' : 'text-gray-300'}`}
+                  >
+                    ★
+                  </span>
+                ))}
+                <a
+                  href="#product-reviews"
+                  className="text-sm text-gray-500 hover:text-black ml-1"
+                >
+                  ({product.numReviews ?? 0} reviews)
+                </a>
+              </div>
               <div className="flex items-center space-x-4 mb-4">
                 <span className="text-2xl font-bold text-gray-900">₹{product.price}</span>
                 {product.mrp && (
@@ -464,6 +481,10 @@ function ProductDetailPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4">
+        <ProductReviews productId={id} onReviewsChanged={fetchProduct} />
       </div>
 
       {/* Related Products */}
