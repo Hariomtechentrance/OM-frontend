@@ -97,7 +97,7 @@ function CheckoutPage() {
       const orderPayload = {
         orderItems,
         shippingAddress: {
-          fullName: fullName || shippingAddress.email, // fallback to prevent missing field
+          fullName: fullName,
           firstName: shippingAddress.firstName,
           lastName: shippingAddress.lastName,
           email: shippingAddress.email,
