@@ -47,6 +47,42 @@ const OrderManagement = () => {
     setShowOrderModal(true);
   };
 
+  const handleShipOrder = async (orderId) => {
+    try {
+      console.log('🚀 Shipping order:', orderId);
+      
+      const response = await api.post(`/shipping/ship-order/${orderId}`);
+      console.log('✅ Shipment created:', response.data);
+      
+      toast.success('Order shipped successfully!');
+      fetchOrders();
+      
+      // Close order modal if open
+      setShowOrderModal(false);
+      setSelectedOrder(null);
+      
+    } catch (error) {
+      console.error('❌ Ship order error:', error);
+      toast.error(error.response?.data?.message || 'Failed to ship order');
+    }
+  };
+
+  const handleTrackShipment = async (shipmentId) => {
+    try {
+      console.log('📦 Tracking shipment:', shipmentId);
+      
+      const response = await api.get(`/shipping/track/${shipmentId}`);
+      console.log('✅ Tracking data:', response.data);
+      
+      // You can show tracking details in a modal or navigate
+      toast.success('Shipment tracking updated!');
+      
+    } catch (error) {
+      console.error('❌ Track shipment error:', error);
+      toast.error(error.response?.data?.message || 'Failed to track shipment');
+    }
+  };
+
   const filteredOrders = filter === 'all' 
     ? (orders || []) 
     : (orders || []).filter(order => order.status === filter);
@@ -130,6 +166,26 @@ const OrderManagement = () => {
                       >
                         View
                       </button>
+                      {order.status === 'pending' && (
+                        <button
+                          className="btn btn-sm btn-success"
+                          onClick={() => handleShipOrder(order._id)}
+                          title="Create shipment via Shiprocket"
+                        >
+                          <i className="fas fa-shipping-fast"></i>
+                          Ship
+                        </button>
+                      )}
+                      {order.status === 'shipped' && order.shiprocket?.trackingUrl && (
+                        <button
+                          className="btn btn-sm btn-info"
+                          onClick={() => handleTrackShipment(order.shiprocket.shipmentId)}
+                          title="Track shipment"
+                        >
+                          <i className="fas fa-truck"></i>
+                          Track
+                        </button>
+                      )}
                       <select
                         className="status-select"
                         value={order.status}
@@ -210,6 +266,36 @@ const OrderManagement = () => {
                   </p>
                   <p>{selectedOrder.shippingAddress?.country}</p>
                 </div>
+                
+                {selectedOrder.shiprocket && (
+                  <div className="shipment-details">
+                    <h5>Shipment Information</h5>
+                    <div className="shipment-grid">
+                      <div>
+                        <strong>Courier:</strong> {selectedOrder.shiprocket.courierName || 'N/A'}
+                      </div>
+                      <div>
+                        <strong>AWB Number:</strong> {selectedOrder.shiprocket.awbNumber || 'N/A'}
+                      </div>
+                      <div>
+                        <strong>Shipment ID:</strong> {selectedOrder.shiprocket.shipmentId || 'N/A'}
+                      </div>
+                      {selectedOrder.shiprocket.trackingUrl && (
+                        <div>
+                          <strong>Tracking URL:</strong> 
+                          <a 
+                            href={selectedOrder.shiprocket.trackingUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="tracking-link"
+                          >
+                            Track Shipment
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="order-items">
