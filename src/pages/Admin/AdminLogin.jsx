@@ -40,18 +40,26 @@ const AdminLogin = () => {
     setLoading(true);
 
     try {
-      const res = await api.post('/users/admin/login', {
+      console.log('🔍 Admin login attempt:', formData.email);
+      
+      const res = await api.post('/auth/admin/login', {
         email: formData.email.trim().toLowerCase(),
         password: formData.password
       });
       
-      const { token, refreshToken, tokenExpiry, user } = res.data;
+      console.log('🔍 Admin login response:', res.data);
+      
+      const { token, admin } = res.data;
       
       // Store admin tokens
       localStorage.setItem('adminToken', token);
-      localStorage.setItem('adminRefreshToken', refreshToken);
-      localStorage.setItem('adminTokenExpiry', tokenExpiry);
+      localStorage.setItem('adminRefreshToken', token); // Use same token for simplicity
+      localStorage.setItem('adminTokenExpiry', '7d'); // Set expiry from backend
       localStorage.setItem('isAdmin', 'true');
+      localStorage.setItem('adminUser', JSON.stringify(admin));
+      
+      console.log('🔍 Admin token stored:', !!token);
+      console.log('🔍 Token length:', token?.length);
       
       // Set auth header is handled by api interceptor
       
@@ -59,6 +67,8 @@ const AdminLogin = () => {
       navigate('/admin');
       
     } catch (error) {
+      console.error('🔍 Admin login error:', error);
+      console.error('🔍 Error response:', error.response?.data);
       toast.error(error.response?.data?.message || 'Admin login failed');
     } finally {
       setLoading(false);
