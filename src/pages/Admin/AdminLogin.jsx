@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { FaShieldAlt, FaLock, FaEnvelope, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import api from '../../api/axios'; // ✅ FIXED: Use shared axios instance
-import logo from '/images/Logo/logo.png';
+import logo from '../../assets/images/logo.png';
 import './AdminLogin.css';
 
 const AdminLogin = () => {
