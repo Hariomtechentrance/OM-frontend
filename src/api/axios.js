@@ -16,6 +16,11 @@ api.interceptors.request.use(
       localStorage.getItem('adminToken') || localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log('🔍 Axios Request:', config.method?.toUpperCase(), config.url);
+      console.log('🔍 Token type:', localStorage.getItem('adminToken') ? 'adminToken' : 'token');
+      console.log('🔍 Token length:', token.length);
+    } else {
+      console.log('🔍 No token found for request:', config.method?.toUpperCase(), config.url);
     }
     return config;
   },

@@ -15,10 +15,18 @@ const OrderManagement = () => {
 
   const fetchOrders = async () => {
     try {
+      console.log('🔍 Fetching orders...');
+      console.log('🔍 Token available:', !!localStorage.getItem('adminToken'));
+      console.log('🔍 API URL:', '/orders/admin/all');
+      
       const response = await api.get('/orders/admin/all');
+      console.log('🔍 API Response:', response.data);
+      
       setOrders(response.data.orders || []);
       setLoading(false);
     } catch (error) {
+      console.error('🔍 Error fetching orders:', error);
+      console.error('🔍 Error response:', error.response?.data);
       toast.error('Failed to fetch orders');
       setLoading(false);
     }
