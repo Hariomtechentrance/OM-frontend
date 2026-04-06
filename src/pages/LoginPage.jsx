@@ -4,7 +4,7 @@ import { FaEye, FaEyeSlash, FaGoogle, FaFacebook, FaTimes, FaCheck, FaMobileAlt 
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import OTPLogin from '../components/Auth/OTPLogin';
-import logo from '../assets/images/new-logo.png';
+import logo from '/images/Logo/logo.png';
 import './LoginPage.css';
 
 const LoginPage = () => {

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FaBars, FaRegHeart, FaSearch, FaShoppingBag, FaTimes, FaUser } from 'react-icons/fa';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
-import logo from '../../assets/images/new-logo.png';
+import logo from '/images/Logo/logo.png';
 import HamburgerMenu from './HamburgerMenu';
 import api from '../../api/axios';
 
