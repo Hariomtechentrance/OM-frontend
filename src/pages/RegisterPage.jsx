@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FaEye, FaEyeSlash, FaGoogle, FaFacebook, FaTimes } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
-import logo from '../assets/images/logo.png';
+import logo from '../assets/images/BL-logo-1.png';
 import './RegisterPage.css';
 
 const RegisterPage = () => {

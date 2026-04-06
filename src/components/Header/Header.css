@@ -499,7 +499,7 @@
 }
 
 .nav-center .logo img {
-  max-height: min(56px, 72vh);
+  max-height: min(80px, 72vh);
   width: auto;
   min-width: 140px;
   height: auto;
@@ -616,7 +616,7 @@
   width: clamp(140px, 28vw, 200px);
   height: auto;
   display: block;
-  max-height: 56px;
+  max-height: 80px;
   object-fit: contain;
 }
 
@@ -947,7 +947,7 @@
   
   .logo img {
     width: clamp(150px, 22vw, 200px);
-    max-height: 56px;
+    max-height: 70px;
     height: auto;
   }
   
@@ -984,7 +984,7 @@
   
   .logo img {
     width: clamp(140px, 24vw, 190px);
-    max-height: 52px;
+    max-height: 65px;
     height: auto;
   }
   
@@ -1021,7 +1021,7 @@
   
   .logo img {
     width: clamp(120px, 32vw, 170px);
-    max-height: 48px;
+    max-height: 60px;
     height: auto;
   }
   
@@ -1058,7 +1058,7 @@
 
   .logo img {
     width: clamp(100px, 36vw, 150px);
-    max-height: 44px;
+    max-height: 55px;
     height: auto;
   }
 
@@ -1103,7 +1103,7 @@
 
   .logo img {
     width: clamp(96px, 40vw, 140px);
-    max-height: 42px;
+    max-height: 50px;
     height: auto;
   }
 
@@ -1146,7 +1146,7 @@
 
   .logo img {
     width: clamp(90px, 42vw, 130px);
-    max-height: 40px;
+    max-height: 48px;
     height: auto;
   }
 
@@ -1343,7 +1343,7 @@
   }
   
   .logo img {
-    max-height: 40px;
+    max-height: 45px;
     width: clamp(88px, 44vw, 128px);
     height: auto;
   }
