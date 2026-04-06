@@ -15,10 +15,18 @@ const UserManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await api.get('/users');
+      console.log('🔍 Fetching users...');
+      console.log('🔍 Token available:', !!localStorage.getItem('adminToken'));
+      console.log('🔍 API URL:', '/users/all');
+      
+      const response = await api.get('/users/all');
+      console.log('🔍 Users API Response:', response.data);
+      
       setUsers(response.data.users || []);
       setLoading(false);
     } catch (error) {
+      console.error('🔍 Error fetching users:', error);
+      console.error('🔍 Error response:', error.response?.data);
       toast.error('Failed to fetch users');
       setLoading(false);
     }
