@@ -7,7 +7,7 @@ import api from '../api/axios';
 
 function CheckoutPage() {
   const { items: cart, clearCart } = useCart();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, login } = useAuth();
   const navigate = useNavigate();
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -31,14 +31,26 @@ function CheckoutPage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
+      
+      // Check if cart is empty
       if (!cart || cart.length === 0) {
         toast.error('Your cart is empty');
         navigate('/cart');
+        return;
+      }
+      
+      // Check if user is authenticated
+      if (!isAuthenticated) {
+        toast.error('Please login to continue with checkout');
+        // Store current path to return after login
+        localStorage.setItem('returnPath', '/checkout');
+        navigate('/login');
+        return;
       }
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [cart, navigate]);
+  }, [cart, navigate, isAuthenticated]);
 
   const calculateSubtotal = () => {
     return (cart || []).reduce((total, item) => total + (item.price * item.quantity), 0);
@@ -130,8 +142,32 @@ function CheckoutPage() {
       razorpayFlow = orderPayload.paymentMethod === 'razorpay';
 
       // 1) Create order record in our DB first
-      const orderRes = await api.post('/orders', orderPayload);
-      const createdOrder = orderRes.data;
+      let orderRes, createdOrder;
+      try {
+        orderRes = await api.post('/orders', orderPayload);
+        createdOrder = orderRes.data;
+      } catch (error) {
+        console.error('Order creation error:', error);
+        
+        if (error.response?.status === 401) {
+          toast.error('Your session has expired. Please login again.');
+          localStorage.setItem('returnPath', '/checkout');
+          navigate('/login');
+          setIsProcessing(false);
+          return;
+        }
+        
+        if (error.response?.status === 400) {
+          const errorMessage = error.response?.data?.message || 'Invalid order data';
+          toast.error(errorMessage);
+          setIsProcessing(false);
+          return;
+        }
+        
+        toast.error('Failed to create order. Please try again.');
+        setIsProcessing(false);
+        return;
+      }
 
       const shiprocketIfPossible = async () => {
         try {

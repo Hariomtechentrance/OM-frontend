@@ -33,9 +33,18 @@ const LoginPage = () => {
       user &&
       location.pathname === '/login'
     ) {
+      // Check for stored return path first
+      const returnPath = localStorage.getItem('returnPath');
+      if (returnPath) {
+        localStorage.removeItem('returnPath'); // Clean up
+        return navigate(returnPath);
+      }
+      
+      // Check for state redirect
       const redirectTo = location.state?.redirectTo;
       if (redirectTo) return navigate(redirectTo);
 
+      // Default redirects
       if (user.role === 'admin') return navigate('/admin');
       return navigate('/');
     }

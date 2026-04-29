@@ -15,18 +15,25 @@ const OrderManagement = () => {
 
   const fetchOrders = async () => {
     try {
-      console.log('🔍 Fetching orders...');
-      console.log('🔍 Token available:', !!localStorage.getItem('adminToken'));
-      console.log('🔍 API URL:', '/orders/admin/all');
-      
+      console.log('Fetching orders...');
       const response = await api.get('/orders/admin/all');
-      console.log('🔍 API Response:', response.data);
+      console.log('Orders API Response:', response.data);
+      console.log('Orders array:', response.data.orders);
+      
+      // Debug each order
+      response.data.orders?.forEach((order, index) => {
+        console.log(`Order ${index}:`, {
+          id: order._id,
+          status: order.status,
+          shiprocket: order.shiprocket,
+          hasShiprocket: !!order.shiprocket
+        });
+      });
       
       setOrders(response.data.orders || []);
       setLoading(false);
     } catch (error) {
-      console.error('🔍 Error fetching orders:', error);
-      console.error('🔍 Error response:', error.response?.data);
+      console.error('Error fetching orders:', error);
       toast.error('Failed to fetch orders');
       setLoading(false);
     }
@@ -158,45 +165,61 @@ const OrderManagement = () => {
                       {order.status || 'pending'}
                     </span>
                   </td>
-                  <td>
-                    <div className="actions">
-                      <button
-                        className="btn btn-sm btn-primary"
-                        onClick={() => handleViewOrder(order)}
-                      >
-                        View
-                      </button>
-                      {order.status === 'pending' && (
+                  <td className="actions-cell">
+                    <div className="actions-container">
+                      <div className="action-row">
                         <button
-                          className="btn btn-sm btn-success"
+                          className="btn btn-sm btn-primary view-btn"
+                          onClick={() => handleViewOrder(order)}
+                        >
+                          View
+                        </button>
+                      </div>
+                      
+                      {/* Debug: Show order status */}
+                      <div className="debug-info">
+                        Status: {order.status} | Shiprocket: {order.shiprocket ? 'Yes' : 'No'}
+                      </div>
+                      
+                      {/* Ship Button - Always visible for testing */}
+                      <div className="action-row">
+                        <button
+                          className="btn btn-sm btn-success ship-btn"
                           onClick={() => handleShipOrder(order._id)}
                           title="Create shipment via Shiprocket"
                         >
                           <i className="fas fa-shipping-fast"></i>
-                          Ship
+                          Ship {order.status === 'pending' ? '(✓)' : '(Test)'}
                         </button>
+                      </div>
+                      
+                      {/* Track Button */}
+                      {(order.status === 'shipped' || order.status === 'processing') && (
+                        <div className="action-row">
+                          <button
+                            className="btn btn-sm btn-info track-btn"
+                            onClick={() => handleTrackShipment(order.shiprocket?.shipmentId)}
+                            title="Track shipment"
+                          >
+                            <i className="fas fa-truck"></i>
+                            Track {order.status === 'shipped' ? '(✓)' : '(Test)'}
+                          </button>
+                        </div>
                       )}
-                      {order.status === 'shipped' && order.shiprocket?.trackingUrl && (
-                        <button
-                          className="btn btn-sm btn-info"
-                          onClick={() => handleTrackShipment(order.shiprocket.shipmentId)}
-                          title="Track shipment"
+                      
+                      <div className="action-row">
+                        <select
+                          className="status-select"
+                          value={order.status}
+                          onChange={(e) => handleStatusUpdate(order._id, e.target.value)}
                         >
-                          <i className="fas fa-truck"></i>
-                          Track
-                        </button>
-                      )}
-                      <select
-                        className="status-select"
-                        value={order.status}
-                        onChange={(e) => handleStatusUpdate(order._id, e.target.value)}
-                      >
-                        <option value="pending">Pending</option>
-                        <option value="processing">Processing</option>
-                        <option value="shipped">Shipped</option>
-                        <option value="delivered">Delivered</option>
-                        <option value="cancelled">Cancelled</option>
-                      </select>
+                          <option value="pending">Pending</option>
+                          <option value="processing">Processing</option>
+                          <option value="shipped">Shipped</option>
+                          <option value="delivered">Delivered</option>
+                          <option value="cancelled">Cancelled</option>
+                        </select>
+                      </div>
                     </div>
                   </td>
                 </tr>
