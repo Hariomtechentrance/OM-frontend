@@ -613,10 +613,10 @@
 }
 
 .logo img {
-  width: clamp(140px, 28vw, 200px);
+  width: clamp(160px, 20vw, 240px);
   height: auto;
   display: block;
-  max-height: 80px;
+  max-height: 60px; /* Adjusted to fit within 80px header with padding */
   object-fit: contain;
 }
 
@@ -946,8 +946,8 @@
   }
   
   .logo img {
-    width: clamp(150px, 22vw, 200px);
-    max-height: 70px;
+    width: clamp(180px, 18vw, 240px);
+    max-height: 55px; /* Adjusted to fit within 80px header */
     height: auto;
   }
   
@@ -983,8 +983,8 @@
   }
   
   .logo img {
-    width: clamp(140px, 24vw, 190px);
-    max-height: 65px;
+    width: clamp(160px, 20vw, 220px);
+    max-height: 50px; /* Adjusted to fit within 80px header */
     height: auto;
   }
   
@@ -1292,7 +1292,7 @@
     padding: 0.25rem 1rem;
   }
   
-  /* Ensure logo shifts more to right side on mobile */
+  /* Ensure logo is perfectly centered on mobile */
   .nav-left {
     min-width: 40px; /* Smaller width for left side */
     flex: 0 0 auto;
@@ -1303,7 +1303,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-left: -10px; /* Shift logo slightly to right */
+    margin-left: 0; /* Remove negative margin for proper centering */
   }
   
   .nav-right {
@@ -1322,7 +1322,7 @@
     padding: 0.25rem 0.5rem;
   }
   
-  /* Ensure logo stays shifted to right on small mobile */
+  /* Ensure logo stays perfectly centered on small mobile */
   .nav-left {
     min-width: 35px; /* Even smaller for small mobile */
     flex: 0 0 auto;
@@ -1333,7 +1333,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-left: -8px; /* Shift logo slightly to right */
+    margin-left: 0; /* Remove negative margin for proper centering */
   }
   
   .nav-right {
@@ -1343,8 +1343,8 @@
   }
   
   .logo img {
-    max-height: 45px;
-    width: clamp(88px, 44vw, 128px);
+    max-height: 40px; /* Adjusted to fit within 80px header */
+    width: clamp(100px, 40vw, 160px);
     height: auto;
   }
   

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FaBars, FaRegHeart, FaSearch, FaShoppingBag, FaTimes, FaUser } from 'react-icons/fa';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
-import logo from '../../assets/images/BL-logo-1.png';
+import logo from '../../assets/images/New logo1.png';
 import HamburgerMenu from './HamburgerMenu';
 import api from '../../api/axios';
 
@@ -104,22 +104,36 @@ const Header = () => {
       <header className="bg-white border-b border-gray-200 relative z-[60]">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between py-4">
-            <button
-              type="button"
-              onClick={toggleHamburger}
-              className="md:hidden p-2 text-gray-600 hover:text-black"
-              aria-label="Open menu"
-            >
-              <FaBars />
-            </button>
+            {/* Mobile Layout */}
+            <div className="flex items-center space-x-3 md:hidden">
+              <button
+                type="button"
+                onClick={toggleHamburger}
+                className="p-2 text-gray-600 hover:text-black"
+                aria-label="Open menu"
+              >
+                <FaBars />
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => (searchOpen ? closeSearch() : openSearch())}
+                className="p-2 text-gray-600 hover:text-black"
+                aria-label={searchOpen ? 'Close search' : 'Search'}
+              >
+                {searchOpen ? <FaTimes className="w-5 h-5" /> : <FaSearch className="w-5 h-5" />}
+              </button>
+            </div>
 
+            {/* Logo - Left on desktop, centered on mobile */}
             <div className="flex-shrink-0">
               <Link to="/" className="flex items-center">
                 <img src={logo} alt="Black Locust" className="h-10 w-auto" />
               </Link>
             </div>
 
-            <nav className="hidden md:flex space-x-6">
+            {/* Desktop Navigation - Center */}
+            <nav className="hidden md:flex space-x-6 flex-1 justify-center">
               <Link
                 to="/category/men"
                 className="text-sm font-medium text-gray-700 hover:text-black uppercase tracking-wide"
@@ -146,7 +160,8 @@ const Header = () => {
               </Link>
             </nav>
 
-            <div className="flex items-center space-x-2 sm:space-x-4">
+            {/* Desktop Right Icons */}
+            <div className="hidden md:flex items-center space-x-2">
               <button
                 type="button"
                 onClick={() => (searchOpen ? closeSearch() : openSearch())}
@@ -203,6 +218,32 @@ const Header = () => {
                   LOGOUT
                 </button>
               )}
+            </div>
+
+            {/* Mobile Right Icons */}
+            <div className="flex items-center space-x-2 md:hidden">
+              <button
+                type="button"
+                onClick={() => navigate('/cart')}
+                className="relative p-2 text-gray-600 hover:text-black"
+                aria-label="Cart"
+              >
+                <FaShoppingBag className="w-5 h-5" />
+                {totalItems > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-black text-white text-xs font-bold">
+                    {totalItems}
+                  </span>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => navigate('/wishlist')}
+                className="p-2 text-gray-600 hover:text-black"
+                aria-label="Wishlist"
+              >
+                <FaRegHeart className="w-5 h-5" />
+              </button>
             </div>
           </div>
         </div>

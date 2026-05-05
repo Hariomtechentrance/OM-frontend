@@ -162,6 +162,20 @@ function HomePage() {
     );
   }
 
+  const getHeroCollectionLink = (slideIndex) => {
+    // Correct mapping for banner photos to their respective collections
+    const heroCollectionMap = [
+      '/collection/summer-collection',      // Slide 0: Summer Collection
+      '/collection/cargo-collection',      // Slide 1: Cargo Collection
+      '/collection/casual-collection',     // Slide 2: Casual Collection
+      '/collection/winter-collection',      // Slide 3: Winter Collection
+      '/collection/denim-collection',      // Slide 4: Denim Collection
+      '/collection/office-collection',      // Slide 5: Office Collection
+      '/collection/party-wear-collection'   // Slide 6: Party Wear Collection
+    ];
+    return heroCollectionMap[slideIndex % heroCollectionMap.length];
+  };
+
   const currentHero = heroImages[currentHeroSlide] || heroImages[0] || desktopHeroImages[0];
 
   return (
@@ -170,12 +184,14 @@ function HomePage() {
       {/* ═════════════ HERO ═════════════ */}
       <section className="relative">
         <div className="relative h-[80vh] w-full overflow-hidden">
-          <SafeImg
-            src={currentHero.src}
-            alt={currentHero.alt}
-            className="w-full h-full object-cover"
-            fallback={heroFallbacks[currentHeroSlide % heroFallbacks.length]}
-          />
+          <Link to={getHeroCollectionLink(currentHeroSlide)} className="block w-full h-full">
+            <SafeImg
+              src={currentHero.src}
+              alt={currentHero.alt}
+              className="w-full h-full object-cover cursor-pointer transition-transform duration-300 hover:scale-105"
+              fallback={heroFallbacks[currentHeroSlide % heroFallbacks.length]}
+            />
+          </Link>
 
           {/* Arrows */}
           <button onClick={prevSlide} className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 transition-all z-10">
