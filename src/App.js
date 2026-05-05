@@ -38,6 +38,9 @@ const CollectionPage = lazy(() => import('./pages/CollectionPage'));
 const SearchPage = lazy(() => import('./pages/SearchPage'));
 const WishlistPage = lazy(() => import('./pages/WishlistPage'));
 const AdminLogin = lazy(() => import('./pages/Admin/AdminLogin'));
+const FAQPage = lazy(() => import('./pages/FAQPage'));
+const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'));
+const ReturnPolicyPage = lazy(() => import('./pages/ReturnPolicyPage'));
 const AdminDashboard = lazy(() => import('./pages/Admin/AdminDashboard'));
 
 const AppLayout = () => {
@@ -95,7 +98,15 @@ const AppLayout = () => {
           />
           <Route
             path="/faq"
-            element={<InfoPage title="Frequently Asked Questions" subtitle="Common questions from Black Locust customers." />}
+            element={<FAQPage />}
+          />
+          <Route
+            path="/privacy"
+            element={<PrivacyPolicyPage />}
+          />
+          <Route
+            path="/return-policy"
+            element={<ReturnPolicyPage />}
           />
           <Route
             path="/shipping-policy"

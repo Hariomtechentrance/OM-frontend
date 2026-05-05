@@ -1,0 +1,278 @@
+.return-policy-page {
+  min-height: 100vh;
+  background-color: #ffffff;
+  padding: 2rem 0;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 3rem;
+  padding: 2rem 0;
+  border-bottom: 2px solid #f3f4f6;
+}
+
+.page-header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 1rem;
+}
+
+.page-header p {
+  font-size: 1.125rem;
+  color: #6b7280;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.policy-content {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.policy-section {
+  margin-bottom: 3rem;
+  padding: 2rem;
+  background: #ffffff;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.policy-section h2 {
+  font-size: 1.875rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #f3f4f6;
+}
+
+.policy-points {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.policy-point {
+  background: #f9fafb;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  border-left: 4px solid #3b82f6;
+}
+
+.policy-point h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 0.75rem;
+}
+
+.policy-point p {
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+.policy-section ol {
+  list-style: none;
+  counter-reset: step-counter;
+  padding-left: 0;
+}
+
+.policy-section ol li {
+  counter-increment: step-counter;
+  position: relative;
+  padding: 1rem 1rem 1rem 3rem;
+  margin-bottom: 1rem;
+  background: #f9fafb;
+  border-radius: 0.5rem;
+  border-left: 4px solid #10b981;
+  color: #1f2937;
+}
+
+.policy-section ol li::before {
+  content: counter(step-counter);
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2rem;
+  height: 2rem;
+  background: #10b981;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.conditions-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 1.5rem;
+}
+
+.condition-item {
+  background: #f9fafb;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+.condition-item h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 1rem;
+}
+
+.condition-item ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.condition-item ul li {
+  padding: 0.5rem 0;
+  padding-left: 1.5rem;
+  position: relative;
+  color: #4b5563;
+}
+
+.condition-item ul li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #ef4444;
+  font-weight: bold;
+}
+
+.refund-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.refund-method {
+  background: #f9fafb;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  border-left: 4px solid #f59e0b;
+}
+
+.refund-method h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 0.75rem;
+}
+
+.refund-method p {
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+.refund-deduction {
+  background: #fef2f2;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  border-left: 4px solid #ef4444;
+}
+
+.refund-deduction h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #dc2626;
+  margin-bottom: 0.75rem;
+}
+
+.refund-deduction p {
+  color: #7f1d1d;
+  line-height: 1.6;
+}
+
+.contact-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.contact-item {
+  background: #f9fafb;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+  text-align: center;
+}
+
+.contact-item h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.contact-item p {
+  font-size: 1.125rem;
+  color: #1f2937;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .return-policy-page {
+    padding: 1rem 0;
+  }
+  
+  .page-header {
+    margin-bottom: 2rem;
+    padding: 1.5rem 0;
+  }
+  
+  .page-header h1 {
+    font-size: 2rem;
+  }
+  
+  .page-header p {
+    font-size: 1rem;
+  }
+  
+  .policy-section {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+  }
+  
+  .policy-section h2 {
+    font-size: 1.5rem;
+  }
+  
+  .conditions-list {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .contact-details {
+    grid-template-columns: 1fr;
+  }
+  
+  .policy-section ol li {
+    padding: 1rem 1rem 1rem 2.5rem;
+  }
+  
+  .policy-section ol li::before {
+    width: 1.5rem;
+    height: 1.5rem;
+    font-size: 0.75rem;
+    left: 0.75rem;
+  }
+}

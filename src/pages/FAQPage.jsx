@@ -6,44 +6,56 @@ const FAQPage = () => {
 
   const faqs = [
     {
-      question: "What is Black Locust's return policy?",
-      answer: "We offer a 30-day return policy for all unused items in their original packaging. Items must be in the same condition as received, with all tags attached. Refunds are processed within 5-7 business days after we receive the returned item."
+      question: "How do I place an order?",
+      answer: "Browse products, select your size, and click Add to Cart, then proceed to checkout."
     },
     {
-      question: "How long does shipping take?",
-      answer: "Standard shipping typically takes 5-7 business days. Express shipping takes 2-3 business days. International shipping varies by location but generally takes 10-15 business days. You'll receive a tracking number once your order ships."
+      question: "How can I track my order?",
+      answer: "You'll receive a tracking link via whatsapp after your order is shipped."
     },
     {
-      question: "Do you offer international shipping?",
-      answer: "Yes, we ship to most countries worldwide. International shipping rates and delivery times vary by destination. You can check if we ship to your country during the checkout process."
+      question: "What are the delivery charges?",
+      answer: "Delivery charges are calculated at checkout based on your location."
     },
     {
-      question: "What payment methods do you accept?",
-      answer: "We accept all major credit cards (Visa, MasterCard, American Express), PayPal, Apple Pay, Google Pay, and bank transfers for orders over $500."
+      question: "How long does delivery take?",
+      answer: "Orders are usually delivered within 3–7 working days."
     },
     {
-      question: "How do I track my order?",
-      answer: "Once your order ships, you'll receive an email with a tracking number. You can use this number on our website's order tracking page or the carrier's website to monitor your package's progress."
+      question: "Do you offer free shipping?",
+      answer: "Free shipping may be available on selected orders or offers."
     },
     {
-      question: "What sizes do you offer?",
-      answer: "We offer sizes from XS to XXL for most items, and some products are available in XXXL. Each product page includes a detailed size chart to help you find the perfect fit."
+      question: "What is your return policy?",
+      answer: "We offer easy returns within 7 days of delivery."
     },
     {
-      question: "How do I care for my Black Locust products?",
-      answer: "Care instructions vary by product. Most items can be machine washed in cold water and tumble dried on low heat. Please check the care label on each specific product for detailed instructions."
+      question: "How do I request a return?",
+      answer: "Go to your orders section or contact our support team to initiate a return."
     },
     {
-      question: "Do you offer gift wrapping?",
-      answer: "Yes, we offer premium gift wrapping services for a small additional fee. You can select this option during checkout and include a personalized message."
+      question: "When will I get my refund?",
+      answer: "Refunds are processed within 5–7 working days after approval."
     },
     {
-      question: "What is your loyalty program?",
-      answer: "Our Black Locust Rewards program offers points for every purchase, which can be redeemed for discounts on future orders. Members also get early access to new collections and exclusive offers."
+      question: "What payment methods are available?",
+      answer: "We accept UPI, debit/credit cards, net banking, and wallets."
     },
     {
-      question: "How can I contact customer service?",
-      answer: "You can reach our customer service team via email at support@blacklocust.com, phone at 1-800-BLACK-LOCUST, or through our live chat feature available on our website."
+      question: "Is Cash on Delivery available?",
+      answer: "Yes, COD is available on eligible orders."
+    },
+    {
+      question: "How do I choose the right size?",
+      answer: "Refer to our size chart available on each product page."
+    },
+    {
+      question: "Are your products true to size?",
+      answer: "Yes, our products follow standard sizing for a comfortable fit."
+    },
+    {
+      question: "How do I use a discount code?",
+      answer: "Apply your code at checkout before making payment."
     }
   ];
 
