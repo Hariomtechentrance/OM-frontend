@@ -24,7 +24,11 @@ const isFirebaseConfigured = () =>
 const getFirebaseAuth = () => {
   if (!isFirebaseConfigured()) {
     throw new Error(
-      'Firebase auth is not configured. Add REACT_APP_FIREBASE_* keys in .env.development.local'
+      'Firebase auth is not configured. Please set up Firebase OAuth credentials:\n\n' +
+      '1. Create a Firebase project at https://console.firebase.google.com\n' +
+      '2. Enable Google and Facebook authentication\n' +
+      '3. Add Firebase credentials to .env.development.local\n' +
+      '4. Restart the development server'
     );
   }
 
@@ -33,18 +37,30 @@ const getFirebaseAuth = () => {
 };
 
 export const signInWithGooglePopup = async () => {
-  const auth = getFirebaseAuth();
-  const provider = new GoogleAuthProvider();
-  provider.setCustomParameters({ prompt: 'select_account' });
-  const result = await signInWithPopup(auth, provider);
-  return result.user;
+  try {
+    const auth = getFirebaseAuth();
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    const result = await signInWithPopup(auth, provider);
+    return result.user;
+  } catch (error) {
+    console.error('Google sign-in error:', error);
+    throw error;
+  }
 };
 
 export const signInWithFacebookPopup = async () => {
-  const auth = getFirebaseAuth();
-  const provider = new FacebookAuthProvider();
-  provider.setCustomParameters({ display: 'popup' });
-  const result = await signInWithPopup(auth, provider);
-  return result.user;
+  try {
+    const auth = getFirebaseAuth();
+    const provider = new FacebookAuthProvider();
+    provider.setCustomParameters({ display: 'popup' });
+    const result = await signInWithPopup(auth, provider);
+    return result.user;
+  } catch (error) {
+    console.error('Facebook sign-in error:', error);
+    throw error;
+  }
 };
+
+export const isSocialAuthAvailable = isFirebaseConfigured;
 

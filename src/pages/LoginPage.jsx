@@ -4,6 +4,7 @@ import { FaEye, FaEyeSlash, FaGoogle, FaFacebook, FaTimes, FaCheck, FaMobileAlt 
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import OTPLogin from '../components/Auth/OTPLogin';
+import { isSocialAuthAvailable } from '../services/firebaseAuth';
 import logo from '../assets/images/New logo1.png';
 import './LoginPage.css';
 
@@ -58,6 +59,18 @@ const LoginPage = () => {
   };
 
   const handleSocialLogin = (provider) => {
+    // Check if Firebase is configured
+    if (!isSocialAuthAvailable()) {
+      toast.error(
+        'Social login is not configured. Please set up Firebase OAuth credentials first.',
+        {
+          autoClose: 8000,
+          position: 'top-center'
+        }
+      );
+      return;
+    }
+
     const providerKey = provider.toLowerCase();
     loginWithSocial(providerKey).then((result) => {
       if (result.success) {
@@ -66,6 +79,9 @@ const LoginPage = () => {
       } else {
         toast.error(result.error || `${provider} login failed`);
       }
+    }).catch((error) => {
+      console.error('Social login error:', error);
+      toast.error(`${provider} login failed: ${error.message}`);
     });
   };
 
@@ -229,16 +245,20 @@ const LoginPage = () => {
             <div className="social-buttons">
               <button
                 type="button"
-                className="social-btn google-btn"
+                className={`social-btn google-btn ${!isSocialAuthAvailable() ? 'disabled' : ''}`}
                 onClick={() => handleSocialLogin('Google')}
+                disabled={!isSocialAuthAvailable()}
+                title={isSocialAuthAvailable() ? 'Continue with Google' : 'Firebase OAuth not configured'}
               >
                 <FaGoogle />
                 <span>Continue with Google</span>
               </button>
               <button
                 type="button"
-                className="social-btn facebook-btn"
+                className={`social-btn facebook-btn ${!isSocialAuthAvailable() ? 'disabled' : ''}`}
                 onClick={() => handleSocialLogin('Facebook')}
+                disabled={!isSocialAuthAvailable()}
+                title={isSocialAuthAvailable() ? 'Continue with Facebook' : 'Firebase OAuth not configured'}
               >
                 <FaFacebook />
                 <span>Continue with Facebook</span>

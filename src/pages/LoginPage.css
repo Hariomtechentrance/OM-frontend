@@ -361,22 +361,34 @@ body {
   flex: 1;
   padding: 0.875rem;
   border: 2px solid var(--border-color);
-  border-radius: 12px;
-  background: var(--input-bg);
+  border-radius: 0.5rem;
+  background: var(--card-bg);
   color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  font-size: 0.9rem;
-  font-weight: 500;
 }
 
 .social-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.social-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.social-btn.disabled:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 .google-btn:hover {

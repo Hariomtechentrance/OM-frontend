@@ -2,7 +2,8 @@ import React, { createContext, useContext, useReducer, useEffect, useState } fro
 import api from '../utils/axios';
 import {
   signInWithGooglePopup,
-  signInWithFacebookPopup
+  signInWithFacebookPopup,
+  isSocialAuthAvailable
 } from '../services/firebaseAuth';
 
 const ACCESS_TOKEN_TTL_MS = 14 * 60 * 1000; // Slightly under backend 15m JWT expiry
@@ -511,6 +512,17 @@ export const AuthProvider = ({ children }) => {
     try {
       dispatch({ type: SET_LOADING, payload: true });
 
+      // Check if Firebase is configured
+      if (!isSocialAuthAvailable()) {
+        throw new Error(
+          'Social login is not configured. Please set up Firebase OAuth credentials:\n\n' +
+          '1. Create a Firebase project at https://console.firebase.google.com\n' +
+          '2. Enable Google and Facebook authentication\n' +
+          '3. Add Firebase credentials to .env.development.local\n' +
+          '4. Restart the development server'
+        );
+      }
+
       const firebaseUser =
         provider === 'google'
           ? await signInWithGooglePopup()
@@ -540,19 +552,24 @@ export const AuthProvider = ({ children }) => {
         }
       });
 
-      dispatch({ type: SET_LOADING, payload: false });
-      return { success: true, user: socialUser };
+      return { success: true };
+
     } catch (error) {
+      console.error(`${provider} login error:`, error);
+      dispatch({ type: AUTH_FAIL, payload: error.message });
       dispatch({ type: SET_LOADING, payload: false });
-      return {
-        success: false,
-        error: error?.message || 'Social login failed'
-      };
+      return { success: false, error: error.message };
     }
   };
 
   const value = {
-    ...state,
+    user: state.user,
+    token: state.token,
+    refreshToken: state.refreshToken,
+    loading: state.loading,
+    isAuthenticated: state.isAuthenticated,
+    error: state.error,
+    tokenExpiry: state.tokenExpiry,
     register,
     login,
     logout,
