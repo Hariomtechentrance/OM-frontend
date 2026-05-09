@@ -76,23 +76,47 @@ export default function ProductReviews({ productId, onReviewsChanged }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Debug: Check authentication state
+    console.log('🔍 Auth state before submission:', isAuthenticated);
+    console.log('🔍 User ID:', JSON.parse(localStorage.getItem('user') || 'null'));
+    console.log('🔍 Token exists:', !!localStorage.getItem('token'));
+    console.log('🔍 Product ID:', productId);
+    console.log('🔍 Rating:', rating);
+    console.log('🔍 Comment:', comment);
+    console.log('🔍 Comment length:', comment.trim().length);
+    
     if (!isAuthenticated) {
+      console.log('❌ User not authenticated - showing toast');
       toast.info('Please sign in to write a review');
       return;
     }
+    
+    console.log('✅ User authenticated - proceeding with submission');
     const text = comment.trim();
     if (text.length < 10) {
+      console.log('❌ Comment too short:', text.length);
       toast.error('Please write at least 10 characters');
       return;
     }
     const images = imageUrl.trim() ? [imageUrl.trim()] : [];
+    
+    console.log('📤 Preparing review submission:', {
+      productId,
+      rating: Number(rating),
+      comment: text,
+      images
+    });
+    
     try {
       setSubmitting(true);
+      console.log('📤 Sending POST request to:', `/products/${productId}/reviews`);
       const res = await api.post(`/products/${productId}/reviews`, {
         rating: Number(rating),
         comment: text,
         images
       });
+      console.log('📥 Response received:', res.data);
       if (res.data?.success) {
         toast.success(res.data.message || 'Review submitted');
         setComment('');
@@ -100,8 +124,13 @@ export default function ProductReviews({ productId, onReviewsChanged }) {
         setPage(1);
         await load();
         onReviewsChanged?.();
+      } else {
+        console.log('❌ Response not successful:', res.data);
+        toast.error(res.data?.message || 'Review submission failed');
       }
     } catch (err) {
+      console.log('❌ Error during submission:', err);
+      console.log('❌ Error response:', err.response?.data);
       toast.error(err.response?.data?.message || 'Could not submit review');
     } finally {
       setSubmitting(false);
@@ -283,63 +312,78 @@ export default function ProductReviews({ productId, onReviewsChanged }) {
 
               <div className="bg-gray-50 rounded-lg p-6 border border-gray-100">
                 <h3 className="font-semibold text-gray-900 mb-4">Write a review</h3>
-                {!isAuthenticated && (
-                  <p className="text-sm text-gray-600 mb-4">
-                    Sign in to share feedback and help us improve.
+                
+                {/* Authentication Status Display */}
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                  <p className="text-sm text-blue-800">
+                    {isAuthenticated ? (
+                      <span>✅ You are logged in and can submit a review</span>
+                    ) : (
+                      <span>❌ Please <a href="/login" className="underline font-medium">sign in</a> to write a review</span>
+                    )}
                   </p>
+                </div>
+                
+                {!isAuthenticated && (
+                  <div className="text-sm text-gray-600 mb-4">
+                    <p>Sign in to share feedback and help us improve.</p>
+                    <a href="/login" className="inline-block mt-2 bg-black text-white px-4 py-2 rounded-md hover:bg-gray-800 transition-colors">
+                      Sign In to Review
+                    </a>
+                  </div>
                 )}
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                      Rating
-                    </label>
-                    <select
-                      value={rating}
-                      onChange={(e) => setRating(Number(e.target.value))}
-                      className="border border-gray-300 rounded-md px-3 py-2 text-sm w-full sm:w-auto"
-                      disabled={!isAuthenticated}
+                
+                {isAuthenticated && (
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        Rating
+                      </label>
+                      <select
+                        value={rating}
+                        onChange={(e) => setRating(Number(e.target.value))}
+                        className="border border-gray-300 rounded-md px-3 py-2 text-sm w-full sm:w-auto"
+                      >
+                        {[5, 4, 3, 2, 1].map((n) => (
+                          <option key={n} value={n}>
+                            {n} stars
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        Your experience (min 10 characters)
+                      </label>
+                      <textarea
+                        value={comment}
+                        onChange={(e) => setComment(e.target.value)}
+                        rows={4}
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                        placeholder="Fit, fabric, delivery — what should other buyers know?"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        Photo link (optional)
+                      </label>
+                      <input
+                        type="url"
+                        value={imageUrl}
+                        onChange={(e) => setImageUrl(e.target.value)}
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                        placeholder="https://… (ImageKit, Imgur, etc.)"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className="bg-black text-white px-6 py-2.5 text-sm font-medium rounded-md hover:bg-gray-800 disabled:opacity-40"
                     >
-                      {[5, 4, 3, 2, 1].map((n) => (
-                        <option key={n} value={n}>
-                          {n} stars
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                      Your experience (min 10 characters)
-                    </label>
-                    <textarea
-                      value={comment}
-                      onChange={(e) => setComment(e.target.value)}
-                      rows={4}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-                      placeholder="Fit, fabric, delivery — what should other buyers know?"
-                      disabled={!isAuthenticated}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                      Photo link (optional)
-                    </label>
-                    <input
-                      type="url"
-                      value={imageUrl}
-                      onChange={(e) => setImageUrl(e.target.value)}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-                      placeholder="https://… (ImageKit, Imgur, etc.)"
-                      disabled={!isAuthenticated}
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={!isAuthenticated || submitting}
-                    className="bg-black text-white px-6 py-2.5 text-sm font-medium rounded-md hover:bg-gray-800 disabled:opacity-40"
-                  >
-                    {submitting ? 'Submitting…' : 'Submit review'}
-                  </button>
-                </form>
+                      {submitting ? 'Submitting…' : 'Submit review'}
+                    </button>
+                  </form>
+                )}
               </div>
             </>
           )}

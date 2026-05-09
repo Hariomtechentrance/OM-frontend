@@ -4,6 +4,8 @@ import { toast } from 'react-toastify';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
+import UPIPayment from '../components/UPIPayment/UPIPayment';
+import CardPayment from '../components/CardPayment/CardPayment';
 
 function CheckoutPage() {
   const { items: cart, clearCart } = useCart();
@@ -27,6 +29,8 @@ function CheckoutPage() {
   const [discount, setDiscount] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [showUPIPayment, setShowUPIPayment] = useState(false);
+  const [showCardPayment, setShowCardPayment] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -65,6 +69,214 @@ function CheckoutPage() {
   const handleAddressSubmit = (e) => {
     e.preventDefault();
     setCurrentStep(2);
+  };
+
+  // Helper: load Razorpay checkout script (cached after first load)
+  const loadRazorpayScript = () =>
+    new Promise((resolve, reject) => {
+      if (window.Razorpay) return resolve(window.Razorpay);
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(window.Razorpay);
+      script.onerror = () => reject(new Error('Failed to load Razorpay script'));
+      document.body.appendChild(script);
+    });
+
+  /**
+   * COD Confirmation Flow:
+   * Opens Razorpay for ₹100 confirmation fee. Returns a Promise that
+   * resolves with the Razorpay payment ID on success, or rejects on
+   * failure / dismissal.
+   */
+  const collectCODConfirmationPayment = async (fullName) => {
+    const { data: keyData } = await api.get('/payments/razorpay/key');
+    if (!keyData?.keyId) {
+      throw new Error('Razorpay is not configured on the server.');
+    }
+
+    await loadRazorpayScript();
+
+    // Call backend to create a Razorpay order for ₹100 confirmation fee
+    const { data: codOrderResp } = await api.post('/payments/cod/confirmation-order', {
+      amount: 100,
+      currency: 'INR'
+    });
+
+    const rzpOrderId = codOrderResp?.order?.id || codOrderResp?.orderId;
+    if (!rzpOrderId) {
+      throw new Error('Failed to create COD confirmation order');
+    }
+
+    return new Promise((resolve, reject) => {
+      const rzpOptions = {
+        key: keyData.keyId,
+        order_id: rzpOrderId,
+        amount: 10000, // ₹100 in paise
+        currency: 'INR',
+        name: 'Black Locust',
+        description: 'COD Confirmation Fee - ₹100',
+        prefill: {
+          name: fullName,
+          email: shippingAddress.email,
+          contact: shippingAddress.phone
+        },
+        theme: { color: '#000000' },
+        handler: function (response) {
+          // Payment successful — resolve with the payment details
+          resolve({
+            razorpayPaymentId: response.razorpay_payment_id,
+            razorpayOrderId: response.razorpay_order_id,
+            razorpaySignature: response.razorpay_signature
+          });
+        },
+        modal: {
+          ondismiss: function () {
+            reject(new Error('COD confirmation payment was cancelled'));
+          }
+        }
+      };
+
+      const rzp = new window.Razorpay(rzpOptions);
+      rzp.on('payment.failed', function (response) {
+        reject(new Error('COD confirmation payment failed. Please try again.'));
+      });
+      rzp.open();
+    });
+  };
+
+  // UPI Payment Handlers
+  const handleUPIPayment = () => {
+    const totalPrice = calculateTotal();
+    const transactionId = `BL_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    setShowUPIPayment(true);
+  };
+
+  const handleUPIPaymentComplete = async (paymentDetails) => {
+    try {
+      setIsProcessing(true);
+      
+      // Create order with UPI payment details
+      const subtotal = calculateSubtotal();
+      const shippingPrice = subtotal > 999 ? 0 : 50;
+      const totalPrice = calculateTotal();
+      
+      const orderItems = (cart || []).map((item) => ({
+        product: item.product || item.productId,
+        name: item.name,
+        image: item.image,
+        price: item.price,
+        quantity: item.quantity,
+        size: item.size,
+        color: item.color
+      }));
+
+      const orderData = {
+        orderItems,
+        shippingAddress: {
+          ...shippingAddress,
+          fullName: `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim()
+        },
+        paymentMethod: 'upi',
+        itemsPrice: subtotal,
+        taxPrice: 0,
+        shippingPrice,
+        totalPrice,
+        paymentDetails: {
+          upiId: paymentDetails.upiId,
+          app: paymentDetails.app,
+          transactionId: paymentDetails.transactionId,
+          status: paymentDetails.status
+        }
+      };
+
+      const res = await api.post('/orders', orderData);
+      
+      if (res.data?.success) {
+        toast.success('UPI payment completed successfully!');
+        clearCart();
+        navigate('/order-success', { state: { order: res.data.order } });
+      } else {
+        toast.error('Order creation failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('UPI Order Error:', error);
+      toast.error('Failed to create order. Please try again.');
+    } finally {
+      setIsProcessing(false);
+      setShowUPIPayment(false);
+    }
+  };
+
+  const handleUPIPaymentCancel = () => {
+    setShowUPIPayment(false);
+  };
+
+  // Card Payment Handlers
+  const handleCardPayment = () => {
+    setShowCardPayment(true);
+  };
+
+  const handleCardPaymentComplete = async (paymentDetails) => {
+    try {
+      setIsProcessing(true);
+      
+      // Create order with card payment details
+      const subtotal = calculateSubtotal();
+      const shippingPrice = subtotal > 999 ? 0 : 50;
+      const totalPrice = calculateTotal();
+      
+      const orderItems = (cart || []).map((item) => ({
+        product: item.product || item.productId,
+        name: item.name,
+        image: item.image,
+        price: item.price,
+        quantity: item.quantity,
+        size: item.size,
+        color: item.color
+      }));
+
+      const orderData = {
+        orderItems,
+        shippingAddress: {
+          ...shippingAddress,
+          fullName: `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim()
+        },
+        paymentMethod: 'card',
+        itemsPrice: subtotal,
+        taxPrice: 0,
+        shippingPrice,
+        totalPrice,
+        paymentDetails: {
+          cardType: paymentDetails.cardType,
+          cardNumber: paymentDetails.cardNumber,
+          cardHolderName: paymentDetails.cardHolderName,
+          transactionId: paymentDetails.transactionId,
+          status: paymentDetails.status,
+          verifiedAt: paymentDetails.verifiedAt
+        }
+      };
+
+      const res = await api.post('/orders', orderData);
+      
+      if (res.data?.success) {
+        toast.success('Card payment completed successfully!');
+        clearCart();
+        navigate('/order-success', { state: { order: res.data.order } });
+      } else {
+        toast.error('Order creation failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Card Order Error:', error);
+      toast.error('Failed to create order. Please try again.');
+    } finally {
+      setIsProcessing(false);
+      setShowCardPayment(false);
+    }
+  };
+
+  const handleCardPaymentCancel = () => {
+    setShowCardPayment(false);
   };
 
   const handlePaymentSubmit = async (e) => {
@@ -106,6 +318,98 @@ function CheckoutPage() {
 
       const fullName = `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim();
 
+      // ─── COD Flow: collect ₹100 confirmation fee BEFORE creating the order ───
+      if (paymentMethod === 'cod') {
+        razorpayFlow = true; // Razorpay modal will be opened
+
+        let codPaymentDetails;
+        try {
+          codPaymentDetails = await collectCODConfirmationPayment(fullName);
+        } catch (codErr) {
+          // User cancelled or payment failed — don't place the order
+          toast.error(codErr.message || 'COD confirmation payment failed');
+          setIsProcessing(false);
+          return;
+        }
+
+        // ₹100 paid successfully — now create the COD order with real payment proof
+        const orderPayload = {
+          orderItems,
+          shippingAddress: {
+            fullName,
+            firstName: shippingAddress.firstName,
+            lastName: shippingAddress.lastName,
+            email: shippingAddress.email,
+            phone: shippingAddress.phone,
+            address: shippingAddress.address,
+            city: shippingAddress.city,
+            state: shippingAddress.state,
+            pincode: shippingAddress.pincode,
+            country: shippingAddress.country
+          },
+          paymentMethod: 'cod',
+          itemsPrice: subtotal,
+          taxPrice: 0,
+          shippingPrice,
+          totalPrice,
+          promoCode,
+          codConfirmation: {
+            paid: true,
+            amount: 100,
+            razorpayPaymentId: codPaymentDetails.razorpayPaymentId,
+            razorpayOrderId: codPaymentDetails.razorpayOrderId,
+            razorpaySignature: codPaymentDetails.razorpaySignature
+          }
+        };
+
+        let createdOrder;
+        try {
+          const orderRes = await api.post('/orders', orderPayload);
+          createdOrder = orderRes.data;
+        } catch (error) {
+          console.error('COD order creation error:', error);
+          if (error.response?.status === 401) {
+            toast.error('Your session has expired. Please login again.');
+            localStorage.setItem('returnPath', '/checkout');
+            navigate('/login');
+            setIsProcessing(false);
+            return;
+          }
+          const errorMessage = error.response?.data?.message || 'Failed to create order. Please try again.';
+          toast.error(errorMessage);
+          setIsProcessing(false);
+          return;
+        }
+
+        // Try Shiprocket (non-blocking)
+        try {
+          await api.post('/shipping/shiprocket/shipment', { orderId: createdOrder._id });
+        } catch (err) {
+          console.warn('Shiprocket shipment creation failed:', err?.response?.data || err.message);
+        }
+
+        clearCart();
+        navigate('/order-success', { state: { orderId: createdOrder._id } });
+        toast.success('Order placed successfully! ₹100 COD confirmation paid.');
+        setIsProcessing(false);
+        return;
+      }
+
+      // ─── UPI Payment Flow ───
+      if (paymentMethod === 'upi') {
+        setIsProcessing(false);
+        handleUPIPayment();
+        return;
+      }
+
+      // ─── Card Payment Flow ───
+      if (paymentMethod === 'card') {
+        setIsProcessing(false);
+        handleCardPayment();
+        return;
+      }
+
+      // ─── Online Payment Flow (Razorpay / Wallet) ───
       const orderPayload = {
         orderItems,
         shippingAddress: {
@@ -120,26 +424,14 @@ function CheckoutPage() {
           pincode: shippingAddress.pincode,
           country: shippingAddress.country
         },
-        // Map UI payment methods to backend StoreOrder paymentMethod values
-        paymentMethod: paymentMethod === 'cod' ? 'cod' : 'razorpay',
+        paymentMethod: 'razorpay',
         itemsPrice: subtotal,
         taxPrice: 0,
         shippingPrice,
         totalPrice,
-        promoCode,
-        ...(paymentMethod === 'cod'
-          ? {
-              // storeOrderController currently enforces min amount >= 100 for COD;
-              // we send a valid confirmation object.
-              codConfirmation: {
-                paid: true,
-                amount: Math.max(100, Math.round(totalPrice)),
-                razorpayPaymentId: 'cod'
-              }
-            }
-          : {})
+        promoCode
       };
-      razorpayFlow = orderPayload.paymentMethod === 'razorpay';
+      razorpayFlow = true;
 
       // 1) Create order record in our DB first
       let orderRes, createdOrder;
@@ -178,26 +470,7 @@ function CheckoutPage() {
         }
       };
 
-      // 2) COD: finalize immediately
-      if (orderPayload.paymentMethod === 'cod') {
-        await shiprocketIfPossible();
-        clearCart();
-        navigate('/order-success', { state: { orderId: createdOrder._id } });
-        toast.success('Order placed successfully!');
-        return;
-      }
-
-      // 3) Razorpay: open checkout and verify payment server-side
-      const loadRazorpayScript = () =>
-        new Promise((resolve, reject) => {
-          if (window.Razorpay) return resolve(window.Razorpay);
-          const script = document.createElement('script');
-          script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-          script.onload = () => resolve(window.Razorpay);
-          script.onerror = () => reject(new Error('Failed to load Razorpay script'));
-          document.body.appendChild(script);
-        });
-
+      // 2) Razorpay: open checkout and verify payment server-side
       const [{ data: keyData }, { data: razorpayOrderResp }] = await Promise.all([
         api.get('/payments/razorpay/key'),
         api.post('/payments/razorpay/order', { orderId: createdOrder._id, currency: 'INR' })
@@ -533,7 +806,7 @@ function CheckoutPage() {
                 <h2 className="text-xl font-bold text-gray-900 mb-6">Payment Method</h2>
                 <form onSubmit={handlePaymentSubmit} className="space-y-6">
                   <div className="space-y-4">
-                    <label className="flex items-center p-4 border border-gray-200 rounded-md cursor-pointer hover:border-black">
+                    <label className={`flex items-center p-4 border rounded-md cursor-pointer hover:border-black ${paymentMethod === 'cod' ? 'border-black bg-gray-50' : 'border-gray-200'}`}>
                       <input
                         type="radio"
                         name="payment"
@@ -542,11 +815,26 @@ function CheckoutPage() {
                         onChange={(e) => setPaymentMethod(e.target.value)}
                         className="mr-3"
                       />
-                      <div>
+                      <div className="flex-1">
                         <div className="font-medium text-gray-900">Cash on Delivery</div>
-                        <div className="text-sm text-gray-600">Pay when you receive your order</div>
+                        <div className="text-sm text-gray-600">Pay remaining amount when you receive your order</div>
                       </div>
+                      <span className="text-xs font-semibold bg-amber-100 text-amber-800 px-2 py-1 rounded-full whitespace-nowrap ml-2">₹100 Fee</span>
                     </label>
+                    {paymentMethod === 'cod' && (
+                      <div className="ml-7 p-3 bg-amber-50 border border-amber-200 rounded-md">
+                        <div className="flex items-start space-x-2">
+                          <span className="text-amber-600 text-lg leading-none">⚠</span>
+                          <div>
+                            <p className="text-sm font-medium text-amber-800">₹100 COD Confirmation Fee Required</p>
+                            <p className="text-xs text-amber-700 mt-1">
+                              A non-refundable ₹100 confirmation fee will be charged via Razorpay to confirm your COD order. 
+                              The remaining amount (₹{calculateTotal() > 0 ? calculateTotal() : 0}) will be collected at delivery.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     <label className="flex items-center p-4 border border-gray-200 rounded-md cursor-pointer hover:border-black">
                       <input
@@ -559,7 +847,7 @@ function CheckoutPage() {
                       />
                       <div>
                         <div className="font-medium text-gray-900">Credit/Debit Card</div>
-                        <div className="text-sm text-gray-600">Visa, Mastercard, RuPay</div>
+                        <div className="text-sm text-gray-600">Visa, Mastercard, RuPay, Amex with OTP verification</div>
                       </div>
                     </label>
 
@@ -573,8 +861,8 @@ function CheckoutPage() {
                         className="mr-3"
                       />
                       <div>
-                        <div className="font-medium text-gray-900">UPI</div>
-                        <div className="text-sm text-gray-600">Google Pay, PhonePe, Paytm</div>
+                        <div className="font-medium text-gray-900">UPI Payment</div>
+                        <div className="text-sm text-gray-600">PhonePe, Paytm, Google Pay, BHIM & more</div>
                       </div>
                     </label>
 
@@ -607,7 +895,7 @@ function CheckoutPage() {
                       disabled={isProcessing}
                       className="flex-1 bg-black text-white py-3 rounded-md font-medium hover:bg-gray-800 transition-colors disabled:opacity-50"
                     >
-                      {isProcessing ? 'PROCESSING...' : 'PLACE ORDER'}
+                      {isProcessing ? 'PROCESSING...' : paymentMethod === 'cod' ? 'PAY ₹100 & PLACE COD ORDER' : 'PLACE ORDER'}
                     </button>
                   </div>
                 </form>
@@ -687,11 +975,29 @@ function CheckoutPage() {
                     <span className="font-medium text-green-600">-₹{discount}</span>
                   </div>
                 )}
+                {paymentMethod === 'cod' && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">COD Confirmation Fee</span>
+                    <span className="font-medium text-amber-600">₹100</span>
+                  </div>
+                )}
                 <div className="border-t border-gray-200 pt-3">
                   <div className="flex justify-between">
                     <span className="text-lg font-bold text-gray-900">Total</span>
                     <span className="text-lg font-bold text-gray-900">₹{calculateTotal()}</span>
                   </div>
+                  {paymentMethod === 'cod' && (
+                    <div className="mt-2 space-y-1">
+                      <div className="flex justify-between text-xs text-amber-700">
+                        <span>Pay now (Confirmation Fee)</span>
+                        <span className="font-semibold">₹100</span>
+                      </div>
+                      <div className="flex justify-between text-xs text-gray-500">
+                        <span>Pay on Delivery</span>
+                        <span className="font-semibold">₹{calculateTotal()}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -722,6 +1028,34 @@ function CheckoutPage() {
           </div>
         </div>
       </div>
+
+      {/* UPI Payment Modal */}
+      {showUPIPayment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <UPIPayment
+              amount={calculateTotal()}
+              merchantVPA="blacklocust@ybl"
+              transactionId={`BL_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`}
+              onPaymentComplete={handleUPIPaymentComplete}
+              onCancel={handleUPIPaymentCancel}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Card Payment Modal */}
+      {showCardPayment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <CardPayment
+              amount={calculateTotal()}
+              onPaymentComplete={handleCardPaymentComplete}
+              onCancel={handleCardPaymentCancel}
+            />
+          </div>
+        </div>
+      )}
       </>
       )}
     </div>

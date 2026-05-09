@@ -15,6 +15,7 @@ import { WishlistProvider } from './context/WishlistContext';
 import Header from './components/Header/Header';
 import Footer from './components/Footer/Footer';
 import PageLoader from './components/PageLoader/PageLoader';
+import ScrollToTop from './components/ScrollToTop/ScrollToTop';
 
 // Pages (Lazy)
 const HomePage = lazy(() => import('./pages/HomePage'));
@@ -172,6 +173,7 @@ const AppLayout = () => {
 const App = () => {
   return (
     <Router>
+      <ScrollToTop />
       <AuthProvider>
         <StockProvider>
           <CartProvider>
