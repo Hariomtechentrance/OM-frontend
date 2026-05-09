@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useCart } from '../context/CartContext';
 import api from '../api/axios';
@@ -35,7 +35,10 @@ const SafeImg = ({ src, alt, className, fallback, onClick }) => {
 function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { addToCart } = useCart();
+  const scrollPositionRef = useRef(0);
+  const isInitialLoadRef = useRef(true);
 
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
@@ -155,6 +158,103 @@ function ProductDetailPage() {
     fetchProduct();
   }, [fetchProduct]);
 
+  // Comprehensive scroll position management for mobile users
+  useEffect(() => {
+    if (product) {
+      const scrollToTop = () => {
+        // Force scroll to top for mobile users
+        try {
+          // Modern browsers with smooth scrolling
+          window.scrollTo({
+            top: 0,
+            left: 0,
+            behavior: 'smooth'
+          });
+        } catch (error) {
+          // Fallback for older browsers
+          document.documentElement.scrollTop = 0;
+          document.body.scrollTop = 0;
+        }
+        
+        // Additional mobile-specific scroll reset
+        if (window.scrollY > 0) {
+          window.scrollTo(0, 0);
+        }
+        if (document.documentElement.scrollTop > 0) {
+          document.documentElement.scrollTop = 0;
+        }
+        if (document.body.scrollTop > 0) {
+          document.body.scrollTop = 0;
+        }
+      };
+
+      // Handle initial load vs navigation
+      if (isInitialLoadRef.current) {
+        // Initial load - scroll to top immediately
+        scrollToTop();
+        isInitialLoadRef.current = false;
+      } else {
+        // Navigation between products - scroll to top with slight delay
+        setTimeout(scrollToTop, 50);
+      }
+    }
+  }, [product]);
+
+  // Handle browser back/forward navigation - Fix for mobile scroll restoration
+  useEffect(() => {
+    const handlePopState = (event) => {
+      // Force scroll to top on browser back/forward navigation
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      }, 0);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    
+    // Store scroll position before unmount
+    const handleBeforeUnload = () => {
+      scrollPositionRef.current = window.scrollY;
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
+
+  // Mobile-specific scroll restoration fix
+  useEffect(() => {
+    // Check if this is a mobile device
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+      // Force scroll to top on mount for mobile devices
+      const forceScrollTop = () => {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+        
+        // Additional mobile scroll reset
+        if (window.scrollY > 0) {
+          window.scrollTo(0, 0);
+        }
+      };
+      
+      // Immediate scroll reset
+      forceScrollTop();
+      
+      // Additional scroll reset after a short delay
+      setTimeout(forceScrollTop, 100);
+      
+      // Another scroll reset after content loads
+      setTimeout(forceScrollTop, 300);
+    }
+  }, [id]);
+
   // ─── Helper to get product image ───────────────────────────────────────────────
   const getProductImage = (product) => {
     if (product.images && product.images.length > 0) {
@@ -166,7 +266,39 @@ function ProductDetailPage() {
 
   // ─── Helper to handle related product click ───────────────────────────────────────
   const handleRelatedProductClick = (productId) => {
-    navigate(`/product/${productId}`);
+    // Enhanced scroll management for mobile users
+    const scrollToTop = () => {
+      try {
+        window.scrollTo({
+          top: 0,
+          left: 0,
+          behavior: 'smooth'
+        });
+      } catch (error) {
+        // Fallback for older browsers
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      }
+      
+      // Additional mobile-specific scroll reset
+      if (window.scrollY > 0) {
+        window.scrollTo(0, 0);
+      }
+      if (document.documentElement.scrollTop > 0) {
+        document.documentElement.scrollTop = 0;
+      }
+      if (document.body.scrollTop > 0) {
+        document.body.scrollTop = 0;
+      }
+    };
+    
+    // Scroll to top before navigation
+    scrollToTop();
+    
+    // Small delay to ensure scroll completes before navigation
+    setTimeout(() => {
+      navigate(`/product/${productId}`);
+    }, 100);
   };
   const getProductImages = (product) => {
     const images = [];
@@ -249,13 +381,41 @@ function ProductDetailPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={() => navigate('/products')}
+              onClick={() => {
+                // Scroll to top before navigation - Fix for iPhone and all devices
+                try {
+                  window.scrollTo({
+                    top: 0,
+                    left: 0,
+                    behavior: 'smooth'
+                  });
+                } catch (error) {
+                  // Fallback for older browsers
+                  document.documentElement.scrollTop = 0;
+                  document.body.scrollTop = 0;
+                }
+                setTimeout(() => navigate('/products'), 100);
+              }}
               className="bg-black text-white px-6 py-3 rounded-md hover:bg-gray-800 transition-colors"
             >
               Browse All Products
             </button>
             <button
-              onClick={() => navigate('/')}
+              onClick={() => {
+                // Scroll to top before navigation - Fix for iPhone and all devices
+                try {
+                  window.scrollTo({
+                    top: 0,
+                    left: 0,
+                    behavior: 'smooth'
+                  });
+                } catch (error) {
+                  // Fallback for older browsers
+                  document.documentElement.scrollTop = 0;
+                  document.body.scrollTop = 0;
+                }
+                setTimeout(() => navigate('/'), 100);
+              }}
               className="border border-gray-300 text-gray-700 px-6 py-3 rounded-md hover:bg-gray-50 transition-colors"
             >
               Back to Home
@@ -274,9 +434,47 @@ function ProductDetailPage() {
       {/* Breadcrumb */}
       <div className="max-w-7xl mx-auto px-4 py-4">
         <nav className="breadcrumb">
-          <button onClick={() => navigate('/')} className="hover:text-black">Home</button>
+          <button 
+            onClick={() => {
+              // Scroll to top before navigation - Fix for iPhone and all devices
+              try {
+                window.scrollTo({
+                  top: 0,
+                  left: 0,
+                  behavior: 'smooth'
+                });
+              } catch (error) {
+                // Fallback for older browsers
+                document.documentElement.scrollTop = 0;
+                document.body.scrollTop = 0;
+              }
+              setTimeout(() => navigate('/'), 100);
+            }} 
+            className="hover:text-black"
+          >
+            Home
+          </button>
           <span className="separator">/</span>
-          <button onClick={() => navigate('/products')} className="hover:text-black">Products</button>
+          <button 
+            onClick={() => {
+              // Scroll to top before navigation - Fix for iPhone and all devices
+              try {
+                window.scrollTo({
+                  top: 0,
+                  left: 0,
+                  behavior: 'smooth'
+                });
+              } catch (error) {
+                // Fallback for older browsers
+                document.documentElement.scrollTop = 0;
+                document.body.scrollTop = 0;
+              }
+              setTimeout(() => navigate('/products'), 100);
+            }} 
+            className="hover:text-black"
+          >
+            Products
+          </button>
           <span className="separator">/</span>
           <span className="current" title={product.name}>
             {product.name.length > 30 ? product.name.substring(0, 30) + '...' : product.name}
@@ -571,7 +769,21 @@ function ProductDetailPage() {
             <h3 className="text-xl font-semibold text-gray-900 mb-2">No related products found</h3>
             <p className="text-gray-600 mb-6">Check out our other collections</p>
             <button
-              onClick={() => navigate('/products')}
+              onClick={() => {
+                // Scroll to top before navigation - Fix for iPhone and all devices
+                try {
+                  window.scrollTo({
+                    top: 0,
+                    left: 0,
+                    behavior: 'smooth'
+                  });
+                } catch (error) {
+                  // Fallback for older browsers
+                  document.documentElement.scrollTop = 0;
+                  document.body.scrollTop = 0;
+                }
+                setTimeout(() => navigate('/products'), 100);
+              }}
               className="bg-black text-white px-6 py-3 rounded-md hover:bg-gray-800 transition-colors"
             >
               View All Products
