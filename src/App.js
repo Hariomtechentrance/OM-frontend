@@ -22,6 +22,7 @@ const HomePage = lazy(() => import('./pages/HomePage'));
 const ProductsPage = lazy(() => import('./pages/ProductsPage'));
 const ProductDetailPage = lazy(() => import('./pages/ProductDetailPage'));
 const CategoryPage = lazy(() => import('./pages/CategoryPage'));
+const KidsComingSoonPage = lazy(() => import('./pages/KidsComingSoonPage'));
 const CartPage = lazy(() => import('./pages/CartPage'));
 const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
 const OrderSuccessPage = lazy(() => import('./pages/OrderSuccessPage'));
@@ -71,6 +72,7 @@ const AppLayout = () => {
           <Route path="/collections" element={<ShopCollectionsPage />} />
           <Route path="/collection/:slug" element={<CollectionPage />} />
           <Route path="/category/:slug" element={<CategoryPage />} />
+          <Route path="/kids" element={<KidsComingSoonPage />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/wishlist" element={<WishlistPage />} />
 
@@ -88,6 +90,7 @@ const AppLayout = () => {
           <Route path="/summer-final" element={<CategoryPage />} />
           <Route path="/office-collection" element={<CategoryPage />} />
           <Route path="/checked-collection" element={<CategoryPage />} />
+          <Route path="/monsoon-collection" element={<CategoryPage />} />
 
           {/* OTHER */}
           <Route path="/about" element={<AboutPage />} />

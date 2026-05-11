@@ -51,6 +51,7 @@ function HomePage() {
     { src: '/images/hero/21.jpg', alt: 'Collection 5' },
     { src: '/images/hero/22.jpg', alt: 'Collection 6' },
     { src: '/images/hero/23.jpg', alt: 'Collection 7' },
+    { src: '/images/hero/24.jpg', alt: 'Collection 8 - Monsoon Collection' },
   ], []);
 
   const mobileHeroImages = useMemo(() => [
@@ -61,6 +62,7 @@ function HomePage() {
     { src: '/images/hero/28.jpg', alt: 'Mobile 5' },
     { src: '/images/hero/29.jpg', alt: 'Mobile 6' },
     { src: '/images/hero/30.jpg', alt: 'Mobile 7' },
+    { src: '/images/hero/31.jpg', alt: 'Mobile 8 - Monsoon Collection' },
   ], []);
 
   // Fallback hero images (local) if primary ones fail
@@ -171,7 +173,8 @@ function HomePage() {
       '/collection/winter-collection',      // Slide 3: Winter Collection
       '/collection/denim-collection',      // Slide 4: Denim Collection
       '/collection/office-collection',      // Slide 5: Office Collection
-      '/collection/party-wear-collection'   // Slide 6: Party Wear Collection
+      '/collection/party-wear-collection',   // Slide 6: Party Wear Collection
+      '/collection/monsoon-collection'      // Slide 7: Monsoon Collection
     ];
     return heroCollectionMap[slideIndex % heroCollectionMap.length];
   };
@@ -233,7 +236,7 @@ function HomePage() {
             </Link>
 
             {/* Kids */}
-            <Link to="/category/kids" className="group relative overflow-hidden rounded-lg shadow-lg h-64 block">
+            <Link to="/kids" className="group relative overflow-hidden rounded-lg shadow-lg h-64 block">
               <SafeImg
                 src="https://images.unsplash.com/photo-1471286174890-9c112ffca5b4?w=800&auto=format&fit=crop"
                 alt="Kids Collection"

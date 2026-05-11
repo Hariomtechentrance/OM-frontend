@@ -141,7 +141,7 @@ const Header = () => {
                 MEN
               </Link>
               <Link
-                to="/category/kids"
+                to="/kids"
                 className="text-sm font-medium text-gray-700 hover:text-black uppercase tracking-wide"
               >
                 KIDS
