@@ -37,6 +37,10 @@ function HomePage() {
     featuredProducts: [], newArrivals: [], trendingProducts: [],
   });
   const [loading, setLoading] = useState(true);
+  const [heroLoading, setHeroLoading] = useState(false);
+  const [featuredLoading, setFeaturedLoading] = useState(true);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [collectionsLoading, setCollectionsLoading] = useState(true);
   const [currentHeroSlide, setCurrentHeroSlide] = useState(0);
 
   const navigate = useNavigate();
@@ -92,13 +96,29 @@ function HomePage() {
   const nextSlide  = () => setCurrentHeroSlide((p) => (p + 1) % heroImages.length);
   const prevSlide  = () => setCurrentHeroSlide((p) => (p - 1 + heroImages.length) % heroImages.length);
 
-  // Fetch data
+  // Fetch data with progressive loading stages
   useEffect(() => { fetchData(); }, []);
   const fetchData = async () => {
     try {
       setLoading(true);
+      
+      // Load all data at once since we have optimized backend
       const data = await DataService.getHomepageData();
       setHomepageData(data);
+      
+      // Progressive loading simulation - reveal content in stages
+      setTimeout(() => {
+        setFeaturedLoading(false);
+      }, 200); // Featured products load first
+      
+      setTimeout(() => {
+        setCategoriesLoading(false);
+      }, 400); // Categories load second
+      
+      setTimeout(() => {
+        setCollectionsLoading(false);
+      }, 600); // Collections load third
+      
     } catch (e) {
       console.error('Homepage data error:', e);
     } finally {
@@ -151,12 +171,62 @@ function HomePage() {
     return mappedImage;
   };
 
+  // Skeleton loading component for better perceived performance
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading amazing products...</p>
+      <div className="min-h-screen bg-white">
+        {/* Hero Section Skeleton */}
+        <div className="relative h-[300px] md:h-[400px] lg:h-[500vh] bg-gray-100 animate-pulse">
+          <div className="absolute inset-0 bg-gradient-to-r from-gray-100 to-gray-200"></div>
+        </div>
+        
+        {/* Featured Products Skeleton */}
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="mb-8">
+            <div className="h-8 bg-gray-200 rounded animate-pulse mb-4"></div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="bg-white rounded-lg shadow-sm overflow-hidden">
+                  <div className="aspect-[3/4] bg-gray-100 animate-pulse"></div>
+                  <div className="p-4">
+                    <div className="h-4 bg-gray-200 rounded animate-pulse mb-2"></div>
+                    <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          {/* Categories Skeleton */}
+          <div className="mb-8">
+            <div className="h-8 bg-gray-200 rounded animate-pulse mb-4"></div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="bg-white rounded-lg shadow-sm overflow-hidden">
+                  <div className="aspect-[16/9] bg-gray-100 animate-pulse"></div>
+                  <div className="p-4">
+                    <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          {/* Collections Skeleton */}
+          <div className="mb-8">
+            <div className="h-8 bg-gray-200 rounded animate-pulse mb-4"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-white rounded-lg shadow-sm overflow-hidden">
+                  <div className="aspect-[16/9] bg-gray-100 animate-pulse"></div>
+                  <div className="p-4">
+                    <div className="h-4 bg-gray-200 rounded animate-pulse mb-2"></div>
+                    <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     );

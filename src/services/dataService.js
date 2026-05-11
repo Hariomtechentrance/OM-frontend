@@ -119,26 +119,23 @@ class DataService {
   // Get all organized data for homepage
   static async getHomepageData() {
     try {
-      const [productsResponse, categoriesResponse, collectionsResponse] = await Promise.all([
-        this.fetchAllProducts(),
-        this.fetchCategories(),
-        this.fetchCollections()
-      ]);
-
-      const products = productsResponse.products || [];
-      const categories = categoriesResponse.categories || [];
-      const collections = collectionsResponse.collections || [];
-
-      return {
-        products,
-        categories,
-        collections,
-        organizedByCategories: this.organizeByCategories(products, categories),
-        organizedByCollections: this.organizeByCollections(products, collections),
-        featuredProducts: this.getFeaturedProducts(products),
-        newArrivals: this.getNewArrivals(products),
-        trendingProducts: this.getTrendingProducts(products)
-      };
+      // Use optimized homepage endpoint instead of multiple API calls
+      const response = await api.get('/products/homepage');
+      
+      if (response.data.success) {
+        return {
+          products: response.data.products || [],
+          categories: response.data.categories || [],
+          collections: response.data.collections || [],
+          organizedByCategories: response.data.organizedByCategories || {},
+          organizedByCollections: response.data.organizedByCollections || {},
+          featuredProducts: response.data.featuredProducts || [],
+          newArrivals: response.data.newArrivals || [],
+          trendingProducts: response.data.trendingProducts || []
+        };
+      } else {
+        throw new Error(response.data.message || 'Failed to fetch homepage data');
+      }
     } catch (error) {
       console.error('Error fetching homepage data:', error);
       throw error;
