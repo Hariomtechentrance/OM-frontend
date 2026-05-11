@@ -43,12 +43,15 @@ function ProductDetailPage() {
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [mainProductLoading, setMainProductLoading] = useState(true);
+  const [relatedProductsLoading, setRelatedProductsLoading] = useState(false);
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const fetchProduct = useCallback(async () => {
     try {
+      setMainProductLoading(true);
       setLoading(true);
       
       // Handle case where id is undefined or invalid
@@ -56,6 +59,7 @@ function ProductDetailPage() {
         console.error('No product ID provided');
         toast.error('Product ID is missing');
         setProduct(null);
+        setMainProductLoading(false);
         setLoading(false);
         return;
       }
@@ -68,6 +72,7 @@ function ProductDetailPage() {
         console.error('Invalid product ID:', id);
         toast.error('Invalid product ID format');
         setProduct(null);
+        setMainProductLoading(false);
         setLoading(false);
         return;
       }
@@ -75,66 +80,25 @@ function ProductDetailPage() {
       // For MongoDB ObjectIds, check if it's a valid format
       if (!/^[a-fA-F0-9]{24}$/.test(idString)) {
         console.warn('Product ID may not be a valid MongoDB ObjectId:', idString);
-        // Still try to fetch the product - the backend might handle different ID formats
+        // Still try to fetch the product - backend might handle different ID formats
       }
       
       console.log('Fetching product with ID:', idString);
-      const response = await api.get(`/products/${idString}`);
+      const response = await api.get(`/products/${idString}?includeRelated=true`);
       if (response.data.success) {
         setProduct(response.data.product);
+        setMainProductLoading(false);
         
-        // Fetch related products (same category or collection)
-        try {
-          const allProductsResponse = await api.get('/products');
-          if (allProductsResponse.data.success) {
-            const allProducts = allProductsResponse.data.products || [];
-            const currentProduct = response.data.product;
-            
-            // Filter related products (same category, collection, or exclude current product)
-            let related = allProducts.filter(p => {
-              // Exclude current product
-              if (p._id === currentProduct._id) return false;
-              
-              // Check if same collection (most products have collections)
-              if (currentProduct.collection && p.collection) {
-                if (typeof currentProduct.collection === 'object' && typeof p.collection === 'object') {
-                  if (currentProduct.collection._id === p.collection._id) return true;
-                }
-              }
-              
-              // Check if same category (some products have categories)
-              if (currentProduct.category && p.category) {
-                if (typeof currentProduct.category === 'object' && typeof p.category === 'object') {
-                  if (currentProduct.category._id === p.category._id) return true;
-                }
-                if (typeof currentProduct.category === 'string' && typeof p.category === 'string') {
-                  if (currentProduct.category === p.category) return true;
-                }
-              }
-              
-              return false;
-            });
-            
-            // Debug logging
-            console.log('Current product:', currentProduct.name, 'Collection:', currentProduct.collection?.name, 'Category:', currentProduct.category?.name);
-            console.log('Found related products:', related.length);
-            
-            // If no related products found, show some random products as fallback
-            if (related.length === 0) {
-              console.log('No related products found, using random fallback');
-              const otherProducts = allProducts.filter(p => p._id !== currentProduct._id);
-              // Shuffle and take first 4
-              related = otherProducts.sort(() => 0.5 - Math.random()).slice(0, 4);
-            }
-            
-            // Take first 4 related products
-            setRelatedProducts(related.slice(0, 4));
-          }
-        } catch (error) {
-          console.error('Error fetching related products:', error);
-          // If error, set empty array
+        // Set related products from the same API call (optimization)
+        if (response.data.relatedProducts) {
+          console.log('Found related products:', response.data.relatedProducts.length);
+          setRelatedProducts(response.data.relatedProducts.slice(0, 4));
+        } else {
           setRelatedProducts([]);
         }
+        
+        // Set overall loading to false when main product is loaded
+        setLoading(false);
       }
     } catch (error) {
       console.error('Error fetching product:', error);
@@ -354,12 +318,35 @@ function ProductDetailPage() {
     await addToCart(relatedProduct, 1, 'M', 'Default');
   };
 
+  // Skeleton loading component for better perceived performance
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading product...</p>
+      <div className="min-h-screen bg-white">
+        {/* Main Product Skeleton */}
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            {/* Product Images Skeleton */}
+            <div className="space-y-4">
+              <div className="aspect-[3/4] bg-gray-100 rounded-lg animate-pulse"></div>
+              <div className="bg-gray-100 p-2 rounded-lg">
+                <div className="grid grid-cols-4 gap-1">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="aspect-square bg-gray-200 rounded animate-pulse"></div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            {/* Product Info Skeleton */}
+            <div className="space-y-6">
+              <div className="h-8 bg-gray-200 rounded animate-pulse mb-4"></div>
+              <div className="h-4 bg-gray-200 rounded animate-pulse mb-6"></div>
+              <div className="h-4 bg-gray-200 rounded animate-pulse mb-6"></div>
+              <div className="h-4 bg-gray-200 rounded animate-pulse mb-6"></div>
+              <div className="h-12 bg-gray-200 rounded animate-pulse mb-6"></div>
+              <div className="h-12 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+          </div>
         </div>
       </div>
     );
