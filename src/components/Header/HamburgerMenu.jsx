@@ -33,7 +33,7 @@ const HamburgerMenu = ({ isOpen, onClose }) => {
               Men
             </Link>
             <Link
-              to="/products"
+              to="/kids"
               className="hamburger-nav-link"
               onClick={onClose}
             >
