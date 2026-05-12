@@ -146,18 +146,36 @@ function HomePage() {
   }
 
   const getHeroCollectionLink = (slideIndex) => {
-    // Correct mapping for banner photos to their respective collections
-    const heroCollectionMap = [
-      '/collection/summer-collection',      // Slide 0: Summer Collection
-      '/collection/cargo-collection',      // Slide 1: Cargo Collection
-      '/collection/casual-collection',     // Slide 2: Casual Collection
-      '/collection/winter-collection',      // Slide 3: Winter Collection
-      '/collection/denim-collection',      // Slide 4: Denim Collection
-      '/collection/office-collection',      // Slide 5: Office Collection
-      '/collection/party-wear-collection',   // Slide 6: Party Wear Collection
-      '/collection/monsoon-collection'      // Slide 7: Monsoon Collection
-    ];
-    return heroCollectionMap[slideIndex % heroCollectionMap.length];
+    // Check if we're in mobile view
+    const isMobile = window.innerWidth < 768;
+    
+    if (isMobile) {
+      // Mobile hero banner collection mapping
+      const mobileHeroCollectionMap = [
+        '/collection/cargo-collection',      // Mobile 1: Cargo Collection (hero/24.jpg)
+        '/collection/checked-collection',   // Mobile 2: Checked Collection (hero/25.jpg)
+        '/collection/checked-collection',   // Mobile 3: Checked Collection (hero/26.jpg)
+        '/collection/denim-collection',     // Mobile 4: Denim Collection (hero/27.jpg)
+        '/collection/summer-collection',    // Mobile 5: Summer Collection (hero/28.jpg)
+        '/collection/summer-collection',    // Mobile 6: Summer Collection (hero/29.jpg)
+        '/collection/summer-collection',    // Mobile 7: Summer Collection (hero/30.jpg)
+        '/collection/monsoon-collection'     // Mobile 8: Monsoon Collection (hero/31.jpg)
+      ];
+      return mobileHeroCollectionMap[slideIndex % mobileHeroCollectionMap.length];
+    } else {
+      // Desktop hero banner collection mapping
+      const desktopHeroCollectionMap = [
+        '/collection/summer-collection',      // Slide 0: Summer Collection (hero/17.jpg)
+        '/collection/cargo-collection',      // Slide 1: Cargo Collection (hero/18.jpg)
+        '/collection/checked-collection',      // Slide 2: Checked Collection (hero/19.jpg)
+        '/collection/checked-collection',      // Slide 3: Checked Collection (hero/20.jpg)
+        '/collection/denim-collection',       // Slide 4: Denim Collection (hero/21.jpg)
+        '/collection/summer-collection',      // Slide 5: Summer Collection (hero/22.jpg)
+        '/collection/summer-collection',      // Slide 6: Summer Collection (hero/23.jpg)
+        '/collection/monsoon-collection'      // Slide 7: Monsoon Collection (hero/24.jpg)
+      ];
+      return desktopHeroCollectionMap[slideIndex % desktopHeroCollectionMap.length];
+    }
   };
 
   const currentHero = heroImages[currentHeroSlide] || heroImages[0] || desktopHeroImages[0];
