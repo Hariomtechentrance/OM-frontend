@@ -2,32 +2,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import DataService from '../services/dataService';
+import SafeImg from '../components/SafeImg/SafeImg';
 
 // ─── Unsplash fallback per category (never 404) ─────────────────────────────
 const IMG_FALLBACK = {
   men:     'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=600&auto=format&fit=crop',
   kids:    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&auto=format&fit=crop',
   default: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=600&auto=format&fit=crop',
-};
-
-// Safe image component — swaps to fallback silently on any error
-const SafeImg = ({ src, alt, className, fallback, onClick }) => {
-  const [errored, setErrored] = useState(false);
-  
-  // Ensure src is a string before calling .includes()
-  const srcString = typeof src === 'string' ? src : '';
-  const resolvedSrc = (errored || !srcString || srcString.includes('placeholder')) ? fallback : srcString;
-  
-  return (
-    <img
-      src={resolvedSrc}
-      alt={alt}
-      className={className}
-      onClick={onClick}
-      onError={() => setErrored(true)}
-      loading="lazy"
-    />
-  );
 };
 
 function HomePage() {
