@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { FaBox, FaUsers, FaShoppingBag, FaDollarSign, FaChartLine, FaEye, FaEdit, FaTrash } from 'react-icons/fa';
+import SafeImg from '../../components/SafeImg/SafeImg';
 
 const DashboardOverview = () => {
   const [stats, setStats] = useState({
@@ -205,7 +206,12 @@ const DashboardOverview = () => {
                     <div key={product._id} className="product-item">
                       <div className="product-image">
                         {product.images && product.images.length > 0 ? (
-                          <img src={product.images[0]?.url} alt={product.name} />
+                          <SafeImg 
+                            src={product.images[0]?.url} 
+                            alt={product.name}
+                            fallback="https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=60&auto=format&fit=crop"
+                            style={{ width: '60px', height: '60px', objectFit: 'cover' }}
+                          />
                         ) : (
                           <div className="no-image">No Image</div>
                         )}

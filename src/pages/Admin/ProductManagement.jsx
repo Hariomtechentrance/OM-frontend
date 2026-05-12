@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import api from '../../api/axios'; // ✅ FIXED: Use shared axios instance
+import SafeImg from '../../components/SafeImg/SafeImg';
 import './ProductManagement.css';
 
 const ProductManagement = () => {
@@ -957,11 +958,12 @@ const ProductManagement = () => {
                 <tr key={product?._id} className={!product?.isActive ? 'inactive-product' : ''}>
                   <td>
                     {product?.images?.[0] ? (
-                      <img 
+                      <SafeImg 
                         src={product?.images[0]?.url} 
                         alt={product?.name}
-                        width="50"
                         className="product-thumbnail"
+                        fallback="https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=50&auto=format&fit=crop"
+                        style={{ width: '50px', height: '50px', objectFit: 'cover' }}
                       />
                     ) : (
                       <div className="no-image">No Image</div>
@@ -1588,7 +1590,12 @@ const ProductManagement = () => {
                       <div className="image-previews">
                         {imagePreviews.map((src, idx) => (
                           <div key={`preview-${idx}`} className="image-preview">
-                            <img src={src} alt={`Selected ${idx + 1}`} />
+                            <SafeImg 
+                              src={src} 
+                              alt={`Selected ${idx + 1}`} 
+                              fallback="https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=100&auto=format&fit=crop"
+                              style={{ width: '100%', height: '100px', objectFit: 'cover' }}
+                            />
                             <span className="image-preview-badge">{idx + 1}</span>
                           </div>
                         ))}

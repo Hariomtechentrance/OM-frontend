@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import api from '../../api/axios';
+import SafeImg from '../../components/SafeImg/SafeImg';
 
 const OrderManagement = () => {
   const [orders, setOrders] = useState([]);
@@ -328,7 +329,12 @@ const OrderManagement = () => {
                     <div key={index} className="order-item">
                       <div className="item-image">
                         {item.image ? (
-                          <img src={item.image} alt={item.name || 'Product'} />
+                          <SafeImg 
+                            src={item.image} 
+                            alt={item.name || 'Product'}
+                            fallback="https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=50&auto=format&fit=crop"
+                            style={{ width: '50px', height: '50px', objectFit: 'cover' }}
+                          />
                         ) : (
                           <div className="no-image">No Image</div>
                         )}
