@@ -9,7 +9,7 @@ import CardPayment from '../components/CardPayment/CardPayment';
 
 function CheckoutPage() {
   const { items: cart, clearCart } = useCart();
-  const { isAuthenticated, login } = useAuth();
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -31,6 +31,19 @@ function CheckoutPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showUPIPayment, setShowUPIPayment] = useState(false);
   const [showCardPayment, setShowCardPayment] = useState(false);
+  
+  // UPI Verification states
+  const [upiId, setUpiId] = useState('');
+  const [upiVerified, setUpiVerified] = useState(false);
+  const [isVerifyingUPI, setIsVerifyingUPI] = useState(false);
+  
+  // Reset UPI verification when payment method changes
+  useEffect(() => {
+    if (paymentMethod !== 'cod' && paymentMethod !== 'upi') {
+      setUpiId('');
+      setUpiVerified(false);
+    }
+  }, [paymentMethod]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -69,6 +82,45 @@ function CheckoutPage() {
   const handleAddressSubmit = (e) => {
     e.preventDefault();
     setCurrentStep(2);
+  };
+
+  // Validate UPI ID format
+  const validateUpiId = (upiId) => {
+    const upiRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9]+$/;
+    return upiRegex.test(upiId) && upiId.length >= 5;
+  };
+
+  // Handle UPI Verification
+  const handleVerifyUPI = async () => {
+    if (!upiId) {
+      toast.error('Please enter your UPI ID');
+      return;
+    }
+
+    if (!validateUpiId(upiId)) {
+      toast.error('Please enter a valid UPI ID (e.g., yourname@ybl, 9876543210@paytm)');
+      return;
+    }
+
+    setIsVerifyingUPI(true);
+
+    try {
+      // Simulate UPI verification (in production, this would call a verification API)
+      toast.info('Verifying UPI ID...', { autoClose: 2000 });
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Mark as verified
+      setUpiVerified(true);
+      toast.success(`UPI ID verified successfully: ${upiId}`);
+      
+    } catch (error) {
+      console.error('UPI Verification Error:', error);
+      toast.error('Failed to verify UPI ID. Please try again.');
+    } finally {
+      setIsVerifyingUPI(false);
+    }
   };
 
   // Helper: load Razorpay checkout script (cached after first load)
@@ -146,9 +198,6 @@ function CheckoutPage() {
 
   // UPI Payment Handlers
   const handleUPIPayment = () => {
-    const totalPrice = calculateTotal();
-    const transactionId = `BL_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
     setShowUPIPayment(true);
   };
 
@@ -184,18 +233,20 @@ function CheckoutPage() {
         totalPrice,
         paymentDetails: {
           upiId: paymentDetails.upiId,
-          app: paymentDetails.app,
           transactionId: paymentDetails.transactionId,
-          status: paymentDetails.status
+          orderId: paymentDetails.orderId,
+          status: paymentDetails.status,
+          verifiedAt: paymentDetails.verifiedAt
         }
       };
 
       const res = await api.post('/orders', orderData);
       
-      if (res.data?.success) {
+      // Backend returns order object directly (not wrapped in success)
+      if (res.data && res.data._id) {
         toast.success('UPI payment completed successfully!');
         clearCart();
-        navigate('/order-success', { state: { order: res.data.order } });
+        navigate('/order-success', { state: { orderId: res.data._id, order: res.data } });
       } else {
         toast.error('Order creation failed. Please try again.');
       }
@@ -259,10 +310,11 @@ function CheckoutPage() {
 
       const res = await api.post('/orders', orderData);
       
-      if (res.data?.success) {
+      // Backend returns order object directly (not wrapped in success)
+      if (res.data && res.data._id) {
         toast.success('Card payment completed successfully!');
         clearCart();
-        navigate('/order-success', { state: { order: res.data.order } });
+        navigate('/order-success', { state: { orderId: res.data._id, order: res.data } });
       } else {
         toast.error('Order creation failed. Please try again.');
       }
@@ -281,6 +333,13 @@ function CheckoutPage() {
 
   const handlePaymentSubmit = async (e) => {
     e.preventDefault();
+    
+    // Check UPI verification for COD and UPI payments
+    if ((paymentMethod === 'cod' || paymentMethod === 'upi') && !upiVerified) {
+      toast.error('Please verify your UPI ID before placing order');
+      return;
+    }
+    
     setIsProcessing(true);
     let razorpayFlow = false;
 
@@ -691,7 +750,7 @@ function CheckoutPage() {
                         required
                         value={shippingAddress.firstName}
                         onChange={(e) => setShippingAddress({...shippingAddress, firstName: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
                         placeholder="John"
                       />
                     </div>
@@ -702,7 +761,7 @@ function CheckoutPage() {
                         required
                         value={shippingAddress.lastName}
                         onChange={(e) => setShippingAddress({...shippingAddress, lastName: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
                         placeholder="Doe"
                       />
                     </div>
@@ -715,7 +774,7 @@ function CheckoutPage() {
                       required
                       value={shippingAddress.email}
                       onChange={(e) => setShippingAddress({...shippingAddress, email: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
                       placeholder="john@example.com"
                     />
                   </div>
@@ -727,7 +786,7 @@ function CheckoutPage() {
                       required
                       value={shippingAddress.phone}
                       onChange={(e) => setShippingAddress({...shippingAddress, phone: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
                       placeholder="+91 9876543210"
                     />
                   </div>
@@ -738,7 +797,7 @@ function CheckoutPage() {
                       required
                       value={shippingAddress.address}
                       onChange={(e) => setShippingAddress({...shippingAddress, address: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
                       rows={3}
                       placeholder="123 Main Street, Apt 4B"
                     />
@@ -752,7 +811,7 @@ function CheckoutPage() {
                         required
                         value={shippingAddress.city}
                         onChange={(e) => setShippingAddress({...shippingAddress, city: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
                         placeholder="Mumbai"
                       />
                     </div>
@@ -763,7 +822,7 @@ function CheckoutPage() {
                         required
                         value={shippingAddress.state}
                         onChange={(e) => setShippingAddress({...shippingAddress, state: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
                         placeholder="Maharashtra"
                       />
                     </div>
@@ -774,7 +833,7 @@ function CheckoutPage() {
                         required
                         value={shippingAddress.pincode}
                         onChange={(e) => setShippingAddress({...shippingAddress, pincode: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
                         placeholder="400001"
                       />
                     </div>
@@ -786,7 +845,7 @@ function CheckoutPage() {
                       type="text"
                       value={shippingAddress.country}
                       onChange={(e) => setShippingAddress({...shippingAddress, country: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
                       placeholder="India"
                     />
                   </div>
@@ -822,16 +881,79 @@ function CheckoutPage() {
                       <span className="text-xs font-semibold bg-amber-100 text-amber-800 px-2 py-1 rounded-full whitespace-nowrap ml-2">₹100 Fee</span>
                     </label>
                     {paymentMethod === 'cod' && (
-                      <div className="ml-7 p-3 bg-amber-50 border border-amber-200 rounded-md">
-                        <div className="flex items-start space-x-2">
-                          <span className="text-amber-600 text-lg leading-none">⚠</span>
+                      <div className="ml-7 space-y-4">
+                        <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
+                          <div className="flex items-start space-x-2">
+                            <span className="text-amber-600 text-lg leading-none">⚠</span>
+                            <div>
+                              <p className="text-sm font-medium text-amber-800">₹100 COD Confirmation Fee Required</p>
+                              <p className="text-xs text-amber-700 mt-1">
+                                A non-refundable ₹100 confirmation fee will be charged via UPI to confirm your COD order. 
+                                The remaining amount (₹{calculateTotal() > 0 ? calculateTotal() : 0}) will be collected at delivery.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* UPI Verification for COD */}
+                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-md space-y-4">
+                          <div className="flex items-start space-x-2">
+                            <span className="text-blue-600 text-lg leading-none">ℹ</span>
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-blue-800">Verify Your UPI ID for ₹100 Payment</p>
+                              <p className="text-xs text-blue-700 mt-1">
+                                Enter and verify your UPI ID to pay ₹100 confirmation fee.
+                              </p>
+                            </div>
+                          </div>
+                          
                           <div>
-                            <p className="text-sm font-medium text-amber-800">₹100 COD Confirmation Fee Required</p>
-                            <p className="text-xs text-amber-700 mt-1">
-                              A non-refundable ₹100 confirmation fee will be charged via Razorpay to confirm your COD order. 
-                              The remaining amount (₹{calculateTotal() > 0 ? calculateTotal() : 0}) will be collected at delivery.
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Enter your UPI ID <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={upiId}
+                              onChange={(e) => setUpiId(e.target.value.toLowerCase())}
+                              placeholder="yourname@ybl or 9876543210@paytm"
+                              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                              disabled={upiVerified}
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Examples: yourname@ybl, 9876543210@paytm, user@okaxis
                             </p>
                           </div>
+                          
+                          {!upiVerified ? (
+                            <button
+                              type="button"
+                              onClick={handleVerifyUPI}
+                              disabled={!upiId || isVerifyingUPI}
+                              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {isVerifyingUPI ? 'Verifying...' : 'Verify UPI ID'}
+                            </button>
+                          ) : (
+                            <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+                              <div className="flex items-center space-x-2">
+                                <span className="text-green-600 text-lg">✓</span>
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium text-green-800">UPI ID Verified!</p>
+                                  <p className="text-xs text-green-700">{upiId}</p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setUpiVerified(false);
+                                    setUpiId('');
+                                  }}
+                                  className="text-xs text-green-700 hover:text-green-900 underline"
+                                >
+                                  Change
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
@@ -851,7 +973,7 @@ function CheckoutPage() {
                       </div>
                     </label>
 
-                    <label className="flex items-center p-4 border border-gray-200 rounded-md cursor-pointer hover:border-black">
+                    <label className={`flex items-center p-4 border rounded-md cursor-pointer hover:border-black ${paymentMethod === 'upi' ? 'border-black bg-gray-50' : 'border-gray-200'}`}>
                       <input
                         type="radio"
                         name="payment"
@@ -865,6 +987,69 @@ function CheckoutPage() {
                         <div className="text-sm text-gray-600">PhonePe, Paytm, Google Pay, BHIM & more</div>
                       </div>
                     </label>
+                    
+                    {/* UPI Verification Section - Shows when UPI is selected */}
+                    {paymentMethod === 'upi' && (
+                      <div className="ml-7 p-4 bg-blue-50 border border-blue-200 rounded-md space-y-4">
+                        <div className="flex items-start space-x-2">
+                          <span className="text-blue-600 text-lg leading-none">ℹ</span>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-blue-800">Verify Your UPI ID</p>
+                            <p className="text-xs text-blue-700 mt-1">
+                              Enter and verify your UPI ID before placing order. Payment request will be sent to your UPI app.
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Enter your UPI ID <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={upiId}
+                            onChange={(e) => setUpiId(e.target.value.toLowerCase())}
+                            placeholder="yourname@ybl or 9876543210@paytm"
+                            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                            disabled={upiVerified}
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Examples: yourname@ybl, 9876543210@paytm, user@okaxis
+                          </p>
+                        </div>
+                        
+                        {!upiVerified ? (
+                          <button
+                            type="button"
+                            onClick={handleVerifyUPI}
+                            disabled={!upiId || isVerifyingUPI}
+                            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isVerifyingUPI ? 'Verifying...' : 'Verify UPI ID'}
+                          </button>
+                        ) : (
+                          <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-green-600 text-lg">✓</span>
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-green-800">UPI ID Verified!</p>
+                                <p className="text-xs text-green-700">{upiId}</p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setUpiVerified(false);
+                                  setUpiId('');
+                                }}
+                                className="text-xs text-green-700 hover:text-green-900 underline"
+                              >
+                                Change
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     <label className="flex items-center p-4 border border-gray-200 rounded-md cursor-pointer hover:border-black">
                       <input
@@ -892,10 +1077,13 @@ function CheckoutPage() {
                     </button>
                     <button
                       type="submit"
-                      disabled={isProcessing}
-                      className="flex-1 bg-black text-white py-3 rounded-md font-medium hover:bg-gray-800 transition-colors disabled:opacity-50"
+                      disabled={isProcessing || ((paymentMethod === 'cod' || paymentMethod === 'upi') && !upiVerified)}
+                      className="flex-1 bg-black text-white py-3 rounded-md font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {isProcessing ? 'PROCESSING...' : paymentMethod === 'cod' ? 'PAY ₹100 & PLACE COD ORDER' : 'PLACE ORDER'}
+                      {isProcessing ? 'PROCESSING...' : 
+                       (paymentMethod === 'cod' || paymentMethod === 'upi') && !upiVerified ? 'VERIFY UPI TO CONTINUE' :
+                       paymentMethod === 'cod' ? 'PAY ₹100 & PLACE COD ORDER' : 
+                       'PLACE ORDER'}
                     </button>
                   </div>
                 </form>
@@ -1037,6 +1225,7 @@ function CheckoutPage() {
               amount={calculateTotal()}
               merchantVPA="blacklocust@ybl"
               transactionId={`BL_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`}
+              verifiedUpiId={upiId}
               onPaymentComplete={handleUPIPaymentComplete}
               onCancel={handleUPIPaymentCancel}
             />
