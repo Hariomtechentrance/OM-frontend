@@ -46,7 +46,6 @@ function ProductDetailPage() {
   const [mainProductLoading, setMainProductLoading] = useState(true);
   const [relatedProductsLoading, setRelatedProductsLoading] = useState(false);
   const [selectedSize, setSelectedSize] = useState('');
-  const [selectedColor, setSelectedColor] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const fetchProduct = useCallback(async () => {
@@ -300,7 +299,7 @@ function ProductDetailPage() {
       return;
     }
 
-    await addToCart(product, quantity, selectedSize, selectedColor || 'Default');
+    await addToCart(product, quantity, selectedSize, 'Default');
   };
 
   const handleBuyNow = async () => {
@@ -309,7 +308,7 @@ function ProductDetailPage() {
       return;
     }
 
-    await addToCart(product, quantity, selectedSize, selectedColor || 'Default');
+    await addToCart(product, quantity, selectedSize, 'Default');
     navigate('/checkout');
   };
 
@@ -574,26 +573,6 @@ function ProductDetailPage() {
                     }`}
                   >
                     {size}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Color Selection */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Select Color</h3>
-              <div className="flex space-x-2">
-                {['Black', 'White', 'Navy', 'Gray', 'Blue'].map((color) => (
-                  <button
-                    key={color}
-                    onClick={() => setSelectedColor(color)}
-                    className={`px-4 py-2 border rounded-md transition-colors ${
-                      selectedColor === color
-                        ? 'border-black bg-black text-white'
-                        : 'border-gray-300 hover:border-black'
-                    }`}
-                  >
-                    {color}
                   </button>
                 ))}
               </div>

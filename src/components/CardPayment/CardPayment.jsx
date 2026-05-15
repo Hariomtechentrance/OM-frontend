@@ -290,9 +290,10 @@ function CardPayment({ amount, onPaymentComplete, onCancel }) {
               value={cardDetails.cardNumber}
               onChange={(e) => handleCardDetailsChange('cardNumber', e.target.value)}
               placeholder="4111 1111 1111 1111 or 1234 5678 9012 3456"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900"
               disabled={isProcessing}
               maxLength={19}
+              style={{ color: '#111827' }}
             />
             {errors.cardNumber && (
               <p className="text-red-500 text-xs mt-1">{errors.cardNumber}</p>
@@ -312,8 +313,9 @@ function CardPayment({ amount, onPaymentComplete, onCancel }) {
               value={cardDetails.cardHolderName}
               onChange={(e) => handleCardDetailsChange('cardHolderName', e.target.value)}
               placeholder="John Doe"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900"
               disabled={isProcessing}
+              style={{ color: '#111827' }}
             />
             {errors.cardHolderName && (
               <p className="text-red-500 text-xs mt-1">{errors.cardHolderName}</p>
@@ -330,8 +332,9 @@ function CardPayment({ amount, onPaymentComplete, onCancel }) {
                 <select
                   value={cardDetails.expiryMonth}
                   onChange={(e) => handleCardDetailsChange('expiryMonth', e.target.value)}
-                  className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm"
+                  className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900"
                   disabled={isProcessing}
+                  style={{ color: '#111827' }}
                 >
                   <option value="">Month</option>
                   {generateMonthOptions()}
@@ -339,8 +342,9 @@ function CardPayment({ amount, onPaymentComplete, onCancel }) {
                 <select
                   value={cardDetails.expiryYear}
                   onChange={(e) => handleCardDetailsChange('expiryYear', e.target.value)}
-                  className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm"
+                  className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900"
                   disabled={isProcessing}
+                  style={{ color: '#111827' }}
                 >
                   <option value="">Year</option>
                   {generateYearOptions()}
@@ -360,9 +364,10 @@ function CardPayment({ amount, onPaymentComplete, onCancel }) {
                 value={cardDetails.cvv}
                 onChange={(e) => handleCardDetailsChange('cvv', e.target.value)}
                 placeholder="123"
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900"
                 disabled={isProcessing}
                 maxLength={4}
+                style={{ color: '#111827' }}
               />
               {errors.cvv && (
                 <p className="text-red-500 text-xs mt-1">{errors.cvv}</p>
@@ -420,9 +425,10 @@ function CardPayment({ amount, onPaymentComplete, onCancel }) {
               value={otp}
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
               placeholder="123456"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-center text-lg"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-center text-lg text-gray-900"
               disabled={isProcessing}
               maxLength={6}
+              style={{ color: '#111827' }}
             />
             {errors.otp && (
               <p className="text-red-500 text-xs mt-1">{errors.otp}</p>

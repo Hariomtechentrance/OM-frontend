@@ -277,66 +277,77 @@ function CollectionPage() {
             <p className="text-sm text-gray-600">From {collection.name}</p>
           </div>
           <div className="relative">
-            <button
-              onClick={() => setIsFilterOpen((prev) => !prev)}
-              className="flex items-center gap-2 bg-white border border-gray-300 px-4 py-2 rounded-md hover:bg-gray-50"
-            >
-              <FaFilter className="text-sm" />
-              <span className="text-sm font-medium">Filters</span>
-            </button>
+            <div className="filter-dropdown">
+              <button
+                onClick={() => setIsFilterOpen((prev) => !prev)}
+                className="flex items-center gap-2 bg-white border border-gray-300 px-4 py-2 rounded-md hover:bg-gray-50"
+              >
+                <FaFilter className="text-sm" />
+                <span className="text-sm font-medium">Filters</span>
+              </button>
 
-            {isFilterOpen && (
-              <div className="absolute right-0 top-12 z-20 w-72 bg-white border border-gray-200 rounded-lg p-4 shadow-lg">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-base font-semibold text-gray-900">Filter & Sort</h3>
-                  <button
+              {isFilterOpen && (
+                <>
+                  {/* Backdrop to close filter when clicking outside */}
+                  <div 
+                    className="filter-backdrop fixed inset-0 bg-black bg-opacity-50 z-10"
                     onClick={() => setIsFilterOpen(false)}
-                    className="p-1 text-gray-400 hover:text-gray-700"
-                    aria-label="Close filters"
-                  >
-                    <FaTimes />
-                  </button>
-                </div>
+                  />
+                  
+                  {/* Filter Dropdown Menu */}
+                  <div className="filter-dropdown-menu">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-base font-semibold text-gray-900">Filter & Sort</h3>
+                      <button
+                        onClick={() => setIsFilterOpen(false)}
+                        className="p-1 text-gray-400 hover:text-gray-700"
+                        aria-label="Close filters"
+                      >
+                        <FaTimes />
+                      </button>
+                    </div>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Filter By</label>
-                    <select
-                      value={filterBy}
-                      onChange={(e) => setFilterBy(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
-                    >
-                      <option value="all">All Products</option>
-                      <option value="new">New Arrivals</option>
-                      <option value="sale">On Sale</option>
-                    </select>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Filter By</label>
+                        <select
+                          value={filterBy}
+                          onChange={(e) => setFilterBy(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
+                        >
+                          <option value="all">All Products</option>
+                          <option value="new">New Arrivals</option>
+                          <option value="sale">On Sale</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+                        <select
+                          value={sortBy}
+                          onChange={(e) => setSortBy(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
+                        >
+                          <option value="name">Sort by Name</option>
+                          <option value="price-low">Price: Low to High</option>
+                          <option value="price-high">Price: High to Low</option>
+                        </select>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          setFilterBy('all');
+                          setSortBy('name');
+                        }}
+                        className="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors"
+                      >
+                        Clear Filters
+                      </button>
+                    </div>
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
-                    >
-                      <option value="name">Sort by Name</option>
-                      <option value="price-low">Price: Low to High</option>
-                      <option value="price-high">Price: High to Low</option>
-                    </select>
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      setFilterBy('all');
-                      setSortBy('name');
-                    }}
-                    className="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors"
-                  >
-                    Clear Filters
-                  </button>
-                </div>
-              </div>
-            )}
+                </>
+              )}
+            </div>
           </div>
         </div>
 

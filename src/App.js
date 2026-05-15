@@ -77,20 +77,20 @@ const AppLayout = () => {
           <Route path="/wishlist" element={<WishlistPage />} />
 
           {/* CATEGORY */}
-          <Route path="/party-wear" element={<CategoryPage />} />
-          <Route path="/casual" element={<CategoryPage />} />
-          <Route path="/polo-tshirts" element={<CategoryPage />} />
-          <Route path="/new-collection" element={<CategoryPage />} />
-          <Route path="/striped-collection" element={<CategoryPage />} />
-          <Route path="/cargo-collection" element={<CategoryPage />} />
-          <Route path="/trousers-collection" element={<CategoryPage />} />
-          <Route path="/denim-collection" element={<CategoryPage />} />
-          <Route path="/winter-collection" element={<CategoryPage />} />
-          <Route path="/formal-pants" element={<CategoryPage />} />
-          <Route path="/summer-final" element={<CategoryPage />} />
-          <Route path="/office-collection" element={<CategoryPage />} />
-          <Route path="/checked-collection" element={<CategoryPage />} />
-          <Route path="/monsoon-collection" element={<CategoryPage />} />
+          <Route path="/party-wear" element={<CollectionPage />} />
+          <Route path="/casual" element={<CollectionPage />} />
+          <Route path="/polo-tshirts" element={<CollectionPage />} />
+          <Route path="/new-collection" element={<CollectionPage />} />
+          <Route path="/striped-collection" element={<CollectionPage />} />
+          <Route path="/cargo-collection" element={<CollectionPage />} />
+          <Route path="/trousers-collection" element={<CollectionPage />} />
+          <Route path="/denim-collection" element={<CollectionPage />} />
+          <Route path="/winter-collection" element={<CollectionPage />} />
+          <Route path="/formal-pants" element={<CollectionPage />} />
+          <Route path="/summer-final" element={<CollectionPage />} />
+          <Route path="/office-collection" element={<CollectionPage />} />
+          <Route path="/checked-collection" element={<CollectionPage />} />
+          <Route path="/monsoon-collection" element={<CollectionPage />} />
 
           {/* OTHER */}
           <Route path="/about" element={<AboutPage />} />
