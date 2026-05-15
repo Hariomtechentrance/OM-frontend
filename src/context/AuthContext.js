@@ -155,20 +155,49 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const requestInterceptor = api.interceptors.request.use(
       async (config) => {
-        // 🚨 Skip refresh logic for refresh-token API
-        if (config.url.includes('/users/refresh-token')) {
+        // 🚨 Skip auth logic for public APIs
+        const publicEndpoints = [
+          '/users/refresh-token',
+          '/users/login',
+          '/users/register',
+          '/products',
+          '/collections',
+          '/categories',
+          '/payments/razorpay/key'
+        ];
+        
+        // Check if this is a public endpoint
+        const isPublicEndpoint = publicEndpoints.some(endpoint => 
+          config.url.includes(endpoint)
+        );
+        
+        if (isPublicEndpoint) {
           return config;
         }
 
-        // Check if token is about to expire (within 5 minutes)
-        if (state.tokenExpiry && isTokenExpired(state.tokenExpiry)) {
-          const refreshed = await refreshAuthToken();
-          if (!refreshed) {
-            return Promise.reject(new Error('Token refresh failed'));
-          }
-          // Update the request header with new token
-          config.headers.Authorization = `Bearer ${localStorage.getItem('token')}`;
+        // For protected endpoints, check if token exists
+        const token = localStorage.getItem('token');
+        if (!token) {
+          // No token - let the request go through, backend will handle 401
+          return config;
         }
+
+        // Check if token is expired
+        const tokenExpiry = localStorage.getItem('tokenExpiry');
+        if (tokenExpiry && isTokenExpired(tokenExpiry)) {
+          // Token expired - clear auth
+          console.log('🔴 Token expired - clearing auth');
+          localStorage.removeItem('token');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('tokenExpiry');
+          localStorage.removeItem('user');
+          localStorage.removeItem('isAuthenticated');
+          delete api.defaults.headers.common['Authorization'];
+          
+          // Don't reject - let the request go through, backend will return 401
+          return config;
+        }
+        
         return config;
       },
       (error) => Promise.reject(error)
@@ -179,15 +208,46 @@ export const AuthProvider = ({ children }) => {
       async (error) => {
         const originalRequest = error.config;
         
+        // Don't handle 401 for login/register requests
+        const authEndpoints = [
+          '/users/login',
+          '/users/register',
+          '/users/refresh-token'
+        ];
+        
+        const isAuthEndpoint = authEndpoints.some(endpoint => 
+          originalRequest.url.includes(endpoint)
+        );
+        
+        if (isAuthEndpoint) {
+          return Promise.reject(error);
+        }
+        
+        // Handle 401 Unauthorized
         if (error.response?.status === 401 && !originalRequest._retry) {
           originalRequest._retry = true;
           
-          const refreshed = await refreshAuthToken();
-          if (refreshed) {
-            // Retry the original request with new token
-            originalRequest.headers.Authorization = `Bearer ${localStorage.getItem('token')}`;
-            return api(originalRequest);
+          console.log('🔴 401 Unauthorized - clearing auth and redirecting to login');
+          
+          // Clear all auth data
+          localStorage.removeItem('token');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('tokenExpiry');
+          localStorage.removeItem('user');
+          localStorage.removeItem('isAuthenticated');
+          delete api.defaults.headers.common['Authorization'];
+          
+          // Dispatch logout action
+          dispatch({ type: LOGOUT });
+          
+          // Only redirect if not already on login page
+          if (!window.location.pathname.includes('/login')) {
+            // Store current path to return after login
+            localStorage.setItem('returnPath', window.location.pathname);
+            window.location.href = '/login';
           }
+          
+          return Promise.reject(error);
         }
         
         return Promise.reject(error);
@@ -198,7 +258,7 @@ export const AuthProvider = ({ children }) => {
       api.interceptors.request.eject(requestInterceptor);
       api.interceptors.response.eject(responseInterceptor);
     };
-  }, [state.tokenExpiry]);
+  }, []);
 
   // Load user from token
   const loadUser = async () => {
@@ -211,11 +271,15 @@ export const AuthProvider = ({ children }) => {
     if (token && typeof token === 'string' && token.trim().length > 0) {
       // Check if token is expired
       if (tokenExpiry && isTokenExpired(tokenExpiry)) {
-        const refreshed = await refreshAuthToken();
-        if (!refreshed) {
-          dispatch({ type: SET_LOADING, payload: false }); // ✅ add this
-          return;
-        }
+        // Token expired - clear everything and don't try to refresh on initial load
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('tokenExpiry');
+        localStorage.removeItem('isAuthenticated');
+        localStorage.removeItem('user');
+        delete api.defaults.headers.common['Authorization'];
+        dispatch({ type: SET_LOADING, payload: false });
+        return;
       }
       
       setAuthToken(token);
@@ -231,12 +295,18 @@ export const AuthProvider = ({ children }) => {
           }
         });
       } catch (error) {
+        // If profile fetch fails, clear auth
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('tokenExpiry');
+        localStorage.removeItem('isAuthenticated');
+        localStorage.removeItem('user');
         setAuthToken(null);
         dispatch({
           type: AUTH_FAIL,
           payload: error.response?.data?.message || 'Failed to load user'
         });
-        dispatch({ type: SET_LOADING, payload: false }); // ✅ MUST have this
+        dispatch({ type: SET_LOADING, payload: false });
       }
     } 
     // Check for OTP authentication
@@ -257,7 +327,7 @@ export const AuthProvider = ({ children }) => {
           type: AUTH_FAIL,
           payload: 'Failed to load user session'
         });
-        dispatch({ type: SET_LOADING, payload: false }); // ✅ add this
+        dispatch({ type: SET_LOADING, payload: false });
       }
     }
     else {
