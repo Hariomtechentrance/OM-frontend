@@ -28,6 +28,7 @@ function UPIPayment({ amount, merchantVPA, transactionId, verifiedUpiId, onPayme
     return new Promise((resolve) => {
       // Check if already loaded
       if (window.Razorpay) {
+        console.log('✅ Razorpay already loaded');
         setRazorpayLoaded(true);
         resolve(true);
         return;
@@ -36,17 +37,26 @@ function UPIPayment({ amount, merchantVPA, transactionId, verifiedUpiId, onPayme
       // Check if script tag already exists
       const existingScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
       if (existingScript) {
+        console.log('⏳ Razorpay script tag exists, waiting for load...');
         existingScript.onload = () => {
+          console.log('✅ Razorpay script loaded from existing tag');
           setRazorpayLoaded(true);
           resolve(true);
+        };
+        existingScript.onerror = () => {
+          console.error('❌ Existing Razorpay script failed to load');
+          setRazorpayLoaded(false);
+          resolve(false);
         };
         return;
       }
 
       // Create and load script
+      console.log('📥 Loading Razorpay script...');
       const script = document.createElement('script');
       script.src = 'https://checkout.razorpay.com/v1/checkout.js';
       script.async = true;
+      script.crossOrigin = 'anonymous'; // Add CORS support for mobile
       
       script.onload = () => {
         console.log('✅ Razorpay script loaded successfully');
@@ -57,6 +67,7 @@ function UPIPayment({ amount, merchantVPA, transactionId, verifiedUpiId, onPayme
       script.onerror = (error) => {
         console.error('❌ Failed to load Razorpay script:', error);
         setRazorpayLoaded(false);
+        toast.error('Failed to load payment gateway. Please check your internet connection.');
         resolve(false);
       };
       
@@ -104,7 +115,36 @@ function UPIPayment({ amount, merchantVPA, transactionId, verifiedUpiId, onPayme
 
   // Detect if user is on mobile device
   const isMobileDevice = () => {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    // More comprehensive mobile detection
+    const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+    
+    // Check for mobile devices in user agent
+    const isMobileUA = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
+    
+    // Check for touch support
+    const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0;
+    
+    // Check screen size (mobile typically < 768px)
+    const isSmallScreen = window.innerWidth <= 768;
+    
+    // Check if it's a mobile browser (not desktop mode)
+    const isMobileBrowser = /Mobile|Android|iPhone/i.test(userAgent);
+    
+    // Final decision: must have mobile UA OR (touch + small screen)
+    const isMobile = isMobileUA || (hasTouch && isSmallScreen && isMobileBrowser);
+    
+    console.log('📱 Device Detection:', {
+      userAgent: userAgent.substring(0, 80),
+      isMobileUA,
+      hasTouch,
+      isSmallScreen,
+      isMobileBrowser,
+      screenWidth: window.innerWidth,
+      screenHeight: window.innerHeight,
+      finalDecision: isMobile ? 'MOBILE' : 'DESKTOP'
+    });
+    
+    return isMobile;
   };
 
   // Step 2: Send Payment Request
@@ -115,6 +155,18 @@ function UPIPayment({ amount, merchantVPA, transactionId, verifiedUpiId, onPayme
     }
 
     setIsProcessing(true);
+    
+    // Set a timeout to prevent indefinite loading
+    const timeoutId = setTimeout(() => {
+      if (isProcessing) {
+        console.warn('⚠️ Payment request timeout - resetting state');
+        setIsProcessing(false);
+        setPaymentInitiated(false);
+        toast.warning('Payment request is taking longer than expected. Please try again.', {
+          autoClose: 5000
+        });
+      }
+    }, 30000); // 30 second timeout
 
     try {
       // Ensure Razorpay script is loaded
@@ -169,10 +221,11 @@ function UPIPayment({ amount, merchantVPA, transactionId, verifiedUpiId, onPayme
       // Detect device type
       const isMobile = isMobileDevice();
       console.log('📱 Device type:', isMobile ? 'Mobile' : 'Desktop');
+      console.log('💳 Verified UPI ID:', upiId);
 
-      // Razorpay options for UPI payment
-      // On mobile: Use UPI Intent (opens app directly)
-      // On desktop: Use UPI Collect (sends notification)
+      // IMPORTANT: Since user already verified their UPI ID,
+      // we should use UPI Collect flow to send notification directly to that UPI ID
+      // This avoids showing app selection and sends payment request to their phone
       const options = {
         key: keyData.keyId,
         amount: amount * 100, // Amount in paise
@@ -180,14 +233,15 @@ function UPIPayment({ amount, merchantVPA, transactionId, verifiedUpiId, onPayme
         name: 'Black Locust',
         description: `Order Payment - ${transactionId}`,
         order_id: razorpayOrderId,
+        method: 'upi',
         prefill: {
           name: 'Customer',
           email: 'customer@example.com',
           contact: '9999999999',
           vpa: upiId // Pre-fill with verified UPI ID
         },
-        method: 'upi',
-        // Configure based on device type
+        // Use UPI Collect flow - sends notification directly to the verified UPI ID
+        // This skips the app selection screen
         config: {
           display: {
             blocks: {
@@ -196,9 +250,8 @@ function UPIPayment({ amount, merchantVPA, transactionId, verifiedUpiId, onPayme
                 instruments: [
                   {
                     method: 'upi',
-                    // Mobile: Use intent first (opens app), then collect as fallback
-                    // Desktop: Use collect only (sends notification)
-                    flows: isMobile ? ['intent', 'collect'] : ['collect'],
+                    // Use ONLY collect flow - sends notification to verified UPI ID
+                    flows: ['collect']
                   }
                 ]
               }
@@ -209,11 +262,9 @@ function UPIPayment({ amount, merchantVPA, transactionId, verifiedUpiId, onPayme
             }
           }
         },
-        // This is critical - it tells Razorpay to send UPI collect request
-        '_': {
-          'integration': 'upi',
-          'integration_version': '1.0'
-        },
+        // Automatically trigger UPI Collect with the verified VPA
+        '_[integration]': 'upi_collect',
+        '_[integration_version]': '1.0',
         handler: async function (response) {
           try {
             console.log('✅ Payment successful:', response);
@@ -281,34 +332,57 @@ function UPIPayment({ amount, merchantVPA, transactionId, verifiedUpiId, onPayme
       const razorpay = new window.Razorpay(options);
       
       razorpay.on('payment.failed', function (response) {
-        console.error('Payment failed:', response);
+        console.error('❌ Payment failed:', response);
+        console.error('Error details:', {
+          code: response.error?.code,
+          description: response.error?.description,
+          source: response.error?.source,
+          step: response.error?.step,
+          reason: response.error?.reason
+        });
         setIsProcessing(false);
         setPaymentInitiated(false);
         setStep(2); // Go back to verification step
-        toast.error(`Payment failed: ${response.error.description || 'Please try again'}`);
+        
+        // Show more specific error messages
+        let errorMessage = 'Payment failed. Please try again.';
+        if (response.error?.description) {
+          errorMessage = response.error.description;
+        } else if (response.error?.reason) {
+          errorMessage = response.error.reason;
+        }
+        
+        toast.error(errorMessage, { autoClose: 5000 });
       });
 
       // IMPORTANT: Open Razorpay modal - this triggers the UPI payment
       console.log('🚀 Opening Razorpay modal for UPI payment...');
-      razorpay.open();
+      console.log('Device type:', isMobile ? 'Mobile' : 'Desktop');
+      console.log('UPI ID:', upiId);
+      
+      try {
+        razorpay.open();
+        console.log('✅ Razorpay modal opened successfully');
+      } catch (openError) {
+        console.error('❌ Failed to open Razorpay modal:', openError);
+        toast.error('Failed to open payment gateway. Please try again.');
+        setIsProcessing(false);
+        setPaymentInitiated(false);
+        setStep(2);
+        return;
+      }
 
       // Show instructions based on device type
-      if (isMobile) {
-        toast.info('Your UPI app will open automatically. Please approve the payment.', {
-          autoClose: 8000,
-          position: 'top-center'
-        });
-        console.log('✅ Mobile detected - UPI Intent will open app directly for:', upiId);
-      } else {
-        toast.info('Payment request will be sent to your UPI app. Please check your phone and approve the payment.', {
-          autoClose: 10000,
-          position: 'top-center'
-        });
-        console.log('✅ Desktop detected - UPI Collect request will be sent to:', upiId);
-      }
+      toast.info(`Payment request sent to ${upiId}. Please check your phone and approve the payment in your UPI app.`, {
+        autoClose: 10000,
+        position: 'top-center'
+      });
+      console.log('✅ UPI Collect request sent to:', upiId);
+      console.log('📱 User should receive notification on their phone to approve payment');
 
     } catch (error) {
       console.error('UPI Payment Error:', error);
+      clearTimeout(timeoutId); // Clear timeout on error
       setIsProcessing(false);
       setStep(2); // Go back to verification step
       
@@ -435,12 +509,7 @@ function UPIPayment({ amount, merchantVPA, transactionId, verifiedUpiId, onPayme
 
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
               <p className="text-sm text-blue-800">
-                <strong>Step 2:</strong> Click "Send Payment Request" below.
-                {isMobileDevice() ? (
-                  <span> Your UPI app will open automatically for payment.</span>
-                ) : (
-                  <span> You'll receive a notification on your phone to approve the payment.</span>
-                )}
+                <strong>Step 2:</strong> Click "Send Payment Request" below. A payment notification will be sent to your UPI app on your phone. Open your UPI app and approve the payment.
               </p>
             </div>
 
@@ -464,12 +533,7 @@ function UPIPayment({ amount, merchantVPA, transactionId, verifiedUpiId, onPayme
 
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-md">
               <p className="text-xs text-amber-800">
-                <strong>What happens next:</strong> 
-                {isMobileDevice() ? (
-                  <span> Your UPI app will open automatically. Approve the payment to complete the transaction.</span>
-                ) : (
-                  <span> You'll receive a notification on your phone. Open your UPI app and approve the payment request.</span>
-                )}
+                <strong>What happens next:</strong> A payment notification will be sent to your phone. Open your UPI app (Google Pay, PhonePe, Paytm, etc.) and approve the payment request for ₹{amount}.
               </p>
             </div>
 
@@ -499,44 +563,28 @@ function UPIPayment({ amount, merchantVPA, transactionId, verifiedUpiId, onPayme
           <>
             <div className="p-4 bg-green-50 border border-green-200 rounded-md">
               <p className="text-sm text-green-800">
-                <strong>✓ Payment Request Sent!</strong> 
-                {isMobileDevice() ? (
-                  <span> Your UPI app should open automatically.</span>
-                ) : (
-                  <span> Please check your phone for the notification.</span>
-                )}
+                <strong>✓ Payment Request Sent!</strong> Please check your phone for the UPI notification.
               </p>
             </div>
 
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
               <p className="text-sm text-blue-800">
-                <strong>Step 3:</strong> 
-                {isMobileDevice() ? (
-                  <span> Your UPI app should open automatically. Approve the payment to complete the transaction.</span>
-                ) : (
-                  <span> Open your UPI app and approve the payment request to complete the transaction.</span>
-                )}
+                <strong>Step 3:</strong> Open your UPI app on your phone and approve the payment request for ₹{amount}.
               </p>
             </div>
 
             <div className="flex items-center justify-center py-8">
               <div className="text-center">
                 <div className="animate-pulse mb-4">
-                  {isMobileDevice() ? (
-                    <svg className="w-16 h-16 text-black mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                  ) : (
-                    <svg className="w-16 h-16 text-black mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                  )}
+                  <svg className="w-16 h-16 text-black mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
                 </div>
                 <p className="text-sm font-medium text-gray-900 mb-2">
-                  {isMobileDevice() ? 'Opening your UPI app...' : 'Waiting for payment approval...'}
+                  Waiting for payment approval...
                 </p>
                 <p className="text-xs text-gray-600">
-                  {isMobileDevice() ? 'Please approve the payment in your UPI app' : 'Check your phone for the UPI notification'}
+                  Check your phone for the UPI notification
                 </p>
               </div>
             </div>
@@ -553,24 +601,13 @@ function UPIPayment({ amount, merchantVPA, transactionId, verifiedUpiId, onPayme
         {step === 1 && (
           <div className="p-4 bg-gray-50 border border-gray-200 rounded-md">
             <p className="text-xs font-medium text-gray-700 mb-2">How it works:</p>
-            {isMobileDevice() ? (
-              <ol className="text-xs text-gray-600 space-y-1 list-decimal list-inside">
-                <li>Enter your UPI ID and verify it</li>
-                <li>Confirm payment details</li>
-                <li>Your UPI app will open automatically</li>
-                <li>Approve the payment in your UPI app</li>
-                <li>Payment completed automatically</li>
-              </ol>
-            ) : (
-              <ol className="text-xs text-gray-600 space-y-1 list-decimal list-inside">
-                <li>Enter your UPI ID and verify it</li>
-                <li>Confirm payment details</li>
-                <li>Payment request sent to your UPI app</li>
-                <li>Check your phone for notification</li>
-                <li>Approve the request in your UPI app</li>
-                <li>Payment completed automatically</li>
-              </ol>
-            )}
+            <ol className="text-xs text-gray-600 space-y-1 list-decimal list-inside">
+              <li>Enter your UPI ID and verify it</li>
+              <li>Confirm payment details</li>
+              <li>Payment notification sent to your phone</li>
+              <li>Open your UPI app and approve the payment</li>
+              <li>Payment completed automatically</li>
+            </ol>
           </div>
         )}
       </div>
@@ -592,12 +629,7 @@ function UPIPayment({ amount, merchantVPA, transactionId, verifiedUpiId, onPayme
       {/* Security Notice */}
       <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
         <p className="text-xs text-amber-800">
-          <strong>Secure Payment:</strong> Your payment is processed securely through Razorpay. 
-          {isMobileDevice() ? (
-            <span> Your UPI app will open automatically for secure payment approval.</span>
-          ) : (
-            <span> You'll receive a notification on your registered mobile number.</span>
-          )}
+          <strong>Secure Payment:</strong> Your payment is processed securely through Razorpay. A payment notification will be sent to your registered UPI app on your phone. Simply open the app and approve the payment.
         </p>
       </div>
     </div>
