@@ -176,6 +176,7 @@ function UPIPayment({ amount, merchantVPA, transactionId, verifiedUpiId, onPayme
       if (!scriptLoaded || !window.Razorpay) {
         console.error('❌ Razorpay script not loaded');
         toast.error('Failed to load payment gateway. Please check your internet connection and try again.');
+        clearTimeout(timeoutId);
         setIsProcessing(false);
         return;
       }
@@ -188,43 +189,38 @@ function UPIPayment({ amount, merchantVPA, transactionId, verifiedUpiId, onPayme
       
       if (!keyData?.keyId) {
         toast.error('Payment gateway not configured. Please contact support.');
+        clearTimeout(timeoutId);
         setIsProcessing(false);
         return;
       }
 
       // Create Razorpay order for UPI payment
       const orderData = {
-        amount: amount, // Amount in rupees
-        currency: 'INR',
-        receipt: transactionId,
-        notes: {
-          upiId: upiId,
-          paymentMethod: 'upi'
-        }
+        amount: amount,
+        vpa: upiId, // Verified UPI ID
+        orderId: transactionId
       };
 
-      toast.info('Creating payment request...', { autoClose: 2000 });
+      toast.info('Sending payment request to your UPI app...', { autoClose: 3000 });
 
-      // Create order on backend
-      const { data: orderResponse } = await api.post('/payments/razorpay/create-upi-order', orderData);
-      console.log('Order response:', orderResponse);
+      // Create UPI Collect order on backend
+      const { data: collectResponse } = await api.post('/payments/razorpay/upi-collect', orderData);
+      console.log('UPI Collect response:', collectResponse);
 
-      if (!orderResponse?.order?.id) {
-        toast.error('Failed to create payment order. Please try again.');
+      if (!collectResponse?.success || !collectResponse?.order?.id) {
+        toast.error('Failed to send payment request. Please try again.');
+        clearTimeout(timeoutId);
         setIsProcessing(false);
         return;
       }
 
-      const razorpayOrderId = orderResponse.order.id;
+      const razorpayOrderId = collectResponse.order.id;
       console.log('Razorpay Order ID:', razorpayOrderId);
-
-      // Detect device type
-      const isMobile = isMobileDevice();
-      console.log('📱 Device type:', isMobile ? 'Mobile' : 'Desktop');
       console.log('💳 Verified UPI ID:', upiId);
+      console.log('💰 Amount: ₹' + amount);
 
-      // IMPORTANT: Use standard Razorpay UPI flow
-      // Let Razorpay handle the UPI payment with the verified UPI ID
+      // CRITICAL: Configure Razorpay to send UPI Collect request
+      // This will send notification directly to the UPI app associated with the UPI ID
       const options = {
         key: keyData.keyId,
         amount: amount * 100, // Amount in paise
@@ -235,17 +231,18 @@ function UPIPayment({ amount, merchantVPA, transactionId, verifiedUpiId, onPayme
         prefill: {
           name: 'Customer',
           email: 'customer@example.com',
-          contact: '9999999999'
+          contact: '9999999999',
+          method: 'upi',
+          'vpa': upiId // CRITICAL: Pre-fill verified UPI ID
         },
-        // Let Razorpay show UPI options but with verified UPI ID pre-filled
         method: 'upi',
+        // Configure UPI Collect flow
+        // This sends notification to the UPI app (PhonePe, Google Pay, Paytm, etc.)
         handler: async function (response) {
           try {
             console.log('✅ Payment successful:', response);
             
-            // Clear timeout
             clearTimeout(timeoutId);
-            
             toast.success('Payment completed successfully!');
             
             setPaymentInitiated(true);
@@ -286,75 +283,66 @@ function UPIPayment({ amount, merchantVPA, transactionId, verifiedUpiId, onPayme
             clearTimeout(timeoutId);
             setIsProcessing(false);
             setPaymentInitiated(false);
-            setStep(2); // Go back to step 2
+            setStep(2);
             toast.info('Payment cancelled. You can try again.');
-          },
-          // Prevent auto-close on backdrop click
-          escape: false,
-          backdropclose: false
+          }
         },
         theme: {
           color: '#000000'
-        },
-        notes: {
-          upiId: upiId,
-          transactionId: transactionId
         }
       };
 
-      console.log('Opening Razorpay checkout with options:', {
-        ...options,
-        key: keyData.keyId.substring(0, 10) + '...' // Don't log full key
-      });
+      console.log('🚀 Opening Razorpay for UPI Collect...');
+      console.log('📱 Payment notification will be sent to:', upiId);
+      
+      // Determine UPI app from UPI ID
+      const upiApp = upiId.includes('@phonepe') ? 'PhonePe' :
+                     upiId.includes('@ybl') ? 'Google Pay' :
+                     upiId.includes('@paytm') ? 'Paytm' :
+                     upiId.includes('@okaxis') ? 'Axis Bank' :
+                     upiId.includes('@oksbi') ? 'SBI' :
+                     upiId.includes('@okicici') ? 'ICICI Bank' :
+                     upiId.includes('@okhdfc') ? 'HDFC Bank' :
+                     'your UPI app';
+      
+      console.log('🎯 Target UPI App:', upiApp);
 
       // Move to payment step
       setStep(3);
       setPaymentInitiated(true);
 
-      // Create Razorpay instance
+      // Create Razorpay instance and open
       const razorpay = new window.Razorpay(options);
       
       razorpay.on('payment.failed', function (response) {
         console.error('❌ Payment failed:', response);
-        console.error('Error details:', {
-          code: response.error?.code,
-          description: response.error?.description,
-          source: response.error?.source,
-          step: response.error?.step,
-          reason: response.error?.reason,
-          metadata: response.error?.metadata
-        });
-        
         clearTimeout(timeoutId);
         setIsProcessing(false);
         setPaymentInitiated(false);
-        setStep(2); // Go back to verification step
+        setStep(2);
         
-        // Show more specific error messages
         let errorMessage = 'Payment failed. Please try again.';
-        
-        if (response.error?.code === 'BAD_REQUEST_ERROR') {
-          errorMessage = 'Unable to process UPI payment. Please try a different payment method or contact support.';
-        } else if (response.error?.description) {
+        if (response.error?.description) {
           errorMessage = response.error.description;
-        } else if (response.error?.reason) {
-          errorMessage = response.error.reason;
         }
-        
         toast.error(errorMessage, { autoClose: 5000 });
       });
 
-      // IMPORTANT: Open Razorpay modal - this triggers the UPI payment
-      console.log('🚀 Opening Razorpay modal for UPI payment...');
-      console.log('Device type:', isMobile ? 'Mobile' : 'Desktop');
-      console.log('UPI ID:', upiId);
-      console.log('Amount:', amount);
-      
       try {
         razorpay.open();
-        console.log('✅ Razorpay modal opened successfully');
+        console.log('✅ Razorpay opened successfully');
+        
+        // Show specific message about which app will receive notification
+        toast.success(`Payment request sent to ${upiApp}! Please check your phone and approve the payment.`, {
+          autoClose: 10000,
+          position: 'top-center'
+        });
+        
+        console.log('✅ UPI Collect request sent to:', upiId);
+        console.log('📱 User should receive notification in', upiApp);
+        
       } catch (openError) {
-        console.error('❌ Failed to open Razorpay modal:', openError);
+        console.error('❌ Failed to open Razorpay:', openError);
         clearTimeout(timeoutId);
         toast.error('Failed to open payment gateway. Please try again.');
         setIsProcessing(false);
@@ -363,19 +351,13 @@ function UPIPayment({ amount, merchantVPA, transactionId, verifiedUpiId, onPayme
         return;
       }
 
-      // Show instructions
-      toast.info(`Payment request will be sent to ${upiId}. Please check your phone and approve the payment in your UPI app.`, {
-        autoClose: 10000,
-        position: 'top-center'
-      });
-      console.log('✅ UPI payment request initiated for:', upiId);
-      console.log('📱 User should receive notification on their phone to approve payment');
-
+      clearTimeout(timeoutId);
+      
     } catch (error) {
       console.error('UPI Payment Error:', error);
-      clearTimeout(timeoutId); // Clear timeout on error
+      clearTimeout(timeoutId);
       setIsProcessing(false);
-      setStep(2); // Go back to verification step
+      setStep(2);
       
       const errorMessage = error.response?.data?.message || error.message || 'Failed to initiate UPI payment';
       toast.error(errorMessage);
@@ -500,7 +482,7 @@ function UPIPayment({ amount, merchantVPA, transactionId, verifiedUpiId, onPayme
 
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
               <p className="text-sm text-blue-800">
-                <strong>Step 2:</strong> Click "Send Payment Request" below. A payment notification will be sent to your UPI app on your phone. Open your UPI app and approve the payment.
+                <strong>Step 2:</strong> Click "Send Payment Request" below. A payment notification will be sent directly to your UPI app ({upiId.includes('@phonepe') ? 'PhonePe' : upiId.includes('@ybl') ? 'Google Pay' : upiId.includes('@paytm') ? 'Paytm' : 'your UPI app'}) on your phone.
               </p>
             </div>
 
@@ -524,7 +506,7 @@ function UPIPayment({ amount, merchantVPA, transactionId, verifiedUpiId, onPayme
 
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-md">
               <p className="text-xs text-amber-800">
-                <strong>What happens next:</strong> A payment notification will be sent to your phone. Open your UPI app (Google Pay, PhonePe, Paytm, etc.) and approve the payment request for ₹{amount}.
+                <strong>What happens next:</strong> A payment notification will be sent to {upiId.includes('@phonepe') ? 'PhonePe' : upiId.includes('@ybl') ? 'Google Pay' : upiId.includes('@paytm') ? 'Paytm' : 'your UPI app'} on your phone. Open the app and approve the payment request for ₹{amount}.
               </p>
             </div>
 
