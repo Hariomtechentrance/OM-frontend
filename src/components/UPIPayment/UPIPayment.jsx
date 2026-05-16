@@ -223,9 +223,8 @@ function UPIPayment({ amount, merchantVPA, transactionId, verifiedUpiId, onPayme
       console.log('📱 Device type:', isMobile ? 'Mobile' : 'Desktop');
       console.log('💳 Verified UPI ID:', upiId);
 
-      // IMPORTANT: Since user already verified their UPI ID,
-      // we should use UPI Collect flow to send notification directly to that UPI ID
-      // This avoids showing app selection and sends payment request to their phone
+      // IMPORTANT: Use standard Razorpay UPI flow
+      // Let Razorpay handle the UPI payment with the verified UPI ID
       const options = {
         key: keyData.keyId,
         amount: amount * 100, // Amount in paise
@@ -233,41 +232,20 @@ function UPIPayment({ amount, merchantVPA, transactionId, verifiedUpiId, onPayme
         name: 'Black Locust',
         description: `Order Payment - ${transactionId}`,
         order_id: razorpayOrderId,
-        method: 'upi',
         prefill: {
           name: 'Customer',
           email: 'customer@example.com',
-          contact: '9999999999',
-          vpa: upiId // Pre-fill with verified UPI ID
+          contact: '9999999999'
         },
-        // Use UPI Collect flow - sends notification directly to the verified UPI ID
-        // This skips the app selection screen
-        config: {
-          display: {
-            blocks: {
-              upi: {
-                name: 'Pay using UPI',
-                instruments: [
-                  {
-                    method: 'upi',
-                    // Use ONLY collect flow - sends notification to verified UPI ID
-                    flows: ['collect']
-                  }
-                ]
-              }
-            },
-            sequence: ['block.upi'],
-            preferences: {
-              show_default_blocks: false
-            }
-          }
-        },
-        // Automatically trigger UPI Collect with the verified VPA
-        '_[integration]': 'upi_collect',
-        '_[integration_version]': '1.0',
+        // Let Razorpay show UPI options but with verified UPI ID pre-filled
+        method: 'upi',
         handler: async function (response) {
           try {
             console.log('✅ Payment successful:', response);
+            
+            // Clear timeout
+            clearTimeout(timeoutId);
+            
             toast.success('Payment completed successfully!');
             
             setPaymentInitiated(true);
@@ -304,11 +282,16 @@ function UPIPayment({ amount, merchantVPA, transactionId, verifiedUpiId, onPayme
         },
         modal: {
           ondismiss: function() {
-            console.log('Payment modal dismissed');
+            console.log('⚠️ Payment modal dismissed by user');
+            clearTimeout(timeoutId);
             setIsProcessing(false);
             setPaymentInitiated(false);
+            setStep(2); // Go back to step 2
             toast.info('Payment cancelled. You can try again.');
-          }
+          },
+          // Prevent auto-close on backdrop click
+          escape: false,
+          backdropclose: false
         },
         theme: {
           color: '#000000'
@@ -338,15 +321,21 @@ function UPIPayment({ amount, merchantVPA, transactionId, verifiedUpiId, onPayme
           description: response.error?.description,
           source: response.error?.source,
           step: response.error?.step,
-          reason: response.error?.reason
+          reason: response.error?.reason,
+          metadata: response.error?.metadata
         });
+        
+        clearTimeout(timeoutId);
         setIsProcessing(false);
         setPaymentInitiated(false);
         setStep(2); // Go back to verification step
         
         // Show more specific error messages
         let errorMessage = 'Payment failed. Please try again.';
-        if (response.error?.description) {
+        
+        if (response.error?.code === 'BAD_REQUEST_ERROR') {
+          errorMessage = 'Unable to process UPI payment. Please try a different payment method or contact support.';
+        } else if (response.error?.description) {
           errorMessage = response.error.description;
         } else if (response.error?.reason) {
           errorMessage = response.error.reason;
@@ -359,12 +348,14 @@ function UPIPayment({ amount, merchantVPA, transactionId, verifiedUpiId, onPayme
       console.log('🚀 Opening Razorpay modal for UPI payment...');
       console.log('Device type:', isMobile ? 'Mobile' : 'Desktop');
       console.log('UPI ID:', upiId);
+      console.log('Amount:', amount);
       
       try {
         razorpay.open();
         console.log('✅ Razorpay modal opened successfully');
       } catch (openError) {
         console.error('❌ Failed to open Razorpay modal:', openError);
+        clearTimeout(timeoutId);
         toast.error('Failed to open payment gateway. Please try again.');
         setIsProcessing(false);
         setPaymentInitiated(false);
@@ -372,12 +363,12 @@ function UPIPayment({ amount, merchantVPA, transactionId, verifiedUpiId, onPayme
         return;
       }
 
-      // Show instructions based on device type
-      toast.info(`Payment request sent to ${upiId}. Please check your phone and approve the payment in your UPI app.`, {
+      // Show instructions
+      toast.info(`Payment request will be sent to ${upiId}. Please check your phone and approve the payment in your UPI app.`, {
         autoClose: 10000,
         position: 'top-center'
       });
-      console.log('✅ UPI Collect request sent to:', upiId);
+      console.log('✅ UPI payment request initiated for:', upiId);
       console.log('📱 User should receive notification on their phone to approve payment');
 
     } catch (error) {
