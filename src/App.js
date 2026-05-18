@@ -1,9 +1,10 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './styles/tailwind.css';
 import './styles/main.css';
+import { trackPageView } from './utils/analytics';
 
 // Contexts
 import { AuthProvider } from './context/AuthContext';
@@ -13,6 +14,7 @@ import { WishlistProvider } from './context/WishlistContext';
 
 // Components
 import Header from './components/Header/Header';
+import PromoBanner from './components/PromoBanner/PromoBanner';
 import Footer from './components/Footer/Footer';
 import PageLoader from './components/PageLoader/PageLoader';
 import ScrollToTop from './components/ScrollToTop/ScrollToTop';
@@ -50,9 +52,15 @@ const AppLayout = () => {
 
   const hideLayout = ['/login', '/register', '/admin/login'].includes(location.pathname);
 
+  // Track page views
+  useEffect(() => {
+    trackPageView(location.pathname);
+  }, [location.pathname]);
+
   return (
     <>
       {!hideLayout && <Header />}
+      {!hideLayout && <PromoBanner />}
 
       <main>
         <Routes>

@@ -17,6 +17,9 @@ const OTPLogin = ({ onBack, onClose, onOTPLoginSuccess }) => {
   const [errors, setErrors] = useState({});
   const [showSetupInfo, setShowSetupInfo] = useState(false);
 
+  // Get auth context
+  const { sendOTP: sendOTPAuth, verifyOTP: verifyOTPAuth } = useAuth();
+
   // Get setup instructions
   const setupInstructions = emailOTPService.getSetupInstructions();
 
@@ -72,41 +75,28 @@ const OTPLogin = ({ onBack, onClose, onOTPLoginSuccess }) => {
     setErrors({});
 
     try {
-      // Generate OTP
-      const generatedOTP = emailOTPService.generateOTP();
+      const identifier = loginMethod === 'email' ? email : mobile;
       
-      if (loginMethod === 'email') {
-        // Send OTP via email
-        const response = await emailOTPService.sendOTP(email, generatedOTP);
+      // Use AuthContext sendOTP function
+      const response = await sendOTPAuth(loginMethod, identifier);
+      
+      if (response.success) {
+        setOtpSent(true);
+        setTimer(60);
+        setResendDisabled(true);
         
-        if (response.success) {
-          setOtpSent(true);
-          setTimer(60);
-          setResendDisabled(true);
-          
-          if (response.demo) {
-            toast.info(`Demo Mode: Check console for OTP (${generatedOTP})`);
-          } else {
-            toast.success('OTP sent to your email!');
-          }
+        if (response.demo) {
+          toast.info(`Demo Mode: OTP is ${response.otp || 'check console'}`);
         } else {
-          setErrors({ general: response.message });
+          toast.success('OTP sent to your email!');
         }
       } else {
-        // For mobile, show demo message (SMS requires paid service)
-        const response = await emailOTPService.sendOTP(`${mobile}@demo.sms`, generatedOTP);
-        
-        if (response.success) {
-          setOtpSent(true);
-          setTimer(60);
-          setResendDisabled(true);
-          toast.info(`Demo Mode: Mobile OTP (${generatedOTP}) - SMS requires paid service`);
-        } else {
-          setErrors({ general: response.message });
-        }
+        setErrors({ general: response.message });
+        toast.error(response.message);
       }
     } catch (error) {
       setErrors({ general: 'Failed to send OTP. Please try again.' });
+      toast.error('Failed to send OTP');
     } finally {
       setLoading(false);
     }
@@ -148,31 +138,25 @@ const OTPLogin = ({ onBack, onClose, onOTPLoginSuccess }) => {
     setErrors({});
 
     try {
-      // Verify OTP using EmailOTPService
-      const response = emailOTPService.verifyOTP(enteredOTP);
+      const identifier = loginMethod === 'email' ? email : mobile;
+      
+      // Use AuthContext verifyOTP function
+      const response = await verifyOTPAuth(identifier, enteredOTP);
       
       if (response.success) {
-        // Create user session
-        const userData = {
-          id: Date.now().toString(),
-          name: loginMethod === 'email' ? email.split('@')[0] : `User ${mobile.slice(-4)}`,
-          email: loginMethod === 'email' ? email : '',
-          mobile: loginMethod === 'mobile' ? mobile : '',
-          loginMethod: loginMethod,
-          loginTime: new Date().toISOString()
-        };
-        
-        // Store user session
-        localStorage.setItem('user', JSON.stringify(userData));
-        localStorage.setItem('isAuthenticated', 'true');
-        
         toast.success('Login successful!');
-        onOTPLoginSuccess(userData);
+        onOTPLoginSuccess(response.user);
       } else {
         setErrors({ otp: response.message });
+        if (response.attemptsRemaining) {
+          toast.error(`${response.message}. ${response.attemptsRemaining} attempts remaining.`);
+        } else {
+          toast.error(response.message);
+        }
       }
     } catch (error) {
       setErrors({ general: 'OTP verification failed. Please try again.' });
+      toast.error('OTP verification failed');
     } finally {
       setLoading(false);
     }
@@ -184,39 +168,28 @@ const OTPLogin = ({ onBack, onClose, onOTPLoginSuccess }) => {
     setErrors({});
 
     try {
-      // Generate new OTP
-      const generatedOTP = emailOTPService.generateOTP();
+      const identifier = loginMethod === 'email' ? email : mobile;
       
-      if (loginMethod === 'email') {
-        const response = await emailOTPService.sendOTP(email, generatedOTP);
+      // Use AuthContext sendOTP function
+      const response = await sendOTPAuth(loginMethod, identifier);
+      
+      if (response.success) {
+        setTimer(60);
+        setResendDisabled(true);
+        setOtp(['', '', '', '', '', '']);
         
-        if (response.success) {
-          setTimer(60);
-          setResendDisabled(true);
-          setOtp(['', '', '', '', '', '']);
-          
-          if (response.demo) {
-            toast.info(`New OTP sent! Check console (${generatedOTP})`);
-          } else {
-            toast.success('New OTP sent to your email!');
-          }
+        if (response.demo) {
+          toast.info(`New OTP sent! Check console (${response.otp})`);
         } else {
-          setErrors({ general: response.message });
+          toast.success('New OTP sent to your email!');
         }
       } else {
-        const response = await emailOTPService.sendOTP(`${mobile}@demo.sms`, generatedOTP);
-        
-        if (response.success) {
-          setTimer(60);
-          setResendDisabled(true);
-          setOtp(['', '', '', '', '', '']);
-          toast.info(`New OTP sent! Check console (${generatedOTP})`);
-        } else {
-          setErrors({ general: response.message });
-        }
+        setErrors({ general: response.message });
+        toast.error(response.message);
       }
     } catch (error) {
       setErrors({ general: 'Failed to resend OTP. Please try again.' });
+      toast.error('Failed to resend OTP');
     } finally {
       setLoading(false);
     }

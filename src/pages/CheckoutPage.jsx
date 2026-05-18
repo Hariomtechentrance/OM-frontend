@@ -31,6 +31,7 @@ function CheckoutPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showUPIPayment, setShowUPIPayment] = useState(false);
   const [showCardPayment, setShowCardPayment] = useState(false);
+  const [deliverySpeed, setDeliverySpeed] = useState('normal'); // 'normal' or 'quick'
   
   // UPI Verification states
   const [upiId, setUpiId] = useState('');
@@ -76,7 +77,8 @@ function CheckoutPage() {
   const calculateTotal = () => {
     const subtotal = calculateSubtotal();
     const shipping = subtotal > 999 ? 0 : 50;
-    return subtotal + shipping - discount;
+    const quickDeliveryFee = deliverySpeed === 'quick' ? 200 : 0;
+    return subtotal + shipping + quickDeliveryFee - discount;
   };
 
   const handleAddressSubmit = (e) => {
@@ -231,6 +233,7 @@ function CheckoutPage() {
         taxPrice: 0,
         shippingPrice,
         totalPrice,
+        deliverySpeed,
         paymentDetails: {
           upiId: paymentDetails.upiId,
           transactionId: paymentDetails.transactionId,
@@ -298,6 +301,7 @@ function CheckoutPage() {
         taxPrice: 0,
         shippingPrice,
         totalPrice,
+        deliverySpeed,
         paymentDetails: {
           cardType: paymentDetails.cardType,
           cardNumber: paymentDetails.cardNumber,
@@ -412,6 +416,7 @@ function CheckoutPage() {
           shippingPrice,
           totalPrice,
           promoCode,
+          deliverySpeed,
           codConfirmation: {
             paid: true,
             amount: 100,
@@ -488,7 +493,8 @@ function CheckoutPage() {
         taxPrice: 0,
         shippingPrice,
         totalPrice,
-        promoCode
+        promoCode,
+        deliverySpeed
       };
       razorpayFlow = true;
 
@@ -850,6 +856,55 @@ function CheckoutPage() {
                     />
                   </div>
 
+                  {/* Delivery Speed Selection */}
+                  <div className="mt-6 pt-6 border-t border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Delivery Speed</h3>
+                    <div className="space-y-3">
+                      <label className={`flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                        deliverySpeed === 'normal' ? 'border-black bg-gray-50' : 'border-gray-200 hover:border-gray-300'
+                      }`}>
+                        <div className="flex items-center">
+                          <input
+                            type="radio"
+                            name="deliverySpeed"
+                            value="normal"
+                            checked={deliverySpeed === 'normal'}
+                            onChange={(e) => setDeliverySpeed(e.target.value)}
+                            className="mr-3 w-4 h-4"
+                          />
+                          <div>
+                            <div className="font-medium text-gray-900">Normal Delivery</div>
+                            <div className="text-sm text-gray-600">Delivery in 5-7 business days</div>
+                          </div>
+                        </div>
+                        <div className="text-lg font-bold text-green-600">FREE</div>
+                      </label>
+
+                      <label className={`flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                        deliverySpeed === 'quick' ? 'border-black bg-gray-50' : 'border-gray-200 hover:border-gray-300'
+                      }`}>
+                        <div className="flex items-center">
+                          <input
+                            type="radio"
+                            name="deliverySpeed"
+                            value="quick"
+                            checked={deliverySpeed === 'quick'}
+                            onChange={(e) => setDeliverySpeed(e.target.value)}
+                            className="mr-3 w-4 h-4"
+                          />
+                          <div>
+                            <div className="font-medium text-gray-900 flex items-center">
+                              Quick Delivery
+                              <span className="ml-2 text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full font-semibold">FAST</span>
+                            </div>
+                            <div className="text-sm text-gray-600">Delivery in 2-3 business days</div>
+                          </div>
+                        </div>
+                        <div className="text-lg font-bold text-gray-900">+₹200</div>
+                      </label>
+                    </div>
+                  </div>
+
                   <button
                     type="submit"
                     className="w-full bg-black text-white py-3 rounded-md font-medium hover:bg-gray-800 transition-colors"
@@ -1157,6 +1212,15 @@ function CheckoutPage() {
                     {calculateSubtotal() > 999 ? 'FREE' : '₹50'}
                   </span>
                 </div>
+                {deliverySpeed === 'quick' && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600 flex items-center">
+                      Quick Delivery Fee
+                      <span className="ml-1 text-xs bg-orange-100 text-orange-800 px-1.5 py-0.5 rounded-full font-semibold">FAST</span>
+                    </span>
+                    <span className="font-medium text-orange-600">₹200</span>
+                  </div>
+                )}
                 {discount > 0 && (
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Discount</span>

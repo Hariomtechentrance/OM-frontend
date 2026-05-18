@@ -17,6 +17,32 @@
   padding: 0;
 }
 
+/* Force hide mobile-only icons on desktop */
+@media (min-width: 768px) {
+  .mobile-only-icons {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+  
+  .mobile-left-icons {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+  
+  /* Ensure mobile search and hamburger buttons are hidden */
+  .mobile-left-icons button {
+    display: none !important;
+  }
+  
+  .mobile-only-icons button {
+    display: none !important;
+  }
+}
+
 /* Hamburger Menu Button */
 .hamburger-menu {
   background: none;

@@ -11,6 +11,7 @@ import OrderManagement from './OrderManagement';
 import PromotionManagement from './PromotionManagement';
 import CategoryManagement from './CategoryManagement';
 import CollectionManagement from './CollectionManagement';
+import Analytics from './Analytics';
 import './AdminDashboard.css';
 
 const AdminDashboard = () => {
@@ -109,6 +110,7 @@ const AdminDashboard = () => {
             <Route path="/products" element={<ProductManagement />} />
             <Route path="/users" element={<UserManagement />} />
             <Route path="/orders" element={<OrderManagement />} />
+            <Route path="/analytics" element={<Analytics />} />
             <Route path="/promotions" element={<PromotionManagement />} />
             <Route path="/categories" element={<CategoryManagement />} />
             <Route path="/collections" element={<CollectionManagement />} />

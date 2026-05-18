@@ -432,6 +432,11 @@ function ProductCard({ product, getImg, onAddToCart, navigate, isNew = false }) 
         {isNew && (
           <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-0.5 text-xs font-medium rounded">NEW</div>
         )}
+        {product.discountPercentApplied > 0 && (
+          <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-0.5 text-xs font-medium rounded">
+            -{product.discountPercentApplied}%
+          </div>
+        )}
       </div>
       
       {/* 4 Small Images Grid - Always show with indicators */}
@@ -471,9 +476,19 @@ function ProductCard({ product, getImg, onAddToCart, navigate, isNew = false }) 
         <h3 className="font-medium text-gray-900 mb-2 text-sm md:text-base line-clamp-2">{product.name}</h3>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
           <div className="min-w-0">
-            <span className="text-base font-bold text-gray-900 tabular-nums">₹{product.price}</span>
-            {product.mrp && product.mrp > product.price && (
-              <span className="ml-1 text-xs text-gray-400 line-through tabular-nums">₹{product.mrp}</span>
+            {product.discountPercentApplied > 0 && (product.listPrice || product.mrp) ? (
+              <>
+                <span className="text-xs text-gray-400 line-through tabular-nums">
+                  ₹{product.listPrice || product.mrp}
+                </span>
+                <span className="ml-2 text-base font-bold text-gray-900 tabular-nums">
+                  ₹{product.price || product.salePrice}
+                </span>
+              </>
+            ) : (
+              <span className="text-base font-bold text-gray-900 tabular-nums">
+                ₹{product.price}
+              </span>
             )}
           </div>
           <button

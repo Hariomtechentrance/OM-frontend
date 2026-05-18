@@ -18,7 +18,12 @@ const ProductManagement = () => {
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [discountFormData, setDiscountFormData] = useState({
+    discountMode: 'inherit',
+    discountPercent: 0
+  });
   const [collections, setCollections] = useState([]); 
   const [categories, setCategories] = useState([]); 
   const [editProduct, setEditProduct] = useState(null); 
@@ -192,7 +197,8 @@ const ProductManagement = () => {
 
   const fetchProducts = useCallback(async () => {
     try {
-      const response = await api.get("/products");
+      // Fetch all products including inactive ones for admin panel
+      const response = await api.get("/products?includeInactive=true");
       console.log("Products:", response.data);
       setProducts(response.data.products);
       setLoading(false);
@@ -713,6 +719,49 @@ const ProductManagement = () => {
     }
   };
 
+  const toggleProductStatus = async (product) => {
+    try {
+      const response = await api.put(`/products/${product?._id}/toggle-status`);
+      toast.success(response.data.message || `Product ${product.isActive ? 'disabled' : 'enabled'} successfully`);
+      fetchProducts();
+    } catch (error) {
+      toast.error('Failed to toggle product status');
+    }
+  };
+
+  const handleOpenDiscountModal = (product) => {
+    setSelectedProduct(product);
+    setDiscountFormData({
+      discountMode: product?.discountMode || 'inherit',
+      discountPercent: product?.discountPercent || 0
+    });
+    setShowDiscountModal(true);
+  };
+
+  const handleSaveDiscount = async () => {
+    try {
+      const discountPercent = Number(discountFormData.discountPercent);
+      
+      if (discountFormData.discountMode === 'custom') {
+        if (!Number.isFinite(discountPercent) || discountPercent < 0 || discountPercent > 100) {
+          toast.error('Discount must be between 0 and 100');
+          return;
+        }
+      }
+
+      await api.put(`/products/${selectedProduct._id}`, {
+        discountMode: discountFormData.discountMode,
+        discountPercent: discountFormData.discountMode === 'custom' ? discountPercent : 0
+      });
+
+      toast.success('Discount updated successfully');
+      setShowDiscountModal(false);
+      fetchProducts();
+    } catch (error) {
+      toast.error('Failed to update discount');
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       name: '',
@@ -946,9 +995,11 @@ const ProductManagement = () => {
               <th>SKU Code</th>
               <th>Collection</th>
               <th>MRP / sale</th>
+              <th>Discount</th>
               <th>Stock</th>
               <th>Availability</th>
               <th>Featured</th>
+              <th>Status</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -999,6 +1050,19 @@ const ProductManagement = () => {
                     )}
                   </td>
                   <td>
+                    <div className="discount-info">
+                      {product?.discountMode === 'custom' ? (
+                        <span className="discount-badge custom">
+                          <i className="fas fa-tag"></i> {product?.discountPercent}% Custom
+                        </span>
+                      ) : (
+                        <span className="discount-badge inherit">
+                          <i className="fas fa-store"></i> Shop-wide
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td>
                     <span className={`stock-badge ${product?.totalStock > 0 ? 'in-stock' : 'out-of-stock'}`}>
                       {product?.totalStock || 0}
                     </span>
@@ -1019,6 +1083,11 @@ const ProductManagement = () => {
                         <span className="slider"></span>
                       </label>
                     </div>
+                  </td>
+                  <td>
+                    <span className={`status-badge ${product?.isActive ? 'active' : 'inactive'}`}>
+                      {product?.isActive ? 'Active' : 'Disabled'}
+                    </span>
                   </td>
                   <td>
                     <div className="action-buttons">
@@ -1047,6 +1116,20 @@ const ProductManagement = () => {
                         {product?.isTrending ? 'Unmark Trend' : 'Mark Trend'}
                       </button>
                       <button
+                        className="btn btn-sm btn-discount"
+                        onClick={() => handleOpenDiscountModal(product)}
+                        title="Set custom discount for this product"
+                      >
+                        <i className="fas fa-percent"></i> Discount
+                      </button>
+                      <button
+                        className={`btn btn-sm ${product?.isActive ? 'btn-secondary' : 'btn-success'}`}
+                        onClick={() => toggleProductStatus(product)}
+                        title={product?.isActive ? 'Disable product (hide from website)' : 'Enable product (show on website)'}
+                      >
+                        {product?.isActive ? 'Disable' : 'Enable'}
+                      </button>
+                      <button
                         className="btn btn-sm btn-danger"
                         onClick={() => handleDelete(product?._id)}
                       >
@@ -1058,7 +1141,7 @@ const ProductManagement = () => {
               ))
             ) : (
               <tr>
-                <td colSpan="9" className="no-products">
+                <td colSpan="11" className="no-products">
                   <div className="no-products-message">
                     <i className="fas fa-box"></i>
                     <h3>No products found</h3>
@@ -1691,6 +1774,172 @@ const ProductManagement = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Discount Modal */}
+      {showDiscountModal && selectedProduct && (
+        <div className="modal">
+          <div className="modal-content discount-modal">
+            <div className="modal-header">
+              <h3>Set Discount for {selectedProduct.name}</h3>
+              <button 
+                className="close-btn"
+                onClick={() => setShowDiscountModal(false)}
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+
+            <div className="discount-modal-body">
+              <div className="current-price-info">
+                <p><strong>Current MRP:</strong> ₹{selectedProduct.listPrice || selectedProduct.price}</p>
+                {selectedProduct.discountPercentApplied > 0 && (
+                  <p><strong>Current Sale Price:</strong> ₹{selectedProduct.price} ({selectedProduct.discountPercentApplied}% off)</p>
+                )}
+              </div>
+
+              <div className="discount-form">
+                <div className="form-group">
+                  <label>Discount Mode</label>
+                  <select
+                    value={discountFormData.discountMode}
+                    onChange={(e) => setDiscountFormData(prev => ({
+                      ...prev,
+                      discountMode: e.target.value
+                    }))}
+                    className="form-control"
+                  >
+                    <option value="inherit">Use Shop-wide Discount ({shopSettings.globalDiscountPercent}%)</option>
+                    <option value="custom">Custom Discount for This Product</option>
+                  </select>
+                  <small className="form-hint">
+                    {discountFormData.discountMode === 'inherit' 
+                      ? 'This product will use the shop-wide discount setting' 
+                      : 'Set a specific discount percentage for this product only'}
+                  </small>
+                </div>
+
+                {discountFormData.discountMode === 'custom' && (
+                  <>
+                    <div className="quick-discount-section">
+                      <p className="section-label"><strong>Quick Set (Default Options):</strong></p>
+                      <div className="quick-buttons">
+                        <button
+                          type="button"
+                          className={`btn btn-sm btn-outline ${discountFormData.discountPercent === 10 ? 'active' : ''}`}
+                          onClick={() => setDiscountFormData(prev => ({
+                            ...prev,
+                            discountPercent: 10
+                          }))}
+                        >
+                          10%
+                        </button>
+                        <button
+                          type="button"
+                          className={`btn btn-sm btn-outline ${discountFormData.discountPercent === 20 ? 'active' : ''}`}
+                          onClick={() => setDiscountFormData(prev => ({
+                            ...prev,
+                            discountPercent: 20
+                          }))}
+                        >
+                          20%
+                        </button>
+                        <button
+                          type="button"
+                          className={`btn btn-sm btn-outline ${discountFormData.discountPercent === 30 ? 'active' : ''}`}
+                          onClick={() => setDiscountFormData(prev => ({
+                            ...prev,
+                            discountPercent: 30
+                          }))}
+                        >
+                          30%
+                        </button>
+                        <button
+                          type="button"
+                          className={`btn btn-sm btn-outline ${discountFormData.discountPercent === 50 ? 'active' : ''}`}
+                          onClick={() => setDiscountFormData(prev => ({
+                            ...prev,
+                            discountPercent: 50
+                          }))}
+                        >
+                          50%
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="divider-text">
+                      <span>OR</span>
+                    </div>
+
+                    <div className="form-group">
+                      <label>Enter Custom Discount Percentage</label>
+                      <div className="discount-input-group">
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="1"
+                          value={discountFormData.discountPercent}
+                          onChange={(e) => setDiscountFormData(prev => ({
+                            ...prev,
+                            discountPercent: e.target.value
+                          }))}
+                          className="form-control"
+                          placeholder="Enter any value 0-100"
+                        />
+                        <span className="input-suffix">%</span>
+                      </div>
+                      <small className="form-hint">Enter a value between 0 and 100 (e.g., 15, 25, 35, 75)</small>
+                    </div>
+                    
+                    {discountFormData.discountPercent > 0 && (
+                      <div className="discount-preview">
+                        <p><strong>Preview:</strong></p>
+                        <p>MRP: ₹{selectedProduct.listPrice || selectedProduct.price}</p>
+                        <p>Discount: {discountFormData.discountPercent}% off</p>
+                        <p className="sale-price">
+                          Sale Price: ₹{Math.round((selectedProduct.listPrice || selectedProduct.price) * (1 - discountFormData.discountPercent / 100))}
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {discountFormData.discountMode === 'custom' && (
+                  <div className="reset-section">
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-reset"
+                      onClick={() => setDiscountFormData(prev => ({
+                        discountMode: 'inherit',
+                        discountPercent: 0
+                      }))}
+                    >
+                      <i className="fas fa-undo"></i> Reset to Shop-wide Discount
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowDiscountModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handleSaveDiscount}
+                >
+                  <i className="fas fa-save"></i> Save Discount
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

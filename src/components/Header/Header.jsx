@@ -105,7 +105,7 @@ const Header = () => {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between py-4">
             {/* Mobile Layout */}
-            <div className="flex items-center space-x-3 md:hidden">
+            <div className="flex items-center space-x-3 md:!hidden mobile-left-icons">
               <button
                 type="button"
                 onClick={toggleHamburger}
@@ -220,8 +220,8 @@ const Header = () => {
               )}
             </div>
 
-            {/* Mobile Right Icons */}
-            <div className="flex items-center space-x-2 md:hidden">
+            {/* Mobile Right Icons - Cart and Wishlist only */}
+            <div className="flex items-center space-x-2 md:!hidden mobile-only-icons">
               <button
                 type="button"
                 onClick={() => navigate('/cart')}

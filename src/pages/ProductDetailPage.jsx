@@ -538,13 +538,21 @@ function ProductDetailPage() {
                 </a>
               </div>
               <div className="flex items-center space-x-4 mb-4">
-                <span className="text-2xl font-bold text-gray-900">₹{product.price}</span>
-                {product.mrp && (
-                  <span className="text-lg text-gray-500 line-through">₹{product.mrp}</span>
-                )}
-                {product.mrp && (
-                  <span className="text-sm text-green-600 font-medium">
-                    {Math.round(((product.mrp - product.price) / product.mrp) * 100)}% OFF
+                {product.discountPercentApplied > 0 && (product.listPrice || product.mrp) ? (
+                  <>
+                    <span className="text-lg text-gray-500 line-through">
+                      ₹{product.listPrice || product.mrp}
+                    </span>
+                    <span className="text-2xl font-bold text-gray-900">
+                      ₹{product.price || product.salePrice}
+                    </span>
+                    <span className="text-sm text-red-600 font-medium">
+                      {product.discountPercentApplied}% OFF
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-2xl font-bold text-gray-900">
+                    ₹{product.price || product.salePrice}
                   </span>
                 )}
               </div>
@@ -697,8 +705,13 @@ function ProductDetailPage() {
                     <div className="absolute top-2 left-2 bg-blue-500 text-white px-2 py-0.5 text-xs font-medium rounded">FEATURED</div>
                   )}
                   {relatedProduct.mrp && relatedProduct.mrp > relatedProduct.price && (
-                    <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-0.5 text-xs font-medium rounded">
+                    <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-0.5 text-xs font-medium rounded">
                       {Math.round(((relatedProduct.mrp - relatedProduct.price) / relatedProduct.mrp) * 100)}% OFF
+                    </div>
+                  )}
+                  {relatedProduct.discountPercentApplied > 0 && !relatedProduct.mrp && (
+                    <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-0.5 text-xs font-medium rounded">
+                      {relatedProduct.discountPercentApplied}% OFF
                     </div>
                   )}
                 </div>
@@ -706,10 +719,18 @@ function ProductDetailPage() {
                   <h3 className="font-medium text-gray-900 mb-2 line-clamp-2">{relatedProduct.name}</h3>
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                     <div className="min-w-0">
-                      <span className="text-lg font-bold text-gray-900 tabular-nums">₹{relatedProduct.price}</span>
-                      {relatedProduct.mrp && (
-                        <span className="ml-1 text-sm text-gray-500 line-through tabular-nums">
-                          ₹{relatedProduct.mrp}
+                      {(relatedProduct.listPrice || relatedProduct.mrp) && relatedProduct.discountPercentApplied > 0 ? (
+                        <>
+                          <span className="text-sm text-gray-500 line-through tabular-nums">
+                            ₹{relatedProduct.listPrice || relatedProduct.mrp}
+                          </span>
+                          <span className="ml-2 text-lg font-bold text-gray-900 tabular-nums">
+                            ₹{relatedProduct.price || relatedProduct.salePrice}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-lg font-bold text-gray-900 tabular-nums">
+                          ₹{relatedProduct.price || relatedProduct.salePrice}
                         </span>
                       )}
                     </div>

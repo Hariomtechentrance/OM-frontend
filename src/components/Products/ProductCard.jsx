@@ -98,7 +98,7 @@ const ProductCard = ({ product, onAddToCart, onQuickView, onAddToWishlist, onCom
     const cartItem = {
       productId: productId,
       name: product.name,
-      price: selectedSize.price || product.price,
+      price: selectedSize.price || displayPrice,
       image: getImageUrl(product),
       size: selectedSize,
       color: selectedColor,
@@ -146,8 +146,10 @@ const ProductCard = ({ product, onAddToCart, onQuickView, onAddToWishlist, onCom
 
   const availableSizesList = getAvailableSizesForProduct();
 
-  const discountPercentage = product.originalPrice ? 
-    Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) : 0;
+  // Use backend-calculated discount data
+  const discountPercentage = product.discountPercentApplied || 0;
+  const displayPrice = product.price || product.salePrice || 0;
+  const originalPrice = product.listPrice || product.originalPrice || product.mrp || 0;
 
   return (
     <div 
@@ -265,12 +267,18 @@ const ProductCard = ({ product, onAddToCart, onQuickView, onAddToWishlist, onCom
           </div>
           
           <div className="product-price-section">
-            <div className="current-price">
-              {selectedSize ? formatPrice(selectedSize.price) : formatPrice(product.price)}
-            </div>
-            {product.originalPrice && (
-              <div className="original-price">
-                {formatPrice(product.originalPrice)}
+            {discountPercentage > 0 && originalPrice > 0 ? (
+              <>
+                <div className="original-price">
+                  {formatPrice(originalPrice)}
+                </div>
+                <div className="current-price">
+                  {selectedSize ? formatPrice(selectedSize.price) : formatPrice(displayPrice)}
+                </div>
+              </>
+            ) : (
+              <div className="current-price">
+                {selectedSize ? formatPrice(selectedSize.price) : formatPrice(displayPrice)}
               </div>
             )}
           </div>

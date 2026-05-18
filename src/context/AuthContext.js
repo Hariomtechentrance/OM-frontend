@@ -503,65 +503,58 @@ export const AuthProvider = ({ children }) => {
     try {
       dispatch({ type: SET_LOADING, payload: true });
       
-      // Simulate API call - replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Call backend API to send OTP
+      const res = await api.post('/auth/send-otp', { email: value });
       
-      // Generate demo OTP (remove in production)
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      console.log(`Demo OTP for ${method}: ${value} is ${otp}`);
-      
-      // Store OTP for demo (in production, this would be server-side)
-      localStorage.setItem('currentOTP', otp);
-      localStorage.setItem('otpValue', value);
-      localStorage.setItem('otpMethod', method);
-      
-      dispatch({ type: SET_LOADING, payload: false });
-      return { success: true, message: 'OTP sent successfully' };
+      if (res.data.success) {
+        dispatch({ type: SET_LOADING, payload: false });
+        return { 
+          success: true, 
+          message: res.data.message,
+          demo: res.data.demo,
+          otp: res.data.otp // Only in development mode
+        };
+      } else {
+        dispatch({ type: SET_LOADING, payload: false });
+        return { success: false, message: res.data.error || 'Failed to send OTP' };
+      }
     } catch (error) {
+      console.error('Send OTP error:', error);
       dispatch({ type: SET_LOADING, payload: false });
-      return { success: false, message: 'Failed to send OTP' };
+      return { 
+        success: false, 
+        message: error.response?.data?.error || 'Failed to send OTP' 
+      };
     }
   };
 
   // Verify OTP
-  const verifyOTP = async (otp) => {
+  const verifyOTP = async (email, otp) => {
     try {
       dispatch({ type: SET_LOADING, payload: true });
       
-      // Simulate API call - replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Call backend API to verify OTP
+      const res = await api.post('/auth/verify-otp', { email, otp });
       
-      const storedOTP = localStorage.getItem('currentOTP');
-      const otpValue = localStorage.getItem('otpValue');
-      const otpMethod = localStorage.getItem('otpMethod');
-      
-      if (otp === storedOTP) {
-        // Create user session
-        const user = {
-          id: Date.now().toString(),
-          name: otpMethod === 'email' ? otpValue.split('@')[0] : `User ${otpValue.slice(-4)}`,
-          email: otpMethod === 'email' ? otpValue : '',
-          mobile: otpMethod === 'mobile' ? otpValue : '',
-          loginMethod: otpMethod,
-          loginTime: new Date().toISOString()
-        };
-        
-        // Clean up OTP data
-        localStorage.removeItem('currentOTP');
-        localStorage.removeItem('otpValue');
-        localStorage.removeItem('otpMethod');
-        
-        // Store user session
+      if (res.data.success) {
+        const token = res.data.token;
+        const user = res.data.user;
+        const refreshToken = res.data.refreshToken;
+        const tokenExpiry = res.data.tokenExpiry;
+
+        localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(user));
-        localStorage.setItem('isAuthenticated', 'true');
-        
+        localStorage.setItem('refreshToken', refreshToken);
+        localStorage.setItem('tokenExpiry', tokenExpiry);
+        setAuthToken(token);
+
         dispatch({
           type: AUTH_SUCCESS,
           payload: {
             user,
-            token: 'otp-token-' + Date.now(),
-            refreshToken: 'otp-refresh-' + Date.now(),
-            tokenExpiry: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
+            token,
+            refreshToken,
+            tokenExpiry
           }
         });
         
@@ -569,11 +562,19 @@ export const AuthProvider = ({ children }) => {
         return { success: true, user };
       } else {
         dispatch({ type: SET_LOADING, payload: false });
-        return { success: false, message: 'Invalid OTP' };
+        return { 
+          success: false, 
+          message: res.data.error || 'Invalid OTP',
+          attemptsRemaining: res.data.attemptsRemaining
+        };
       }
     } catch (error) {
+      console.error('Verify OTP error:', error);
       dispatch({ type: SET_LOADING, payload: false });
-      return { success: false, message: 'OTP verification failed' };
+      return { 
+        success: false, 
+        message: error.response?.data?.error || 'OTP verification failed' 
+      };
     }
   };
 
@@ -593,42 +594,56 @@ export const AuthProvider = ({ children }) => {
         );
       }
 
+      // Get Firebase user
       const firebaseUser =
         provider === 'google'
           ? await signInWithGooglePopup()
           : await signInWithFacebookPopup();
 
-      const socialUser = {
-        id: firebaseUser.uid,
-        name: firebaseUser.displayName || 'User',
-        email: firebaseUser.email || '',
-        mobile: firebaseUser.phoneNumber || '',
-        photoURL: firebaseUser.photoURL || '',
-        loginMethod: provider,
-        role: 'user',
-        loginTime: new Date().toISOString()
+      // Send to backend for authentication
+      const endpoint = provider === 'google' ? '/auth/google' : '/auth/facebook';
+      const payload = {
+        email: firebaseUser.email,
+        name: firebaseUser.displayName || firebaseUser.email?.split('@')[0],
+        [provider === 'google' ? 'googleId' : 'facebookId']: firebaseUser.uid,
+        profilePicture: firebaseUser.photoURL
       };
 
-      localStorage.setItem('user', JSON.stringify(socialUser));
-      localStorage.setItem('isAuthenticated', 'true');
+      const res = await api.post(endpoint, payload);
+
+      const token = res.data.token;
+      const user = res.data.user;
+      const refreshToken = res.data.refreshToken;
+      const tokenExpiry = res.data.tokenExpiry || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+      if (!token || !user) {
+        throw new Error('Invalid response from server');
+      }
+
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('refreshToken', refreshToken);
+      localStorage.setItem('tokenExpiry', tokenExpiry);
+      setAuthToken(token);
 
       dispatch({
         type: AUTH_SUCCESS,
         payload: {
-          user: socialUser,
-          token: `social-token-${Date.now()}`,
-          refreshToken: `social-refresh-${Date.now()}`,
-          tokenExpiry: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+          user,
+          token,
+          refreshToken,
+          tokenExpiry
         }
       });
 
-      return { success: true };
+      return { success: true, user };
 
     } catch (error) {
       console.error(`${provider} login error:`, error);
-      dispatch({ type: AUTH_FAIL, payload: error.message });
+      const errorMessage = error.response?.data?.error || error.message;
+      dispatch({ type: AUTH_FAIL, payload: errorMessage });
       dispatch({ type: SET_LOADING, payload: false });
-      return { success: false, error: error.message };
+      return { success: false, error: errorMessage };
     }
   };
 
