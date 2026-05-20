@@ -31,6 +31,11 @@ const AdminSidebar = ({ sidebarOpen }) => {
       label: 'Products'
     },
     {
+      path: '/admin/bulk-upload',
+      icon: 'fas fa-file-csv',
+      label: 'Bulk Upload'
+    },
+    {
       path: '/admin/users',
       icon: 'fas fa-user-friends',
       label: 'Users'

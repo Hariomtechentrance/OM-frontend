@@ -12,6 +12,7 @@ import PromotionManagement from './PromotionManagement';
 import CategoryManagement from './CategoryManagement';
 import CollectionManagement from './CollectionManagement';
 import Analytics from './Analytics';
+import BulkProductUpload from './BulkProductUpload';
 import './AdminDashboard.css';
 
 const AdminDashboard = () => {
@@ -114,6 +115,7 @@ const AdminDashboard = () => {
             <Route path="/promotions" element={<PromotionManagement />} />
             <Route path="/categories" element={<CategoryManagement />} />
             <Route path="/collections" element={<CollectionManagement />} />
+            <Route path="/bulk-upload" element={<BulkProductUpload />} />
           </Routes>
         </div>
       </div>
