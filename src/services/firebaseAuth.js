@@ -3,7 +3,9 @@ import {
   getAuth,
   signInWithPopup,
   GoogleAuthProvider,
-  FacebookAuthProvider
+  FacebookAuthProvider,
+  RecaptchaVerifier,
+  signInWithPhoneNumber
 } from 'firebase/auth';
 
 const firebaseConfig = {
@@ -63,4 +65,40 @@ export const signInWithFacebookPopup = async () => {
 };
 
 export const isSocialAuthAvailable = isFirebaseConfigured;
+
+// ─── Phone Auth ─────────────────────────────────────────────────────────────
+
+export const createRecaptchaVerifier = (containerId) => {
+  // Clear any existing verifier to prevent "already rendered" error
+  if (window.recaptchaVerifier) {
+    try { window.recaptchaVerifier.clear(); } catch {}
+    window.recaptchaVerifier = null;
+  }
+  const auth = getFirebaseAuth();
+  window.recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
+    size: 'invisible',
+    callback: () => {},
+    'expired-callback': () => {
+      // Reset so user can retry
+      if (window.recaptchaVerifier) {
+        try { window.recaptchaVerifier.clear(); } catch {}
+        window.recaptchaVerifier = null;
+      }
+    }
+  });
+  return window.recaptchaVerifier;
+};
+
+export const sendPhoneOTP = async (phone, recaptchaVerifier) => {
+  const auth = getFirebaseAuth();
+  const phoneNumber = `+91${phone}`;
+  const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
+  return confirmationResult;
+};
+
+export const verifyPhoneOTP = async (confirmationResult, otp) => {
+  const credential = await confirmationResult.confirm(otp);
+  const idToken = await credential.user.getIdToken();
+  return { firebaseUser: credential.user, idToken };
+};
 

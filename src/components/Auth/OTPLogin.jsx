@@ -1,12 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { FaEnvelope, FaMobileAlt, FaArrowLeft, FaTimes, FaInfoCircle } from 'react-icons/fa';
+import React, { useState, useRef, useEffect } from 'react';
+import { FaEnvelope, FaMobileAlt, FaArrowLeft, FaTimes } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
-import emailOTPService from '../../services/EmailOTPService';
+import {
+  createRecaptchaVerifier,
+  sendPhoneOTP,
+  verifyPhoneOTP
+} from '../../services/firebaseAuth';
 import './OTPLogin.css';
 
 const OTPLogin = ({ onBack, onClose, onOTPLoginSuccess }) => {
-  const [loginMethod, setLoginMethod] = useState('email'); // 'email' or 'mobile'
+  const [loginMethod, setLoginMethod] = useState('email');
   const [email, setEmail] = useState('');
   const [mobile, setMobile] = useState('');
   const [otpSent, setOtpSent] = useState(false);
@@ -15,194 +19,215 @@ const OTPLogin = ({ onBack, onClose, onOTPLoginSuccess }) => {
   const [timer, setTimer] = useState(60);
   const [resendDisabled, setResendDisabled] = useState(true);
   const [errors, setErrors] = useState({});
-  const [showSetupInfo, setShowSetupInfo] = useState(false);
 
-  // Get auth context
-  const { sendOTP: sendOTPAuth, verifyOTP: verifyOTPAuth } = useAuth();
+  // Firebase phone auth state
+  const recaptchaVerifierRef = useRef(null);
+  const confirmationResultRef = useRef(null);
 
-  // Get setup instructions
-  const setupInstructions = emailOTPService.getSetupInstructions();
+  const { sendOTP: sendOTPAuth, verifyOTP: verifyOTPAuth, loginWithPhoneFirebase } = useAuth();
 
-  // Timer for OTP resend
+  // Countdown timer
   useEffect(() => {
-    let interval;
-    if (otpSent && timer > 0) {
-      interval = setInterval(() => {
-        setTimer(prev => prev - 1);
-      }, 1000);
-    } else if (timer === 0) {
-      setResendDisabled(false);
-    }
-    return () => clearInterval(interval);
+    if (!otpSent || timer <= 0) return;
+    const id = setInterval(() => setTimer(t => t - 1), 1000);
+    return () => clearInterval(id);
   }, [otpSent, timer]);
 
-  // Validate email
-  const validateEmail = (email) => {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(email);
-  };
+  useEffect(() => {
+    if (timer === 0) setResendDisabled(false);
+  }, [timer]);
 
-  // Validate mobile number
-  const validateMobile = (mobile) => {
-    const re = /^[6-9]\d{9}$/;
-    return re.test(mobile);
-  };
+  // Cleanup recaptcha on unmount
+  useEffect(() => {
+    return () => {
+      if (window.recaptchaVerifier) {
+        try { window.recaptchaVerifier.clear(); } catch {}
+        window.recaptchaVerifier = null;
+      }
+      recaptchaVerifierRef.current = null;
+    };
+  }, []);
 
-  // Handle send OTP
+  const validateEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  const validateMobile = (v) => /^[6-9]\d{9}$/.test(v);
+
+  // ── Send OTP ──────────────────────────────────────────────────────────────
+
   const handleSendOTP = async () => {
     const newErrors = {};
-    
+
     if (loginMethod === 'email') {
-      if (!email) {
-        newErrors.email = 'Email is required';
-      } else if (!validateEmail(email)) {
-        newErrors.email = 'Please enter a valid email address';
-      }
+      if (!email) newErrors.email = 'Email is required';
+      else if (!validateEmail(email)) newErrors.email = 'Enter a valid email address';
     } else {
-      if (!mobile) {
-        newErrors.mobile = 'Mobile number is required';
-      } else if (!validateMobile(mobile)) {
-        newErrors.mobile = 'Please enter a valid 10-digit mobile number';
-      }
+      if (!mobile) newErrors.mobile = 'Mobile number is required';
+      else if (!validateMobile(mobile)) newErrors.mobile = 'Enter a valid 10-digit mobile number';
     }
 
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
+    if (Object.keys(newErrors).length) { setErrors(newErrors); return; }
 
     setLoading(true);
     setErrors({});
 
     try {
-      const identifier = loginMethod === 'email' ? email : mobile;
-      
-      // Use AuthContext sendOTP function
-      const response = await sendOTPAuth(loginMethod, identifier);
-      
-      if (response.success) {
+      if (loginMethod === 'mobile') {
+        // ── Firebase phone auth ──────────────────────────────────────────
+        // Clear any previous verifier
+        if (recaptchaVerifierRef.current) {
+          try { recaptchaVerifierRef.current.clear(); } catch {}
+          recaptchaVerifierRef.current = null;
+        }
+
+        recaptchaVerifierRef.current = createRecaptchaVerifier('recaptcha-container');
+        await recaptchaVerifierRef.current.render();
+
+        confirmationResultRef.current = await sendPhoneOTP(mobile, recaptchaVerifierRef.current);
+
         setOtpSent(true);
         setTimer(60);
         setResendDisabled(true);
-        
-        if (response.demo) {
-          toast.info(`Demo Mode: OTP is ${response.otp || 'check console'}`);
-        } else {
-          toast.success('OTP sent to your email!');
-        }
+        toast.success(`OTP sent to +91 ${mobile}`);
       } else {
-        setErrors({ general: response.message });
-        toast.error(response.message);
-      }
-    } catch (error) {
-      setErrors({ general: 'Failed to send OTP. Please try again.' });
-      toast.error('Failed to send OTP');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Handle OTP input change
-  const handleOTPChange = (index, value) => {
-    if (value.length > 1) return;
-    
-    const newOTP = [...otp];
-    newOTP[index] = value;
-    setOtp(newOTP);
-
-    // Auto-focus next input
-    if (value && index < 5) {
-      const nextInput = document.getElementById(`otp-input-${index + 1}`);
-      if (nextInput) nextInput.focus();
-    }
-  };
-
-  // Handle OTP key press
-  const handleOTPKeyPress = (e, index) => {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      const prevInput = document.getElementById(`otp-input-${index - 1}`);
-      if (prevInput) prevInput.focus();
-    }
-  };
-
-  // Handle verify OTP
-  const handleVerifyOTP = async () => {
-    const enteredOTP = otp.join('');
-    
-    if (enteredOTP.length !== 6) {
-      setErrors({ otp: 'Please enter complete 6-digit OTP' });
-      return;
-    }
-
-    setLoading(true);
-    setErrors({});
-
-    try {
-      const identifier = loginMethod === 'email' ? email : mobile;
-      
-      // Use AuthContext verifyOTP function
-      const response = await verifyOTPAuth(identifier, enteredOTP);
-      
-      if (response.success) {
-        toast.success('Login successful!');
-        onOTPLoginSuccess(response.user);
-      } else {
-        setErrors({ otp: response.message });
-        if (response.attemptsRemaining) {
-          toast.error(`${response.message}. ${response.attemptsRemaining} attempts remaining.`);
+        // ── Email OTP via backend ────────────────────────────────────────
+        const response = await sendOTPAuth('email', email);
+        if (response.success) {
+          setOtpSent(true);
+          setTimer(60);
+          setResendDisabled(true);
+          if (response.demo) {
+            toast.info(`Demo Mode: OTP is ${response.otp || 'check console'}`);
+          } else {
+            toast.success('OTP sent to your email!');
+          }
         } else {
+          setErrors({ general: response.message });
           toast.error(response.message);
         }
       }
     } catch (error) {
-      setErrors({ general: 'OTP verification failed. Please try again.' });
-      toast.error('OTP verification failed');
+      console.error('Send OTP error:', error);
+      const msg = error.code === 'auth/invalid-phone-number'
+        ? 'Invalid phone number. Use 10-digit Indian mobile number.'
+        : error.code === 'auth/too-many-requests'
+        ? 'Too many attempts. Please try again later.'
+        : error.message || 'Failed to send OTP';
+      setErrors({ general: msg });
+      toast.error(msg);
+
+      // Reset recaptcha on error
+      if (recaptchaVerifierRef.current) {
+        try { recaptchaVerifierRef.current.clear(); } catch {}
+        recaptchaVerifierRef.current = null;
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle resend OTP
-  const handleResendOTP = async () => {
+  // ── Verify OTP ────────────────────────────────────────────────────────────
+
+  const handleVerifyOTP = async () => {
+    const enteredOTP = otp.join('');
+    if (enteredOTP.length !== 6) {
+      setErrors({ otp: 'Enter the complete 6-digit OTP' });
+      return;
+    }
+
     setLoading(true);
     setErrors({});
 
     try {
-      const identifier = loginMethod === 'email' ? email : mobile;
-      
-      // Use AuthContext sendOTP function
-      const response = await sendOTPAuth(loginMethod, identifier);
-      
-      if (response.success) {
-        setTimer(60);
-        setResendDisabled(true);
-        setOtp(['', '', '', '', '', '']);
-        
-        if (response.demo) {
-          toast.info(`New OTP sent! Check console (${response.otp})`);
+      if (loginMethod === 'mobile') {
+        // ── Firebase verify ──────────────────────────────────────────────
+        if (!confirmationResultRef.current) {
+          setErrors({ general: 'Session expired. Please resend OTP.' });
+          setLoading(false);
+          return;
+        }
+
+        const { idToken } = await verifyPhoneOTP(confirmationResultRef.current, enteredOTP);
+        const response = await loginWithPhoneFirebase(idToken, mobile);
+
+        if (response.success) {
+          toast.success('Mobile login successful!');
+          onOTPLoginSuccess(response.user);
         } else {
-          toast.success('New OTP sent to your email!');
+          setErrors({ general: response.error });
+          toast.error(response.error);
         }
       } else {
-        setErrors({ general: response.message });
-        toast.error(response.message);
+        // ── Backend email verify ─────────────────────────────────────────
+        const response = await verifyOTPAuth(email, enteredOTP);
+        if (response.success) {
+          toast.success('Login successful!');
+          onOTPLoginSuccess(response.user);
+        } else {
+          setErrors({ otp: response.message });
+          const extra = response.attemptsRemaining ? ` ${response.attemptsRemaining} attempts remaining.` : '';
+          toast.error(response.message + extra);
+        }
       }
     } catch (error) {
-      setErrors({ general: 'Failed to resend OTP. Please try again.' });
-      toast.error('Failed to resend OTP');
+      console.error('Verify OTP error:', error);
+      const msg = error.code === 'auth/invalid-verification-code'
+        ? 'Incorrect OTP. Please try again.'
+        : error.code === 'auth/code-expired'
+        ? 'OTP expired. Please resend.'
+        : error.message || 'OTP verification failed';
+      setErrors({ otp: msg });
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle back to login method selection
+  // ── Resend OTP ────────────────────────────────────────────────────────────
+
+  const handleResendOTP = async () => {
+    setOtp(['', '', '', '', '', '']);
+    setErrors({});
+    setOtpSent(false);
+    confirmationResultRef.current = null;
+    // Re-triggers send from scratch
+    setTimeout(handleSendOTP, 0);
+  };
+
+  // ── OTP input helpers ─────────────────────────────────────────────────────
+
+  const handleOTPChange = (index, value) => {
+    if (value.length > 1) return;
+    const newOTP = [...otp];
+    newOTP[index] = value;
+    setOtp(newOTP);
+    if (value && index < 5) {
+      document.getElementById(`otp-input-${index + 1}`)?.focus();
+    }
+  };
+
+  const handleOTPKeyPress = (e, index) => {
+    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      document.getElementById(`otp-input-${index - 1}`)?.focus();
+    }
+  };
+
   const handleBack = () => {
     setOtpSent(false);
     setOtp(['', '', '', '', '', '']);
     setTimer(60);
     setResendDisabled(true);
     setErrors({});
+    confirmationResultRef.current = null;
   };
+
+  const handleMethodSwitch = (method) => {
+    setLoginMethod(method);
+    setOtpSent(false);
+    setOtp(['', '', '', '', '', '']);
+    setErrors({});
+    confirmationResultRef.current = null;
+  };
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="otp-login-overlay">
@@ -212,18 +237,9 @@ const OTPLogin = ({ onBack, onClose, onOTPLoginSuccess }) => {
             <FaArrowLeft />
           </button>
           <h2>Login with OTP</h2>
-          <div className="header-buttons">
-            <button 
-              className="info-btn" 
-              onClick={() => setShowSetupInfo(!showSetupInfo)}
-              title="Setup Instructions"
-            >
-              <FaInfoCircle />
-            </button>
-            <button className="close-btn" onClick={onClose}>
-              <FaTimes />
-            </button>
-          </div>
+          <button className="close-btn" onClick={onClose}>
+            <FaTimes />
+          </button>
         </div>
 
         {!otpSent ? (
@@ -231,19 +247,23 @@ const OTPLogin = ({ onBack, onClose, onOTPLoginSuccess }) => {
             <div className="login-method-selector">
               <button
                 className={`method-btn ${loginMethod === 'email' ? 'active' : ''}`}
-                onClick={() => setLoginMethod('email')}
+                onClick={() => handleMethodSwitch('email')}
               >
                 <FaEnvelope />
                 <span>Email</span>
               </button>
               <button
                 className={`method-btn ${loginMethod === 'mobile' ? 'active' : ''}`}
-                onClick={() => setLoginMethod('mobile')}
+                onClick={() => handleMethodSwitch('mobile')}
               >
                 <FaMobileAlt />
                 <span>Mobile</span>
               </button>
             </div>
+
+            {loginMethod === 'mobile' && (
+              <p className="method-note">Free SMS OTP via Firebase · No charges</p>
+            )}
 
             <div className="input-group">
               {loginMethod === 'email' ? (
@@ -261,13 +281,16 @@ const OTPLogin = ({ onBack, onClose, onOTPLoginSuccess }) => {
               ) : (
                 <>
                   <label>Mobile Number</label>
-                  <input
-                    type="tel"
-                    value={mobile}
-                    onChange={(e) => setMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                    placeholder="Enter your 10-digit mobile number"
-                    className={errors.mobile ? 'error' : ''}
-                  />
+                  <div className="phone-input-wrapper">
+                    <span className="phone-prefix">+91</span>
+                    <input
+                      type="tel"
+                      value={mobile}
+                      onChange={(e) => setMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                      placeholder="10-digit mobile number"
+                      className={errors.mobile ? 'error' : ''}
+                    />
+                  </div>
                   {errors.mobile && <span className="error-message">{errors.mobile}</span>}
                 </>
               )}
@@ -275,23 +298,20 @@ const OTPLogin = ({ onBack, onClose, onOTPLoginSuccess }) => {
 
             {errors.general && <div className="error-message general">{errors.general}</div>}
 
-            <button
-              className="send-otp-btn"
-              onClick={handleSendOTP}
-              disabled={loading}
-            >
-              {loading ? 'Sending...' : 'Send OTP'}
+            <button className="send-otp-btn" onClick={handleSendOTP} disabled={loading}>
+              {loading ? 'Sending OTP...' : 'Send OTP'}
             </button>
           </div>
         ) : (
           <div className="otp-verification-form">
             <div className="otp-info">
-              <p>
-                We've sent a 6-digit OTP to your {loginMethod === 'email' ? 'email' : 'mobile number'}
-              </p>
+              <p>We sent a 6-digit OTP to</p>
               <p className="otp-value">
                 {loginMethod === 'email' ? email : `+91 ${mobile}`}
               </p>
+              {loginMethod === 'mobile' && (
+                <p className="otp-sub">Delivered via Firebase — check your SMS</p>
+              )}
             </div>
 
             <div className="otp-inputs">
@@ -300,6 +320,7 @@ const OTPLogin = ({ onBack, onClose, onOTPLoginSuccess }) => {
                   key={index}
                   id={`otp-input-${index}`}
                   type="text"
+                  inputMode="numeric"
                   maxLength={1}
                   value={digit}
                   onChange={(e) => handleOTPChange(index, e.target.value)}
@@ -338,31 +359,9 @@ const OTPLogin = ({ onBack, onClose, onOTPLoginSuccess }) => {
             </div>
           </div>
         )}
-        
-        {/* Setup Info Section */}
-        {showSetupInfo && (
-          <div className="setup-info-section">
-            <div className="setup-info-content">
-              <h3>{setupInstructions.title}</h3>
-              <div className="setup-steps">
-                {setupInstructions.steps.map((step, index) => (
-                  <div key={index} className="setup-step">
-                    <span className="step-number">{index + 1}</span>
-                    <span className="step-text">{step}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="template-example">
-                <h4>Email Template Example:</h4>
-                <pre>{setupInstructions.templateExample}</pre>
-              </div>
-              <div className="demo-notice">
-                <p><strong>Current Mode:</strong> Demo Mode (OTP shown in console)</p>
-                <p>Follow the setup instructions to enable real email sending.</p>
-              </div>
-            </div>
-          </div>
-        )}
+
+        {/* Invisible reCAPTCHA container required by Firebase Phone Auth */}
+        <div id="recaptcha-container" />
       </div>
     </div>
   );

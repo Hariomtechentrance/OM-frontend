@@ -5,6 +5,11 @@ import {
   signInWithFacebookPopup,
   isSocialAuthAvailable
 } from '../services/firebaseAuth';
+import {
+  createRecaptchaVerifier,
+  sendPhoneOTP as firebaseSendPhoneOTP,
+  verifyPhoneOTP as firebaseVerifyPhoneOTP
+} from '../services/firebaseAuth';
 
 const ACCESS_TOKEN_TTL_MS = 14 * 60 * 1000; // Slightly under backend 15m JWT expiry
 
@@ -502,17 +507,17 @@ export const AuthProvider = ({ children }) => {
   const sendOTP = async (method, value) => {
     try {
       dispatch({ type: SET_LOADING, payload: true });
-      
-      // Call backend API to send OTP
-      const res = await api.post('/auth/send-otp', { email: value });
-      
+
+      const body = method === 'mobile' ? { phone: value } : { email: value };
+      const res = await api.post('/auth/send-otp', body);
+
       if (res.data.success) {
         dispatch({ type: SET_LOADING, payload: false });
-        return { 
-          success: true, 
+        return {
+          success: true,
           message: res.data.message,
           demo: res.data.demo,
-          otp: res.data.otp // Only in development mode
+          otp: res.data.otp
         };
       } else {
         dispatch({ type: SET_LOADING, payload: false });
@@ -521,20 +526,21 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Send OTP error:', error);
       dispatch({ type: SET_LOADING, payload: false });
-      return { 
-        success: false, 
-        message: error.response?.data?.error || 'Failed to send OTP' 
+      return {
+        success: false,
+        message: error.response?.data?.error || 'Failed to send OTP'
       };
     }
   };
 
   // Verify OTP
-  const verifyOTP = async (email, otp) => {
+  const verifyOTP = async (identifier, otp, method = 'email') => {
     try {
       dispatch({ type: SET_LOADING, payload: true });
-      
-      // Call backend API to verify OTP
-      const res = await api.post('/auth/verify-otp', { email, otp });
+
+      const isPhone = /^[6-9]\d{9}$/.test(identifier);
+      const body = isPhone ? { phone: identifier, otp } : { email: identifier, otp };
+      const res = await api.post('/auth/verify-otp', body);
       
       if (res.data.success) {
         const token = res.data.token;
@@ -575,6 +581,36 @@ export const AuthProvider = ({ children }) => {
         success: false, 
         message: error.response?.data?.error || 'OTP verification failed' 
       };
+    }
+  };
+
+  // Phone login — called after Firebase OTP is confirmed on the frontend
+  const loginWithPhoneFirebase = async (idToken, phone) => {
+    try {
+      dispatch({ type: SET_LOADING, payload: true });
+
+      const res = await api.post('/auth/phone-otp-login', { idToken, phone });
+
+      const { token, user, refreshToken, tokenExpiry } = res.data;
+
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('refreshToken', refreshToken);
+      localStorage.setItem('tokenExpiry', tokenExpiry);
+      setAuthToken(token);
+
+      dispatch({
+        type: AUTH_SUCCESS,
+        payload: { user, token, refreshToken, tokenExpiry }
+      });
+
+      return { success: true, user };
+    } catch (error) {
+      console.error('Phone login error:', error);
+      const msg = error.response?.data?.error || error.message || 'Phone login failed';
+      dispatch({ type: AUTH_FAIL, payload: msg });
+      dispatch({ type: SET_LOADING, payload: false });
+      return { success: false, error: msg };
     }
   };
 
@@ -665,7 +701,11 @@ export const AuthProvider = ({ children }) => {
     getTimeUntilExpiry,
     sendOTP,
     verifyOTP,
-    loginWithSocial
+    loginWithSocial,
+    loginWithPhoneFirebase,
+    createRecaptchaVerifier,
+    firebaseSendPhoneOTP,
+    firebaseVerifyPhoneOTP
   };
 
   return (

@@ -5,6 +5,7 @@ import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import logo from '../../assets/images/New logo1.png';
 import HamburgerMenu from './HamburgerMenu';
+import BackButton from './BackButton';
 import api from '../../api/axios';
 
 const TOP_SEARCHES = [
@@ -105,7 +106,8 @@ const Header = () => {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between py-4">
             {/* Mobile Layout */}
-            <div className="flex items-center space-x-3 md:!hidden mobile-left-icons">
+            <div className="flex items-center space-x-1 md:!hidden mobile-left-icons">
+              <BackButton />
               <button
                 type="button"
                 onClick={toggleHamburger}
@@ -126,7 +128,11 @@ const Header = () => {
             </div>
 
             {/* Logo - Left on desktop, centered on mobile */}
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0 flex items-center gap-1">
+              {/* Back button desktop only */}
+              <div className="hidden md:flex">
+                <BackButton />
+              </div>
               <Link to="/" className="flex items-center">
                 <img src={logo} alt="Black Locust" className="h-10 w-auto" />
               </Link>
