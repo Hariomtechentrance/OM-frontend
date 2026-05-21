@@ -1,0 +1,279 @@
+/* ── Overlay ────────────────────────────────────────────────────────────────── */
+.sc-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+/* ── Modal box ──────────────────────────────────────────────────────────────── */
+.sc-modal {
+  background: #fff;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 620px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  animation: sc-slide-up 0.22s ease;
+}
+
+@keyframes sc-slide-up {
+  from { transform: translateY(30px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────────── */
+.sc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e5e5e5;
+  padding: 0 20px;
+  flex-shrink: 0;
+}
+
+.sc-tabs {
+  display: flex;
+  gap: 0;
+}
+
+.sc-tab {
+  background: none;
+  border: none;
+  padding: 18px 20px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #aaa;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.sc-tab.active {
+  color: #000;
+  border-bottom-color: #000;
+}
+
+.sc-tab:hover:not(.active) {
+  color: #555;
+}
+
+.sc-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #666;
+  cursor: pointer;
+  padding: 8px;
+  line-height: 1;
+  border-radius: 50%;
+  transition: background 0.15s;
+}
+
+.sc-close:hover {
+  background: #f0f0f0;
+  color: #000;
+}
+
+/* ── Body ───────────────────────────────────────────────────────────────────── */
+.sc-body {
+  padding: 20px 24px 28px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* ── Unit toggle ─────────────────────────────────────────────────────────────── */
+.sc-unit-toggle {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+  gap: 0;
+}
+
+.sc-unit-btn {
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  color: #777;
+}
+
+.sc-unit-btn:first-child {
+  border-radius: 20px 0 0 20px;
+  border-right: none;
+}
+
+.sc-unit-btn:last-child {
+  border-radius: 0 20px 20px 0;
+}
+
+.sc-unit-btn.active {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+}
+
+/* ── Table ──────────────────────────────────────────────────────────────────── */
+.sc-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+}
+
+.sc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  min-width: 340px;
+}
+
+.sc-table thead tr {
+  background: #f8f8f8;
+}
+
+.sc-table th {
+  padding: 14px 16px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #555;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.sc-table th:first-child {
+  text-align: left;
+}
+
+.sc-table td {
+  padding: 12px 16px;
+  text-align: center;
+  border-bottom: 1px solid #f0f0f0;
+  color: #333;
+  font-size: 14px;
+}
+
+.sc-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.sc-table tbody tr:hover {
+  background: #fafafa;
+}
+
+.sc-size-label {
+  text-align: left !important;
+  font-weight: 600;
+  color: #111;
+  font-size: 13px;
+}
+
+/* ── Note ───────────────────────────────────────────────────────────────────── */
+.sc-note {
+  margin-top: 14px;
+  font-size: 12px;
+  color: #888;
+}
+
+/* ── How to Measure ─────────────────────────────────────────────────────────── */
+.sc-measure {
+  padding-top: 4px;
+}
+
+.sc-measure-intro {
+  font-size: 14px;
+  color: #555;
+  line-height: 1.6;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.sc-measure-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sc-measure-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.sc-measure-icon {
+  font-size: 22px;
+  width: 36px;
+  text-align: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.sc-measure-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #111;
+  margin: 0 0 4px;
+}
+
+.sc-measure-desc {
+  font-size: 13px;
+  color: #555;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.sc-measure-tip {
+  margin-top: 20px;
+  background: #111;
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ── Mobile ─────────────────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .sc-modal {
+    max-height: 95vh;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .sc-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .sc-tab {
+    padding: 16px 12px;
+    font-size: 11px;
+  }
+
+  .sc-body {
+    padding: 16px 16px 24px;
+  }
+
+  .sc-table th,
+  .sc-table td {
+    padding: 10px 10px;
+    font-size: 13px;
+  }
+}

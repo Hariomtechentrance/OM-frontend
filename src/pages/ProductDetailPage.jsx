@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { useCart } from '../context/CartContext';
 import api from '../api/axios';
 import ProductReviews from '../components/ProductReviews/ProductReviews';
+import SizeChartModal from '../components/SizeChart/SizeChartModal';
 
 // ─── Unsplash fallback per category (never 404) ─────────────────────────────
 const IMG_FALLBACK = {
@@ -47,6 +48,7 @@ function ProductDetailPage() {
   const [relatedProductsLoading, setRelatedProductsLoading] = useState(false);
   const [selectedSize, setSelectedSize] = useState('');
   const [quantity, setQuantity] = useState(1);
+  const [sizeChartOpen, setSizeChartOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const fetchProduct = useCallback(async () => {
     try {
@@ -568,7 +570,16 @@ function ProductDetailPage() {
 
             {/* Size Selection */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Select Size</h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold text-gray-900">Select Size</h3>
+                <button
+                  type="button"
+                  onClick={() => setSizeChartOpen(true)}
+                  className="text-sm text-gray-500 underline underline-offset-2 hover:text-black transition-colors"
+                >
+                  Size Chart
+                </button>
+              </div>
               <div className="flex flex-wrap gap-2">
                 {['S', 'M', 'L', 'XL', 'XXL'].map((size) => (
                   <button
@@ -585,6 +596,12 @@ function ProductDetailPage() {
                 ))}
               </div>
             </div>
+
+            <SizeChartModal
+              isOpen={sizeChartOpen}
+              onClose={() => setSizeChartOpen(false)}
+              product={product}
+            />
 
             {/* Quantity Selection */}
             <div>
