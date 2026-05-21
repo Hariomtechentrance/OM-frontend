@@ -859,27 +859,102 @@ const ProductManagement = () => {
     specifications: ['material', 'care', 'origin', 'season', 'fit', 'weight', 'style']
   } : null;
 
+  // ── CSV columns covering ALL product types ────────────────────────────────
   const CSV_HEADERS = [
-    'name','skuCode','h1Heading','price','categoryName','collectionName','brand',
-    'description','specifications','availability','sizes','colors','imageUrls',
-    'isFeatured','isNewArrival','isTrending','discountMode','discountPercent',
-    'tags','material','careInstructions','productLink','fit','marketingDescription',
-    'fabric','sleeves','collar','pocket','occasion'
+    // Required
+    'name','skuCode','h1Heading','price','categoryName',
+    // Identity
+    'gender','subcategory','ageGroup','season',
+    // Optional identity
+    'collectionName','brand',
+    // Content
+    'description','specifications','availability',
+    // Sizes & variants  (shirts/jackets: S:10,M:15 | pants/jeans: 28:10,30:15 | kids: 2-4Y:10,5-7Y:8)
+    'sizes','colors','imageUrls',
+    // Flags
+    'isFeatured','isNewArrival','isTrending',
+    // Discount
+    'discountMode','discountPercent',
+    // Extra tags
+    'tags','material','careInstructions','productLink',
+    // Fit & marketing
+    'fit','marketingDescription',
+    // Technical specs — fill only what applies to this product type
+    'fabric',
+    // Shirts / Tops
+    'sleeves','collar','pocket',
+    // Pants / Jeans / Cargo
+    'rise','legStyle','closure',
+    // Jackets / Hoodies
+    'lining','hood',
+    // Common
+    'occasion'
   ];
-  const CSV_SAMPLE = [
-    'Classic White Shirt','BL-WS-001','Premium White Formal Shirt','1299',
-    'Men','Formal Collection','Black Locust',
-    'Premium white formal shirt for office wear.','Cotton 100% - Machine Wash Cold',
-    'in_stock','S:10,M:15,L:20,XL:10','White,Light Blue','https://example.com/img.jpg',
-    'false','true','false','inherit','0','formal,shirt,office','Cotton',
-    'Machine wash cold','','Regular Fit','Perfect office shirt','Cotton Blend',
-    'Full Sleeves','Point Collar','No Pocket','Formal Office'
+
+  // One sample row per product type so the user sees exactly what to fill
+  const CSV_SAMPLES = [
+    // 1. Men's Shirt
+    ['Classic White Formal Shirt','BL-SHIRT-001','Premium White Formal Shirt for Men','1299',
+     'Men','Men','Formal Shirt','','All Season','Formal Collection','Black Locust',
+     'Premium white formal shirt for office and formal occasions.','100% Cotton - Machine Wash Cold - Do Not Bleach',
+     'in_stock','S:10,M:15,L:20,XL:10,XXL:5','White,Light Blue','',
+     'false','true','false','inherit','0',
+     'formal,shirt,office,cotton','Cotton','Machine wash cold','',
+     'Regular Fit','The perfect shirt for your office days',
+     'Cotton Blend','Full Sleeves','Spread Collar','Chest Pocket','','','','','','Formal & Office'],
+
+    // 2. Men's Jeans
+    ['Classic Slim Fit Blue Jeans','BL-JEANS-001','Slim Fit Blue Denim Jeans for Men','1799',
+     'Men','Men','Jeans','','All Season','Denim Collection','Black Locust',
+     'Premium slim fit blue jeans made from stretch denim for all-day comfort.',
+     'Stretch Denim 98% Cotton 2% Elastane - Machine Wash Cold',
+     'in_stock','28:10,30:15,32:20,34:10,36:5','Blue,Black,Dark Grey','',
+     'false','true','false','inherit','0',
+     'jeans,denim,slim-fit,casual','Denim','Machine wash cold separately','',
+     'Slim Fit','Your go-to pair of jeans for every occasion',
+     'Stretch Denim','','','5-Pocket','Mid Rise','Slim','Zipper & Button','','','Casual & Smart Casual'],
+
+    // 3. Men's Cargo Pants
+    ['Urban Cargo Pants','BL-CARGO-001','Relaxed Fit Cargo Pants for Men','1599',
+     'Men','Men','Cargo Pants','','All Season','Casuals Collection','Black Locust',
+     'Utility cargo pants with multiple pockets for an urban streetwear look.',
+     '100% Cotton Twill - Machine Wash Cold',
+     'in_stock','28:8,30:12,32:15,34:10,36:6','Olive,Black,Khaki,Navy','',
+     'false','false','true','inherit','0',
+     'cargo,pants,utility,streetwear,casual','Cotton Twill','Machine wash cold','',
+     'Relaxed Fit','Built for the streets - style meets utility',
+     'Cotton Twill','','','6 Cargo Pockets','Mid Rise','Regular','Drawstring & Button','','','Casual & Streetwear'],
+
+    // 4. Men's Jacket
+    ['Classic Bomber Jacket','BL-JACKET-001','Men\'s Slim Fit Bomber Jacket','2999',
+     'Men','Men','Bomber Jacket','','Winter','Winter Collection','Black Locust',
+     'Premium bomber jacket with ribbed cuffs and hem for a classic streetwear look.',
+     'Polyester Shell 100% - Polyester Lining - Dry Clean Only',
+     'in_stock','S:5,M:10,L:8,XL:5,XXL:3','Black,Olive,Navy','',
+     'false','true','false','inherit','0',
+     'jacket,bomber,winter,streetwear','Polyester','Dry clean only','',
+     'Slim Fit','The classic bomber - timeless style redefined',
+     'Polyester Shell','Full Sleeves','Ribbed Collar','Side Pockets','','','Zipper','Half Lined','No','Casual & Streetwear'],
+
+    // 5. Kids T-Shirt
+    ['Kids Graphic Printed T-Shirt','BL-KIDS-001','Soft Cotton Printed T-Shirt for Kids','699',
+     'Kids','Kids','T-Shirt','2-13 Years','All Season','Kids Collection','Black Locust',
+     'Bright and fun graphic printed t-shirt made from soft breathable cotton for kids.',
+     '100% Combed Cotton - Machine Wash Cold Gentle - Do Not Bleach',
+     'in_stock','2-4Y:15,5-7Y:20,8-10Y:18,11-13Y:12','Red,Blue,Yellow,Green,White','',
+     'false','true','false','inherit','0',
+     'kids,t-shirt,printed,cotton,children','Cotton','Machine wash gentle cold','',
+     'Regular Fit','Fun and comfortable - perfect for active kids',
+     'Combed Cotton','Short Sleeves','Round Neck','No Pocket','','','','','','Casual & Play'],
   ];
 
   const handleDownloadTemplate = () => {
-    const escape = (v) => (String(v).includes(',') ? `"${v}"` : v);
-    const csv = [CSV_HEADERS.join(','), CSV_SAMPLE.map(escape).join(',')].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const escape = (v) => {
+      const s = String(v);
+      return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const rows = [CSV_HEADERS.join(','), ...CSV_SAMPLES.map(row => row.map(escape).join(','))];
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = 'bulk_product_template.csv'; a.click();
@@ -2026,10 +2101,16 @@ const ProductManagement = () => {
                 <p style={{ margin: '0 0 10px', fontWeight: '600', fontSize: '14px' }}>
                   Step 1 — Download the template
                 </p>
-                <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#666' }}>
-                  Fill it in Excel / Google Sheets. Use <code style={{ background: '#e8e8e8', padding: '1px 5px', borderRadius: '3px' }}>S:10,M:20,L:15</code> for sizes.
-                  The <strong>categoryName</strong> must match an existing category exactly.
+                <p style={{ margin: '0 0 8px', fontSize: '13px', color: '#666' }}>
+                  Fill in Excel / Google Sheets. The template includes <strong>5 sample rows</strong> — one per product type (Shirt, Jeans, Cargo, Jacket, Kids). Delete the sample rows before uploading.
                 </p>
+                <div style={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '6px', padding: '10px 12px', marginBottom: '12px', fontSize: '12px', lineHeight: '1.8' }}>
+                  <strong>Sizes format by category:</strong><br />
+                  Shirts / Jackets / Kids tops → <code style={{ background: '#e8e8e8', padding: '1px 4px', borderRadius: '3px' }}>S:10,M:15,L:20,XL:10</code><br />
+                  Pants / Jeans / Cargo → <code style={{ background: '#e8e8e8', padding: '1px 4px', borderRadius: '3px' }}>28:10,30:15,32:20,34:10</code><br />
+                  Kids by age → <code style={{ background: '#e8e8e8', padding: '1px 4px', borderRadius: '3px' }}>2-4Y:10,5-7Y:15,8-10Y:12,11-13Y:8</code><br />
+                  <strong>gender</strong> → Men / Women / Kids / Unisex &nbsp;|&nbsp; <strong>categoryName</strong> must match exactly
+                </div>
                 <button
                   className="btn btn-secondary btn-sm"
                   onClick={handleDownloadTemplate}
