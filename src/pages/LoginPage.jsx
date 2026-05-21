@@ -286,11 +286,17 @@ const LoginPage = () => {
         </div>
       </div>
 
-      {/* Right Side - Big Logo */}
+      {/* Left Brand Panel */}
       <div className="login-right">
         <div className="login-logo-section">
           <img src={logo} alt="Black Locust" className="login-logo" />
+          <div className="brand-divider" />
+          <div className="brand-tagline">
+            <h1>Black<br />Locust</h1>
+            <p>Elevate Your Style</p>
+          </div>
         </div>
+        <p className="brand-quote">Premium Clothing · Est. India</p>
       </div>
 
       {/* OTP Modal */}

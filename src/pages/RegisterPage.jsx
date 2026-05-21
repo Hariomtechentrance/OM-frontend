@@ -321,11 +321,17 @@ const RegisterPage = () => {
         </div>
       </div>
 
-      {/* Right Side - Big Logo */}
+      {/* Left Brand Panel */}
       <div className="register-right">
         <div className="register-logo-section">
           <img src={logo} alt="Black Locust" className="register-logo" />
+          <div className="register-brand-divider" />
+          <div className="register-brand-tagline">
+            <h2>Black<br />Locust</h2>
+            <p>Elevate Your Style</p>
+          </div>
         </div>
+        <p className="register-brand-quote">Premium Clothing · Est. India</p>
       </div>
 
       {/* OTP Modal */}
