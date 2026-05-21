@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'react-toastify';
 import api from '../../api/axios'; // ✅ FIXED: Use shared axios instance
 import SafeImg from '../../components/SafeImg/SafeImg';
@@ -18,6 +18,11 @@ const ProductManagement = () => {
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [csvFile, setCsvFile] = useState(null);
+  const [csvUploading, setCsvUploading] = useState(false);
+  const [csvResults, setCsvResults] = useState(null);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const csvInputRef = useRef(null);
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [discountFormData, setDiscountFormData] = useState({
@@ -854,6 +859,57 @@ const ProductManagement = () => {
     specifications: ['material', 'care', 'origin', 'season', 'fit', 'weight', 'style']
   } : null;
 
+  const CSV_HEADERS = [
+    'name','skuCode','h1Heading','price','categoryName','collectionName','brand',
+    'description','specifications','availability','sizes','colors','imageUrls',
+    'isFeatured','isNewArrival','isTrending','discountMode','discountPercent',
+    'tags','material','careInstructions','productLink','fit','marketingDescription',
+    'fabric','sleeves','collar','pocket','occasion'
+  ];
+  const CSV_SAMPLE = [
+    'Classic White Shirt','BL-WS-001','Premium White Formal Shirt','1299',
+    'Men','Formal Collection','Black Locust',
+    'Premium white formal shirt for office wear.','Cotton 100% - Machine Wash Cold',
+    'in_stock','S:10,M:15,L:20,XL:10','White,Light Blue','https://example.com/img.jpg',
+    'false','true','false','inherit','0','formal,shirt,office','Cotton',
+    'Machine wash cold','','Regular Fit','Perfect office shirt','Cotton Blend',
+    'Full Sleeves','Point Collar','No Pocket','Formal Office'
+  ];
+
+  const handleDownloadTemplate = () => {
+    const escape = (v) => (String(v).includes(',') ? `"${v}"` : v);
+    const csv = [CSV_HEADERS.join(','), CSV_SAMPLE.map(escape).join(',')].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'bulk_product_template.csv'; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleCsvUpload = async () => {
+    if (!csvFile) { toast.error('Please select a CSV file first'); return; }
+    setCsvUploading(true);
+    setCsvResults(null);
+    try {
+      const formData = new FormData();
+      formData.append('csvFile', csvFile);
+      const res = await api.post('/products/admin/bulk-upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      const r = res.data.results;
+      setCsvResults(r);
+      if (r.created > 0) {
+        toast.success(`${r.created} product${r.created !== 1 ? 's' : ''} created!`);
+        fetchProducts();
+      }
+      if (r.failed > 0) toast.warning(`${r.failed} row${r.failed !== 1 ? 's' : ''} failed — see details`);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Upload failed');
+    } finally {
+      setCsvUploading(false);
+    }
+  };
+
   if (loading) {
     return <div className="loading">Loading products...</div>;
   }
@@ -862,23 +918,28 @@ const ProductManagement = () => {
     <div className="product-management">
       <div className="page-header">
         <h2>Product Management</h2>
-        <button
-          className="btn btn-primary"
-          onClick={() => {
-            try {
-              console.log(" Add Product button clicked");
-              resetForm();
-              console.log(" Form reset completed");
-              setShowAddModal(true);
-              console.log(" Modal should show now");
-            } catch (error) {
-              console.error(" Error opening Add Product modal:", error);
-              alert(`Error opening Add Product modal: ${error.message}`);
-            }
-          }}
-        >
-          <i className="fas fa-plus"></i> Add Product
-        </button>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <button
+            className="btn btn-secondary"
+            onClick={() => { setCsvFile(null); setCsvResults(null); setShowUploadModal(true); }}
+            title="Upload products in bulk via CSV"
+          >
+            <i className="fas fa-upload"></i> Upload
+          </button>
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              try {
+                resetForm();
+                setShowAddModal(true);
+              } catch (error) {
+                alert(`Error opening Add Product modal: ${error.message}`);
+              }
+            }}
+          >
+            <i className="fas fa-plus"></i> Add Product
+          </button>
+        </div>
       </div>
 
       <div className="shop-discount-panel">
@@ -1939,6 +2000,130 @@ const ProductManagement = () => {
                   <i className="fas fa-save"></i> Save Discount
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Bulk CSV Upload Modal ───────────────────────────────────────── */}
+      {showUploadModal && (
+        <div className="modal-overlay" onClick={() => setShowUploadModal(false)}>
+          <div
+            className="modal-content"
+            style={{ maxWidth: '560px', width: '100%' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header">
+              <h3 style={{ margin: 0 }}>Upload Products via CSV</h3>
+              <button className="close-btn" onClick={() => setShowUploadModal(false)}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+
+            <div className="modal-body" style={{ padding: '20px' }}>
+              {/* Download template */}
+              <div style={{ background: '#f8f9fa', borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
+                <p style={{ margin: '0 0 10px', fontWeight: '600', fontSize: '14px' }}>
+                  Step 1 — Download the template
+                </p>
+                <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#666' }}>
+                  Fill it in Excel / Google Sheets. Use <code style={{ background: '#e8e8e8', padding: '1px 5px', borderRadius: '3px' }}>S:10,M:20,L:15</code> for sizes.
+                  The <strong>categoryName</strong> must match an existing category exactly.
+                </p>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={handleDownloadTemplate}
+                >
+                  <i className="fas fa-download"></i> Download CSV Template
+                </button>
+              </div>
+
+              {/* File select */}
+              <div style={{ marginBottom: '16px' }}>
+                <p style={{ margin: '0 0 8px', fontWeight: '600', fontSize: '14px' }}>
+                  Step 2 — Select your filled CSV
+                </p>
+                <input
+                  ref={csvInputRef}
+                  type="file"
+                  accept=".csv"
+                  style={{ display: 'none' }}
+                  onChange={(e) => { setCsvFile(e.target.files[0] || null); setCsvResults(null); }}
+                />
+                <div
+                  onClick={() => csvInputRef.current?.click()}
+                  style={{
+                    border: `2px dashed ${csvFile ? '#16a34a' : '#ccc'}`,
+                    borderRadius: '8px',
+                    padding: '24px',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    background: csvFile ? '#f0fff4' : '#fafafa',
+                  }}
+                >
+                  {csvFile ? (
+                    <>
+                      <i className="fas fa-check-circle" style={{ color: '#16a34a', fontSize: '20px' }}></i>
+                      <p style={{ margin: '8px 0 4px', fontWeight: '600' }}>{csvFile.name}</p>
+                      <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>
+                        {(csvFile.size / 1024).toFixed(1)} KB &nbsp;·&nbsp;
+                        <span
+                          style={{ color: '#dc2626', cursor: 'pointer' }}
+                          onClick={(e) => { e.stopPropagation(); setCsvFile(null); setCsvResults(null); if (csvInputRef.current) csvInputRef.current.value = ''; }}
+                        >Remove</span>
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-file-csv" style={{ fontSize: '24px', color: '#888' }}></i>
+                      <p style={{ margin: '8px 0 0', fontSize: '13px', color: '#666' }}>Click to select CSV file</p>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Results */}
+              {csvResults && (
+                <div style={{ background: '#f8f9fa', borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
+                  <div style={{ display: 'flex', gap: '12px', marginBottom: csvResults.errors?.length ? '12px' : 0 }}>
+                    {[
+                      { label: 'Total', value: csvResults.total, color: '#374151' },
+                      { label: 'Created', value: csvResults.created, color: '#16a34a' },
+                      { label: 'Failed', value: csvResults.failed, color: csvResults.failed > 0 ? '#dc2626' : '#374151' },
+                    ].map(({ label, value, color }) => (
+                      <div key={label} style={{ flex: 1, textAlign: 'center', background: '#fff', borderRadius: '6px', padding: '10px 6px', border: '1px solid #e5e5e5' }}>
+                        <p style={{ margin: 0, fontSize: '22px', fontWeight: '700', color }}>{value}</p>
+                        <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>{label}</p>
+                      </div>
+                    ))}
+                  </div>
+                  {csvResults.errors?.length > 0 && (
+                    <div style={{ maxHeight: '160px', overflowY: 'auto', background: '#fff8f8', border: '1px solid #fca5a5', borderRadius: '6px', padding: '10px' }}>
+                      {csvResults.errors.map((err, i) => (
+                        <p key={i} style={{ margin: '0 0 6px', fontSize: '12px' }}>
+                          <strong>Row {err.row} ({err.name}):</strong> {err.error}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="modal-footer" style={{ padding: '16px 20px', display: 'flex', justifyContent: 'flex-end', gap: '10px', borderTop: '1px solid #eee' }}>
+              <button className="btn btn-secondary" onClick={() => setShowUploadModal(false)}>
+                Close
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={handleCsvUpload}
+                disabled={!csvFile || csvUploading}
+              >
+                {csvUploading
+                  ? <><i className="fas fa-spinner fa-spin"></i> Uploading...</>
+                  : <><i className="fas fa-upload"></i> Upload Products</>
+                }
+              </button>
             </div>
           </div>
         </div>
