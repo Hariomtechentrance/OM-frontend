@@ -220,10 +220,17 @@ function HomePage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Men */}
             <Link to="/category/men" className="group relative overflow-hidden rounded-lg shadow-lg h-64 block">
+              {/* Mobile: local photo, Desktop: Unsplash */}
+              <SafeImg
+                src="/images/mens-collection/men-banner-mobile.jpeg"
+                alt="Men's Collection"
+                className="block md:hidden w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                fallback={IMG_FALLBACK.men}
+              />
               <SafeImg
                 src="https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?w=800&auto=format&fit=crop"
                 alt="Men's Collection"
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                className="hidden md:block w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 fallback={IMG_FALLBACK.men}
               />
               <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors" />
