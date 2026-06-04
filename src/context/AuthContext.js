@@ -191,7 +191,6 @@ export const AuthProvider = ({ children }) => {
         const tokenExpiry = localStorage.getItem('tokenExpiry');
         if (tokenExpiry && isTokenExpired(tokenExpiry)) {
           // Token expired - clear auth
-          console.log('🔴 Token expired - clearing auth');
           localStorage.removeItem('token');
           localStorage.removeItem('refreshToken');
           localStorage.removeItem('tokenExpiry');
@@ -232,7 +231,6 @@ export const AuthProvider = ({ children }) => {
         if (error.response?.status === 401 && !originalRequest._retry) {
           originalRequest._retry = true;
           
-          console.log('🔴 401 Unauthorized - clearing auth and redirecting to login');
           
           // Clear all auth data
           localStorage.removeItem('token');
@@ -414,7 +412,6 @@ export const AuthProvider = ({ children }) => {
   // Login user
   const login = async (formData) => {
     try {
-      console.log("MAKING API CALL TO: /users/login");
       const res = await api.post('/users/login', formData);
 
       const token = res.data.token || res.data.data?.token;
@@ -449,7 +446,6 @@ export const AuthProvider = ({ children }) => {
       return { success: true, user };
 
     } catch (error) {
-      console.error("❌ LOGIN ERROR:", error.response?.data || error.message);
       const msg = getApiErrorMessage(error, 'Login failed');
 
       dispatch({
@@ -524,7 +520,6 @@ export const AuthProvider = ({ children }) => {
         return { success: false, message: res.data.error || 'Failed to send OTP' };
       }
     } catch (error) {
-      console.error('Send OTP error:', error);
       dispatch({ type: SET_LOADING, payload: false });
       return {
         success: false,
@@ -575,7 +570,6 @@ export const AuthProvider = ({ children }) => {
         };
       }
     } catch (error) {
-      console.error('Verify OTP error:', error);
       dispatch({ type: SET_LOADING, payload: false });
       return { 
         success: false, 
@@ -606,7 +600,6 @@ export const AuthProvider = ({ children }) => {
 
       return { success: true, user };
     } catch (error) {
-      console.error('Phone login error:', error);
       const msg = error.response?.data?.error || error.message || 'Phone login failed';
       dispatch({ type: AUTH_FAIL, payload: msg });
       dispatch({ type: SET_LOADING, payload: false });
@@ -675,7 +668,6 @@ export const AuthProvider = ({ children }) => {
       return { success: true, user };
 
     } catch (error) {
-      console.error(`${provider} login error:`, error);
       const errorMessage = error.response?.data?.error || error.message;
       dispatch({ type: AUTH_FAIL, payload: errorMessage });
       dispatch({ type: SET_LOADING, payload: false });

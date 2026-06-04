@@ -9,22 +9,17 @@ const api = axios.create({
   withCredentials: true
 });
 
-// Request interceptor: user JWT or admin JWT (admin panel stores adminToken)
+// Request interceptor — attaches token if present in localStorage
+// (httpOnly cookie is sent automatically by the browser for same-origin requests)
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log('🔍 Axios Request:', config.method?.toUpperCase(), config.url);
-      console.log('🔍 Token found:', token.length > 0 ? 'YES' : 'NO');
-    } else {
-      console.log('🔍 No token found for request:', config.method?.toUpperCase(), config.url);
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 // Response interceptor for error handling
