@@ -250,15 +250,23 @@ function CollectionPage() {
     );
   }
 
+  const desktopBanner = `/images/banners/${slug}/desktop.jpg`;
+  const mobileBanner = `/images/banners/${slug}/mobile.jpg`;
+
   return (
     <div className="min-h-screen bg-white">
       {/* Collection Header */}
-      <div className="relative h-[400px] w-full overflow-hidden">
-        <img
-          src={collection.image}
-          alt={collection.name}
-          className="w-full h-full object-cover"
-        />
+      <div className="relative h-[300px] md:h-[500px] w-full overflow-hidden">
+        <picture>
+          <source media="(max-width: 767px)" srcSet={mobileBanner} />
+          <source media="(min-width: 768px)" srcSet={desktopBanner} />
+          <img
+            src={desktopBanner}
+            alt={collection.name}
+            className="w-full h-full object-cover"
+            onError={(e) => { e.target.src = collection.image; }}
+          />
+        </picture>
         <div className="absolute inset-0 bg-black bg-opacity-40"></div>
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center text-white px-4">
