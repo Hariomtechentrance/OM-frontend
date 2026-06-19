@@ -726,11 +726,16 @@ const ProductManagement = () => {
 
   const toggleProductStatus = async (product) => {
     try {
+      console.log('Toggling product:', product?._id);
       const response = await api.put(`/products/${product?._id}/toggle-status`);
+      console.log('Toggle response:', response.data);
       toast.success(response.data.message || `Product ${product.isActive ? 'disabled' : 'enabled'} successfully`);
       fetchProducts();
     } catch (error) {
-      toast.error('Failed to toggle product status');
+      console.error('Toggle error:', error);
+      console.error('Error response:', error.response?.data);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to toggle product status';
+      toast.error(errorMessage);
     }
   };
 
